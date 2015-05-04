@@ -35,11 +35,11 @@ type
     mmDownloadCert: TMenuItem;
     mmReport: TMenuItem;
     N2: TMenuItem;
+    procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
     procedure bBrowseClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
     procedure cbxAlgorithmClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
   private
     FHashAlgorithm: THashAlgorithm;
     procedure OnBeginHashing(Sender: TObject; const AFileSize: Cardinal);
@@ -56,6 +56,12 @@ implementation
 
 {$R *.dfm}
 
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  // Enable drag & drop support
+  DragAcceptFiles(Handle, True);
+end;
+
 procedure TForm1.OnBeginHashing(Sender: TObject; const AFileSize: Cardinal);
 begin
   pbProgress.Max := AFileSize;
@@ -65,7 +71,7 @@ end;
 
 procedure TForm1.OnHashing(Sender: TObject; const AProgress: Cardinal);
 begin
-  pbProgress.Position := pbProgress.Position + AProgress;
+  pbProgress.Position := Cardinal(pbProgress.Position) + AProgress;
 end;
 
 
@@ -87,12 +93,12 @@ end;
 procedure TForm1.WMDropFiles(var AMsg: TMessage);
 var
   BufferSize: Integer;
-  FileName: string;
+  FileName: PChar;
 
 begin
   BufferSize := DragQueryFile(AMsg.WParam, 0, nil, 0) + 1;
   FileName := StrAlloc(BufferSize);
-  DragQueryFile(AMsg.WParam, 0, PChar(FileName), BufferSize);
+  DragQueryFile(AMsg.WParam, 0, FileName, BufferSize);
   eFile.Text := StrPas(FileName);
   DragFinish(AMsg.WParam);
 end;
@@ -164,12 +170,6 @@ end;
 procedure TForm1.cbxAlgorithmClick(Sender: TObject);
 begin
   FHashAlgorithm := THashAlgorithm(cbxAlgorithm.ItemIndex);
-end;
-
-procedure TForm1.FormCreate(Sender: TObject);
-begin
-  // Enable drag & drop support
-  DragAcceptFiles(Handle, True);
 end;
 
 end.

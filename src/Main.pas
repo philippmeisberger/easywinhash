@@ -35,11 +35,11 @@ type
     mmDownloadCert: TMenuItem;
     mmReport: TMenuItem;
     N2: TMenuItem;
+    procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
     procedure bBrowseClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
     procedure cbxAlgorithmClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
   private
     FHashAlgorithm: THashAlgorithm;
     procedure OnBeginHashing(Sender: TObject; const AFileSize: Cardinal);
@@ -56,6 +56,12 @@ implementation
 
 {$R *.dfm}
 
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  // Enable drag & drop support
+  DragAcceptFiles(Handle, True);
+end;
+
 procedure TForm1.OnBeginHashing(Sender: TObject; const AFileSize: Cardinal);
 begin
   pbProgress.Max := AFileSize;
@@ -65,7 +71,7 @@ end;
 
 procedure TForm1.OnHashing(Sender: TObject; const AProgress: Cardinal);
 begin
-  pbProgress.Position := pbProgress.Position + AProgress;
+  pbProgress.Position := Cardinal(pbProgress.Position) + AProgress;
 end;
 
 
@@ -113,7 +119,7 @@ begin
 
   except
     on E: EAbort do
-      Edit_ShowBalloonTip(eFile.Handle, Application.Title, E.Message, biWarning);
+      Edit_ShowBalloonTip(eFile.Handle, 'Warning', E.Message, biWarning);
 
     on E: Exception do
       ShowException(Self, 'Calculation impossible!', '', E.Message);
@@ -142,7 +148,7 @@ procedure TForm1.bVerifyClick(Sender: TObject);
 begin
   try
     if (eHash.Text = '') then
-      raise EAbort.Create('No file selected!');
+      raise EAbort.Create('No hash entered or calculated!');
 
     with TFileHashThread.Create(eFile.Text, FHashAlgorithm, eHash.Text) do
     begin
@@ -154,7 +160,7 @@ begin
 
   except
     on E: EAbort do
-      Edit_ShowBalloonTip(eHash.Handle, Application.Title, E.Message, biWarning);
+      Edit_ShowBalloonTip(eHash.Handle, 'Warning', E.Message, biWarning);
 
     on E: Exception do
       ShowException(Self, 'Calculation impossible!', '', E.Message);
@@ -164,12 +170,6 @@ end;
 procedure TForm1.cbxAlgorithmClick(Sender: TObject);
 begin
   FHashAlgorithm := THashAlgorithm(cbxAlgorithm.ItemIndex);
-end;
-
-procedure TForm1.FormCreate(Sender: TObject);
-begin
-  // Enable drag & drop support
-  DragAcceptFiles(Handle, True);
 end;
 
 end.
