@@ -287,6 +287,7 @@ type
   PCRYPT_INTEGER_BLOB = ^CRYPT_INTEGER_BLOB;
   DATA_BLOB = _CRYPTOAPI_BLOB;
   PDATA_BLOB = ^DATA_BLOB;
+  TDataBlob = DATA_BLOB;
 
   _CRYPTPROTECT_PROMPTSTRUCT = record
     cbSize: DWORD;
@@ -297,23 +298,25 @@ type
 
   CRYPTPROTECT_PROMPTSTRUCT = _CRYPTPROTECT_PROMPTSTRUCT;
   PCRYPTPROTECT_PROMPTSTRUCT = ^CRYPTPROTECT_PROMPTSTRUCT;
+  TPromptStruct = CRYPTPROTECT_PROMPTSTRUCT;
 
 const
   { dwFlags definitions for CryptProtectData and CryptUnprotectData }
   CRYPTPROTECT_UI_FORBIDDEN        = $00000001;
+  CRYPTPROTECT_PROMPT_ON_PROTECT   = $00000002;
   CRYPTPROTECT_LOCAL_MACHINE       = $00000004;
   CRYPTPROTECT_CRED_SYNC           = $00000008;
   CRYPTPROTECT_AUDIT               = $00000010;
   CRYPTPROTECT_NO_RECOVERY         = $00000020;
   CRYPTPROTECT_VERIFY_PROTECTION   = $00000040;
 
-function CryptProtectData(pDataIn: DATA_BLOB; szDataDescr: PWideChar;
-  pOptionalEntropy: DATA_BLOB; pvReserved: PVOID;
-  pPromptStruct: CRYPTPROTECT_PROMPTSTRUCT; dwFlags: DWORD;
+function CryptProtectData(pDataIn: PDATA_BLOB; szDataDescr: PWideChar;
+  pOptionalEntropy: PDATA_BLOB; pvReserved: PVOID;
+  pPromptStruct: PCRYPTPROTECT_PROMPTSTRUCT; dwFlags: DWORD;
   var pDataOut: DATA_BLOB): LongBool; stdcall;
-function CryptUnprotectData(pDataIn: DATA_BLOB; ppszDataDescr: PWideChar;
-  pOptionalEntropy: DATA_BLOB; pvReserved: PVOID;
-  pPromptStruct: CRYPTPROTECT_PROMPTSTRUCT; dwFlags: DWORD;
+function CryptUnprotectData(pDataIn: PDATA_BLOB; ppszDataDescr: PWideChar;
+  pOptionalEntropy: PDATA_BLOB; pvReserved: PVOID;
+  pPromptStruct: PCRYPTPROTECT_PROMPTSTRUCT; dwFlags: DWORD;
   var pDataOut: DATA_BLOB): LongBool; stdcall;
 
 const
