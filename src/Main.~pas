@@ -12,8 +12,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, StdCtrls, XPMan, ExtCtrls, AddDialogs, AddCommCtrl,
-  Crypt, FileHashThread, Menus;
+  Dialogs, ComCtrls, StdCtrls, XPMan, ExtCtrls, Menus, ShellAPI, AddDialogs,
+  AddCommCtrl, Crypt, FileHashThread;
 
 type
   TForm1 = class(TForm)
@@ -39,12 +39,14 @@ type
     procedure bBrowseClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
     procedure cbxAlgorithmClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   private
     FHashAlgorithm: THashAlgorithm;
     procedure OnBeginHashing(Sender: TObject; const AFileSize: Cardinal);
     procedure OnHashing(Sender: TObject; const AProgress: Cardinal);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
+    procedure WMDropFiles(var AMsg: TMessage); message WM_DROPFILES;
   end;
 
 var
@@ -75,11 +77,24 @@ end;
 procedure TForm1.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
   SetForegroundWindow(Handle);
-  
+
   if AMatches then
     ShowTaskDialog(Self, 'GHash', '', 'Hash matches!', [cbOk], tiInformation)
   else
     ShowTaskDialog(Self, 'GHash', '', 'Hash does not match!', [cbOk], tiWarning);
+end;
+
+procedure TForm1.WMDropFiles(var AMsg: TMessage);
+var
+  BufferSize: Integer;
+  FileName: string;
+
+begin
+  BufferSize := DragQueryFile(AMsg.WParam, 0, nil, 0) + 1;
+  FileName := StrAlloc(BufferSize);
+  DragQueryFile(AMsg.WParam, 0, PChar(FileName), BufferSize);
+  eFile.Text := StrPas(FileName);
+  DragFinish(AMsg.WParam);
 end;
 
 procedure TForm1.bCalculateClick(Sender: TObject);
@@ -149,6 +164,12 @@ end;
 procedure TForm1.cbxAlgorithmClick(Sender: TObject);
 begin
   FHashAlgorithm := THashAlgorithm(cbxAlgorithm.ItemIndex);
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  // Enable drag & drop support
+  DragAcceptFiles(Handle, True);
 end;
 
 end.

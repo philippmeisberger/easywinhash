@@ -15,6 +15,7 @@ object Form1: TForm1
   Menu = MainMenu
   OldCreateOrder = False
   Position = poScreenCenter
+  OnCreate = FormCreate
   DesignSize = (
     353
     163)
