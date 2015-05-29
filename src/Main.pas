@@ -11,9 +11,9 @@ unit Main;
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, ComCtrls, StdCtrls, XPMan, ExtCtrls, Menus, ShellAPI, AddDialogs,
-  AddCommCtrl, Crypt, FileHashThread;
+  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
+  ComCtrls, StdCtrls, XPMan, ExtCtrls, Menus, ShellAPI, Vcl.Taskbar, Crypt,
+  FileHashThread, PMCW.Dialogs, PMCW.CommCtrl, System.Win.TaskbarCore;
 
 type
   TForm1 = class(TForm)
@@ -21,7 +21,6 @@ type
     bCalculate: TButton;
     pbProgress: TProgressBar;
     bVerify: TButton;
-    XPManifest: TXPManifest;
     bBrowse: TButton;
     eFile: TLabeledEdit;
     eHash: TLabeledEdit;
@@ -31,7 +30,7 @@ type
     mmLang: TMenuItem;
     mmUpdate: TMenuItem;
     N1: TMenuItem;
-    ber1: TMenuItem;
+    mmAbout: TMenuItem;
     mmDownloadCert: TMenuItem;
     mmReport: TMenuItem;
     N2: TMenuItem;
@@ -40,10 +39,12 @@ type
     procedure bBrowseClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
     procedure cbxAlgorithmClick(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     FHashAlgorithm: THashAlgorithm;
-    procedure OnBeginHashing(Sender: TObject; const AFileSize: Cardinal);
-    procedure OnHashing(Sender: TObject; const AProgress: Cardinal);
+    FTaskBar: TTaskbar;
+    procedure OnBeginHashing(Sender: TObject; const AFileSize: Int64);
+    procedure OnHashing(Sender: TObject; const AProgress: Int64);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
     procedure WMDropFiles(var AMsg: TMessage); message WM_DROPFILES;
@@ -60,35 +61,51 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
   // Enable drag & drop support
   DragAcceptFiles(Handle, True);
+  FTaskBar := TTaskbar.Create(Self);
 end;
 
-procedure TForm1.OnBeginHashing(Sender: TObject; const AFileSize: Cardinal);
+
+procedure TForm1.FormDestroy(Sender: TObject);
 begin
+  FTaskBar.Free;
+end;
+
+
+procedure TForm1.OnBeginHashing(Sender: TObject; const AFileSize: Int64);
+begin
+  FTaskBar.ProgressMaxValue := AFileSize;
+  FTaskBar.ProgressState := TTaskBarProgressState.Normal;
+  FTaskBar.ProgressValue := 0;
   pbProgress.Max := AFileSize;
   pbProgress.Position := 0;
 end;
 
 
-procedure TForm1.OnHashing(Sender: TObject; const AProgress: Cardinal);
+procedure TForm1.OnHashing(Sender: TObject; const AProgress: Int64);
 begin
-  pbProgress.Position := Cardinal(pbProgress.Position) + AProgress;
+  pbProgress.Position := pbProgress.Position + AProgress;
+  FTaskBar.ProgressValue := FTaskBar.ProgressValue + AProgress;
 end;
 
 
 procedure TForm1.OnEndHashing(Sender: TThread; const AHash: string);
 begin
   eHash.Text := AHash;
+  FTaskBar.ProgressState := TTaskBarProgressState.None;
+  FlashWindow(Application.Handle, True);
 end;
+
 
 procedure TForm1.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
-  SetForegroundWindow(Handle);
+  FlashWindow(Application.Handle, True);
 
   if AMatches then
-    ShowTaskDialog(Self, 'GHash', '', 'Hash matches!', [cbOk], tiInformation)
+    ShowTaskDialog(Self, 'GHash', '', 'Hash matches!', [tcbOk], tdiInformation)
   else
-    ShowTaskDialog(Self, 'GHash', '', 'Hash does not match!', [cbOk], tiWarning);
+    ShowTaskDialog(Self, 'GHash', '', 'Hash does not match!', [tcbOk], tdiWarning);
 end;
+
 
 procedure TForm1.WMDropFiles(var AMsg: TMessage);
 var
@@ -103,6 +120,7 @@ begin
   DragFinish(AMsg.WParam);
 end;
 
+
 procedure TForm1.bCalculateClick(Sender: TObject);
 begin
   try
@@ -114,7 +132,7 @@ begin
       OnStart := OnBeginHashing;
       OnFinish := OnEndHashing;
       OnProgress := OnHashing;
-      Resume;
+      Start;
     end;  //of with
 
   except
@@ -155,7 +173,7 @@ begin
       OnStart := OnBeginHashing;
       OnVerify := OnVerified;
       OnProgress := OnHashing;
-      Resume;
+      Start;
     end;  //of with
 
   except

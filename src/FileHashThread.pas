@@ -23,8 +23,8 @@ type
     procedure DoNotifyOnFinish();
     procedure DoNotifyOnProgress();
     procedure DoNotifyOnVerified();
-    procedure OnStartHashing(Sender: TObject; const AFileSize: Cardinal);
-    procedure OnHashing(Sender: TObject; const ABytesRead: Cardinal);
+    procedure OnStartHashing(Sender: TObject; const AFileSize: Int64);
+    procedure OnHashing(Sender: TObject; const ABytesRead: Int64);
   protected
     procedure Execute; override;
   public
@@ -96,15 +96,17 @@ begin
     FOnVerify(Self, FMatches);
 end;
 
-procedure TFileHashThread.OnStartHashing(Sender: TObject; const AFileSize: Cardinal);
+procedure TFileHashThread.OnStartHashing(Sender: TObject; const AFileSize: Int64);
 begin
-  FBytes := AFileSize;
+  // Show progress in KB
+  FBytes := AFileSize div 1024;
   Synchronize(DoNotifyOnStart);
 end;
 
-procedure TFileHashThread.OnHashing(Sender: TObject; const ABytesRead: Cardinal);
+procedure TFileHashThread.OnHashing(Sender: TObject; const ABytesRead: Int64);
 begin
-  FBytesRead := ABytesRead;
+  // Show progress in KB
+  FBytesRead := ABytesRead div 1024;
   Synchronize(DoNotifyOnProgress);
 end;
 

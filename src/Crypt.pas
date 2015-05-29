@@ -43,7 +43,7 @@ type
   TCryptAlgorithm = (caAes128, caAes192, caAes256);
 
   { Events }
-  TProgressEvent = procedure(Sender: TObject; const AProgress: Cardinal) of object;
+  TProgressEvent = procedure(Sender: TObject; const AProgress: Int64) of object;
 
   { TCryptBase }
   TCryptBase = class(TObject)

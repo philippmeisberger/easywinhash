@@ -1,12 +1,12 @@
 object Form1: TForm1
   Left = 192
   Top = 124
-  Width = 369
-  Height = 221
   Caption = 'GHash'
+  ClientHeight = 178
+  ClientWidth = 400
   Color = clBtnFace
-  Constraints.MinHeight = 221
-  Constraints.MinWidth = 369
+  Constraints.MinHeight = 236
+  Constraints.MinWidth = 416
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -16,19 +16,19 @@ object Form1: TForm1
   OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   DesignSize = (
-    353
-    163)
+    400
+    178)
   PixelsPerInch = 96
   TextHeight = 13
   object cbxAlgorithm: TComboBox
     Left = 24
-    Top = 128
+    Top = 132
     Width = 73
     Height = 21
     Style = csDropDownList
     Anchors = [akLeft, akBottom]
-    ItemHeight = 13
     ItemIndex = 0
     TabOrder = 0
     Text = 'MD5'
@@ -41,8 +41,8 @@ object Form1: TForm1
       'SHA-512')
   end
   object bCalculate: TButton
-    Left = 256
-    Top = 126
+    Left = 301
+    Top = 129
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
@@ -52,15 +52,17 @@ object Form1: TForm1
   end
   object pbProgress: TProgressBar
     Left = 24
-    Top = 102
-    Width = 305
+    Top = 106
+    Width = 352
     Height = 17
     Anchors = [akLeft, akRight, akBottom]
+    Smooth = True
+    Step = 1
     TabOrder = 2
   end
   object bVerify: TButton
-    Left = 140
-    Top = 126
+    Left = 164
+    Top = 130
     Width = 75
     Height = 25
     Anchors = [akBottom]
@@ -69,8 +71,8 @@ object Form1: TForm1
     OnClick = bVerifyClick
   end
   object bBrowse: TButton
-    Left = 296
-    Top = 32
+    Left = 342
+    Top = 30
     Width = 33
     Height = 25
     Anchors = [akTop, akRight]
@@ -81,7 +83,7 @@ object Form1: TForm1
   object eFile: TLabeledEdit
     Left = 24
     Top = 32
-    Width = 265
+    Width = 312
     Height = 21
     Anchors = [akLeft, akTop, akRight]
     EditLabel.Width = 28
@@ -91,21 +93,18 @@ object Form1: TForm1
   end
   object eHash: TLabeledEdit
     Left = 24
-    Top = 72
-    Width = 305
+    Top = 74
+    Width = 352
     Height = 21
-    Anchors = [akLeft, akTop, akRight]
+    Anchors = [akLeft, akRight]
     DragMode = dmAutomatic
     EditLabel.Width = 28
     EditLabel.Height = 13
     EditLabel.Caption = 'Hash:'
     TabOrder = 6
   end
-  object XPManifest: TXPManifest
-    Left = 320
-  end
   object MainMenu: TMainMenu
-    Left = 288
+    Left = 360
     object mmView: TMenuItem
       Caption = 'Ansicht'
       object mmLang: TMenuItem
@@ -129,7 +128,7 @@ object Form1: TForm1
       object N2: TMenuItem
         Caption = '-'
       end
-      object ber1: TMenuItem
+      object mmAbout: TMenuItem
         Caption = #220'ber ...'
       end
     end
