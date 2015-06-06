@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Windows Mutex Unit v1.2                                   }
+{ PM Code Works Windows Mutex Unit v1.3                                   }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -11,23 +11,21 @@ unit PMCW.Mutex;
 interface
 
 uses
-  Windows, Forms;
+  Windows, Forms, Dialogs;
 
 implementation
 
 var
   Handle: THandle;
-  FileName: string;
 
 initialization
 
-  FileName := Application.Title;
-  Handle := CreateMutex(nil, True, PChar(FileName));
+  Handle := CreateMutex(nil, True, PChar(Application.Title));
 
   if (GetLastError() = ERROR_ALREADY_EXISTS) then
   begin
-    Application.MessageBox('Another instance of '+ FileName +' already exists!',
-      FileName, MB_ICONWARNING);
+    MessageDlg('Another instance of '+ Application.Title +' already exists! Abort...',
+      mtWarning, [mbOK], 0);
     Application.Terminate;
   end;  //of begin
 

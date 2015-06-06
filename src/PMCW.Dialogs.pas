@@ -30,7 +30,7 @@ function InputCombo(AOwner: TComponent; ACaption, APrompt: string; AList: TStrin
 
 function ShowAddRegistryDialog(ARegFilePath: string): Boolean;
 
-function ShowTaskDialog(AOwner: TComponent; ATitle, ACaption, AText: WideString;
+function ShowTaskDialog(AOwner: TComponent; ACaption, ATitle, AText: WideString;
   ACommonButtons: TTaskDialogCommonButtons; AIcon: TTaskDialogIcon;
   AFlags: TTaskDialogFlags = []): Integer;
 
@@ -74,7 +74,7 @@ begin
   Result := False;
 
   // Init TForm
-  Form := TForm.Create(Application);
+  Form := TForm.Create(AOwner);
 
   try
     with Form do
@@ -178,7 +178,7 @@ end;
 
   Shows the new task dialog of Windows Vista. }
 
-function ShowTaskDialog(AOwner: TComponent; ATitle, ACaption, AText: WideString;
+function ShowTaskDialog(AOwner: TComponent; ACaption, ATitle, AText: WideString;
   ACommonButtons: TTaskDialogCommonButtons; AIcon: TTaskDialogIcon;
   AFlags: TTaskDialogFlags = []): Integer;
 var

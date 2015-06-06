@@ -1,9 +1,17 @@
+{ *********************************************************************** }
+{                                                                         }
+{ FileHashThread                                                          }
+{                                                                         }
+{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
+{                                                                         }
+{ *********************************************************************** }
+
 unit FileHashThread;
 
 interface
 
 uses
-  Classes, Crypt;
+  Classes, WinCrypt;
 
 type
   TCalculatedHashEvent = procedure(Sender: TThread; const AHash: string) of object;

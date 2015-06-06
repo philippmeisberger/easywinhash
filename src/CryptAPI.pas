@@ -15,11 +15,14 @@ uses
 
 type
   ALG_ID     = Cardinal;
-  HCRYPTPROV = HWND;
-  HCRYPTKEY  = HWND;
-  HCRYPTHASH = HWND;
-  PVOID      = Pointer;
-  LPVOID     = Pointer;
+  HCRYPTPROV = ULONG_PTR;
+  TCryptProv = HCRYPTPROV;
+
+  HCRYPTKEY  = ULONG_PTR;
+  TCryptKey  = HCRYPTKEY;
+
+  HCRYPTHASH = ULONG_PTR;
+  TCryptHash = HCRYPTHASH;
 
   _HMAC_INFO = record
     HashAlgId: ALG_ID;
@@ -173,7 +176,7 @@ function CryptDuplicateKey(hKey: HCRYPTKEY; pdwReserved, dwFlags: DWORD;
 function CryptEncrypt(Key: HCRYPTKEY; Hash: HCRYPTHASH; Final: LongBool;
   Flags: LongWord; pbData: PByte; var pdwDataLen, dwBufLen: DWORD): LongBool; stdcall;
 function CryptGenRandom(hProv: HCRYPTPROV; dwLen: DWORD;
-  var pbBuffer: PByte): LongBool; stdcall;
+  pbBuffer: PByte): LongBool; stdcall;
 function CryptGetHashParam(hHash: HCRYPTHASH; dwParam: DWORD; pbData: PByte;
   var pdwDataLen: DWORD; dwFlags: DWORD): LongBool; stdcall;
 function CryptGetKeyParam(hKey: HCRYPTKEY; dwParam: DWORD; var pbData: PByte;
@@ -240,26 +243,32 @@ function CryptSetKeyParam(hKey: HCRYPTKEY; dwParam: DWORD; pbData: PByte;
 
 const
   { dwFlags definitions for Base64 functions }
-  CRYPT_STRING_BASE64HEADER        = 0;
-  CRYPT_STRING_BASE64              = 1;
-  CRYPT_STRING_BINARY              = 2;
-  CRYPT_STRING_BASE64REQUESTHEADER = 3;
-  CRYPT_STRING_HEX                 = 4;
-  CRYPT_STRING_HEXASCII            = 5;
-  CRYPT_STRING_BASE64_ANY          = 6;
-  CRYPT_STRING_ANY                 = 7;
-  CRYPT_STRING_HEX_ANY             = 8;
-  CRYPT_STRING_BASE64X509CRLHEADER = 9;
-  CRYPT_STRING_HEXADDR             = 10;
-  CRYPT_STRING_HEXASCIIADDR        = 11;
-  CRYPT_STRING_HEXRAW              = 12;
+  CRYPT_STRING_BASE64HEADER        = $00000000;
+  CRYPT_STRING_BASE64              = $00000001;
+  CRYPT_STRING_BINARY              = $00000002;
+  CRYPT_STRING_BASE64REQUESTHEADER = $00000003;
+  CRYPT_STRING_HEX                 = $00000004;
+  CRYPT_STRING_HEXASCII            = $00000005;
+
+  CRYPT_STRING_BASE64_ANY          = $00000006;
+  CRYPT_STRING_ANY                 = $00000007;
+  CRYPT_STRING_HEX_ANY             = $00000008;
+
+  CRYPT_STRING_BASE64X509CRLHEADER = $00000009;
+  CRYPT_STRING_HEXADDR             = $0000000a;
+  CRYPT_STRING_HEXASCIIADDR        = $0000000b;
+  CRYPT_STRING_HEXRAW              = $0000000c;
+
+  CRYPT_STRING_STRICT              = $20000000;
+  CRYPT_STRING_NOCRLF              = $40000000;
+  CRYPT_STRING_NOCR                = $80000000;
 
 function CryptStringToBinary(pszString: PChar; cchString, dwFlags: DWORD;
-  pbBinary: PByte; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
+  pbBinary: Pointer; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
 function CryptStringToBinaryA(pszString: PAnsiChar; cchString, dwFlags: DWORD;
-  pbBinary: PByte; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
+  pbBinary: Pointer; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
 function CryptStringToBinaryW(pszString: PWideChar; cchString, dwFlags: DWORD;
-  pbBinary: PByte; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
+  pbBinary: Pointer; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
 function CryptBinaryToString(pbBinary: Pointer; cbBinary, dwFlags: DWORD;
   pszString: PChar; var pcchString: DWORD): Boolean; stdcall;
 function CryptBinaryToStringA(pbBinary: Pointer; cbBinary: DWORD; dwFlags: DWORD;
@@ -338,10 +347,10 @@ const
 
 implementation
 
-function CryptAcquireContext; stdcall; external advapi32 name 'CryptAcquireContextA';
+function CryptAcquireContext; stdcall; external advapi32 name 'CryptAcquireContextW';
 function CryptAcquireContextA; stdcall; external advapi32 name 'CryptAcquireContextA';
 function CryptAcquireContextW; stdcall; external advapi32 name 'CryptAcquireContextW';
-function CryptBinaryToString; stdcall; external Crypt32 name 'CryptBinaryToStringA';
+function CryptBinaryToString; stdcall; external Crypt32 name 'CryptBinaryToStringW';
 function CryptBinaryToStringA; stdcall; external crypt32 name 'CryptBinaryToStringA';
 function CryptBinaryToStringW; stdcall; external crypt32 name 'CryptBinaryToStringW';
 function CryptCreateHash; stdcall; external advapi32 name 'CryptCreateHash';
@@ -362,7 +371,7 @@ function CryptHashData; stdcall; external advapi32 name 'CryptHashData';
 function CryptReleaseContext; stdcall; external advapi32 name 'CryptReleaseContext';
 function CryptSetHashParam; stdcall; external advapi32 name 'CryptSetHashParam';
 function CryptSetKeyParam; stdcall; external advapi32 name 'CryptSetKeyParam';
-function CryptStringToBinary; stdcall; external Crypt32 name 'CryptStringToBinaryA';
+function CryptStringToBinary; stdcall; external Crypt32 name 'CryptStringToBinaryW';
 function CryptStringToBinaryA; stdcall; external crypt32 name 'CryptStringToBinaryA';
 function CryptStringToBinaryW; stdcall; external crypt32 name 'CryptStringToBinaryW';
 function CryptProtectData; stdcall; external crypt32 name 'CryptProtectData';

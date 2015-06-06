@@ -33,8 +33,10 @@ type
   { TWinWOW64 }
   TWinWOW64 = class(TObject)
   public
-    class function DenyWOW64Redirection(AAccessRight: Cardinal): Cardinal;
-    class function Wow64FsRedirection(ADisable: Boolean): Boolean;
+    class function DenyWOW64Redirection(AAccessRight: Cardinal): Cardinal; deprecated;
+    class function Wow64FsRedirection(ADisable: Boolean = True): Boolean;
+    class function Wow64RegistryRedirection(AAccessRight: Cardinal;
+      A64Bit: Boolean = True): Cardinal;
     class function GetArchitecture(): string;
     class function IsWindows64(): Boolean;
   end;
@@ -84,11 +86,11 @@ uses StrUtils;
 {$IFDEF MSWINDOWS}
 { TWinWOW64 }
 
-{ protected TWinWOW64.Wow64FsRedirection
+{ public TWinWOW64.Wow64FsRedirection
 
-  Disables or reverts the WOW64 redirection on 64bit Windows. }
+  Disables or reverts the WOW64 file system redirection on 64 Bit Windows. }
 
-class function TWinWOW64.Wow64FsRedirection(ADisable: Boolean): Boolean;
+class function TWinWOW64.Wow64FsRedirection(ADisable: Boolean = True): Boolean;
 type
   TWow64DisableWow64FsRedirection = function(OldValue: Pointer): BOOL; stdcall;
   TWow64RevertWow64FsRedirection = function(OldValue: Pointer): BOOL; stdcall;
@@ -127,6 +129,26 @@ begin
   end;  //of begin
 end;
 
+{ public TWinWOW64.Wow64RegistryRedirection
+
+  Disables or reverts the WOW64 registry redirection on 64 Bit Windows. }
+
+class function TWinWOW64.Wow64RegistryRedirection(AAccessRight: Cardinal;
+  A64Bit: Boolean = True): Cardinal;
+begin
+  Result := AAccessRight;
+
+{$IFDEF WIN64}
+   if not A64Bit then
+     // Enable redirection to 32 Bit registry hive
+     Result := KEY_WOW64_32KEY or AAccessRight;
+{$ELSE}
+  if (A64Bit and TOSUtils.IsWindows64()) then
+    // Enable redirection to 64 Bit registry hive
+    Result := KEY_WOW64_64KEY or AAccessRight;
+{$ENDIF}
+end;
+
 { public TWinWOW64.IsWindows64
 
   Returns if current Windows is a 32 or 64bit OS. }
@@ -137,7 +159,7 @@ type
 
 var
   LibraryHandle: HMODULE;
-  IsWow64: LongBool;
+  IsWow64: BOOL;
   IsWow64Process: TIsWow64Process;
 
 begin
@@ -203,7 +225,7 @@ end;
 class function TOSUtils.ExecuteProgram(const AProgram: string;
   AArguments: string = ''; ARunAsAdmin: Boolean = False): Boolean;
 var
-  Operation: PAnsiChar;
+  Operation: PWideChar;
 
 begin
   // Run as administrator?
@@ -401,15 +423,18 @@ begin
            0: Result := '2000';
            1: Result := 'XP';
            2: Result := 'XP 64-Bit Edition';
-         end; //of case
+         end;  //of case
 
       6: case Win32MinorVersion of
            0: Result := 'Vista';
            1: Result := '7';
            2: Result := '8';
            3: Result := '8.1';
-           4: Result := '10';
-         end; //of case
+         end;  //of case
+
+      10: case Win32MinorVersion of
+            0: Result := '10';
+          end;  //of case
     end; //of case
 
   // Add information about service packs?
@@ -608,7 +633,7 @@ const
   PM_CERT_THUMBPRINT = '1350A832ED8A6A8FE8B95D2E674495021EB93A4D';
 
 begin
-  Reg := TRegistry.Create(DenyWOW64Redirection(KEY_READ));
+  Reg := TRegistry.Create(Wow64RegistryRedirection(KEY_READ));
   
   try
     Reg.RootKey := HKEY_LOCAL_MACHINE;

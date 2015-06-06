@@ -12,8 +12,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ComCtrls, StdCtrls, XPMan, ExtCtrls, Menus, ShellAPI, Vcl.Taskbar, Crypt,
-  FileHashThread, PMCW.Dialogs, PMCW.CommCtrl, System.Win.TaskbarCore;
+  ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Taskbar, WinCrypt,
+  FileHashThread, PMCW.Dialogs, System.Win.TaskbarCore;
 
 type
   TForm1 = class(TForm)
@@ -136,8 +136,8 @@ begin
     end;  //of with
 
   except
-    on E: EAbort do
-      Edit_ShowBalloonTip(eFile.Handle, 'Warning', E.Message, biWarning);
+    //on E: EAbort do
+      //Edit_ShowBalloonTip(eFile.Handle, 'Warning', E.Message, biWarning);
 
     on E: Exception do
       ShowException(Self, 'Calculation impossible!', '', E.Message);
@@ -147,10 +147,10 @@ end;
 
 procedure TForm1.bBrowseClick(Sender: TObject);
 var
-  OpenDialog: TFileOpenDialog;
+  OpenDialog: TOpenDialog;
 
 begin
-  OpenDialog := TFileOpenDialog.Create(Self);
+  OpenDialog := TOpenDialog.Create(Self);
 
   try
     if OpenDialog.Execute then
@@ -177,8 +177,8 @@ begin
     end;  //of with
 
   except
-    on E: EAbort do
-      Edit_ShowBalloonTip(eHash.Handle, 'Warning', E.Message, biWarning);
+    //on E: EAbort do
+    //  Edit_ShowBalloonTip(eHash.Handle, 'Warning', E.Message, biWarning);
 
     on E: Exception do
       ShowException(Self, 'Calculation impossible!', '', E.Message);
