@@ -15,14 +15,16 @@ object Update: TUpdate
   OldCreateOrder = False
   Position = poScreenCenter
   OnCloseQuery = FormCloseQuery
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 14
   object lSize: TLabel
-    Left = 280
+    Left = 308
     Top = 16
-    Width = 53
+    Width = 29
     Height = 14
-    Caption = '000/000KB'
+    Alignment = taRightJustify
+    Caption = '0/0KB'
     Transparent = True
   end
   object pbProgress: TProgressBar
@@ -37,7 +39,9 @@ object Update: TUpdate
     Top = 64
     Width = 78
     Height = 33
-    Caption = 'Fertig!'
+    Cancel = True
+    Caption = 'abbrechen'
+    Default = True
     TabOrder = 1
     OnClick = bFinishedClick
   end

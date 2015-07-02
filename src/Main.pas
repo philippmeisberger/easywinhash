@@ -12,8 +12,8 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Taskbar, WinCrypt,
-  FileHashThread, PMCW.Dialogs, System.Win.TaskbarCore;
+  ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Taskbar,
+  System.Win.TaskbarCore, WinCrypt, PMCWLanguageFile, FileHashThread;
 
 type
   TForm1 = class(TForm)
@@ -41,6 +41,7 @@ type
     procedure cbxAlgorithmClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
+    FLang: TLanguageFile;
     FHashAlgorithm: THashAlgorithm;
     FTaskBar: TTaskbar;
     procedure OnBeginHashing(Sender: TObject; const AFileSize: Int64);
@@ -59,6 +60,13 @@ implementation
 
 procedure TForm1.FormCreate(Sender: TObject);
 begin
+  // Setup language
+  FLang := TLanguageFile.Create(Self);
+  FLang.AddLanguage(LANG_GERMAN, 100);
+  FLang.AddLanguage(LANG_ENGLISH, 200);
+  FLang.AddLanguage(LANG_FRENCH, 300);
+  FLang.ChangeLanguage(LANG_USER);
+
   // Enable drag & drop support
   DragAcceptFiles(Handle, True);
   FTaskBar := TTaskbar.Create(Self);
@@ -68,14 +76,15 @@ end;
 procedure TForm1.FormDestroy(Sender: TObject);
 begin
   FTaskBar.Free;
+  FLang.Free;
 end;
 
 
 procedure TForm1.OnBeginHashing(Sender: TObject; const AFileSize: Int64);
 begin
   FTaskBar.ProgressMaxValue := AFileSize;
-  FTaskBar.ProgressState := TTaskBarProgressState.Normal;
   FTaskBar.ProgressValue := 0;
+  FTaskBar.ProgressState := TTaskBarProgressState.Normal;
   pbProgress.Max := AFileSize;
   pbProgress.Position := 0;
 end;
@@ -91,19 +100,20 @@ end;
 procedure TForm1.OnEndHashing(Sender: TThread; const AHash: string);
 begin
   eHash.Text := AHash;
-  FTaskBar.ProgressState := TTaskBarProgressState.None;
-  FlashWindow(Application.Handle, True);
+  //FTaskBar.ProgressState := TTaskBarProgressState.None;
+  MessageBeep(MB_ICONINFORMATION);
+  //FlashWindow(Application.Handle, True);
 end;
 
 
 procedure TForm1.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
-  FlashWindow(Application.Handle, True);
+  //FlashWindow(Application.Handle, True);
 
   if AMatches then
-    ShowTaskDialog(Self, 'GHash', '', 'Hash matches!', [tcbOk], tdiInformation)
+    FLang.ShowMessage('Hash matches!', mtInformation)
   else
-    ShowTaskDialog(Self, 'GHash', '', 'Hash does not match!', [tcbOk], tdiWarning);
+    FLang.ShowMessage('Hash does not match!', mtWarning);
 end;
 
 
@@ -136,11 +146,11 @@ begin
     end;  //of with
 
   except
-    //on E: EAbort do
-      //Edit_ShowBalloonTip(eFile.Handle, 'Warning', E.Message, biWarning);
+    on E: EAbort do
+      FLang.EditBalloonTip(eFile.Handle, FLang.GetString(1), E.Message, biWarning);
 
     on E: Exception do
-      ShowException(Self, 'Calculation impossible!', '', E.Message);
+      FLang.ShowException('Calculation impossible!', E.Message);
   end;  //of try
 end;
 
@@ -177,11 +187,11 @@ begin
     end;  //of with
 
   except
-    //on E: EAbort do
-    //  Edit_ShowBalloonTip(eHash.Handle, 'Warning', E.Message, biWarning);
+    on E: EAbort do
+      FLang.EditBalloonTip(eHash.Handle, FLang.GetString(1), E.Message, biWarning);
 
     on E: Exception do
-      ShowException(Self, 'Calculation impossible!', '', E.Message);
+      FLang.ShowException('Calculation impossible!', E.Message);
   end;  //of try
 end;
 

@@ -6,21 +6,21 @@
 {                                                                         }
 { *********************************************************************** }
 
-unit PMCW.Updater;
+unit PMCWUpdater;
 
 {$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
 
 interface
 
 uses
-  SysUtils, Classes, PMCW.UpdateCheckThread, PMCW.DownloadThread, PMCW.OSUtils,
-  PMCW.LanguageFile, PMCW.Dialogs,
+  SysUtils, Classes, Dialogs, PMCWUpdateCheckThread, PMCWDownloadThread,
+  PMCWLanguageFile,
 
 {$IFDEF MSWINDOWS}
   Windows, FileCtrl, Forms, StdCtrls, ComCtrls, Controls, System.Win.TaskbarCore,
-  Vcl.Taskbar;
+  Vcl.Taskbar, Registry, ShellAPI;
 {$ELSE}
-  LCLType;
+  LCLType, Resource, ElfReader, VersionResource, LResources;
 {$ENDIF}
 
 const
@@ -30,8 +30,7 @@ type
   { IUpdateListener }
   IUpdateListener = interface
   ['{D1CDAE74-717A-4C5E-9152-15FBA4A15552}']
-    procedure AfterUpdate(Sender: TObject; ADownloadedFileName: string);
-    procedure BeforeUpdate(Sender: TObject; const ANewBuild: Cardinal);
+    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
   end;
 
   { TUpdateCheck }
@@ -42,7 +41,8 @@ type
     FRemoteDirName: string;
     FNewBuild: Cardinal;
     { TUpdateCheckThread events }
-    procedure OnCheckError(Sender: TThread; AResponseCode: Integer);
+    procedure OnCheckError(Sender: TThread; AResponseCode: Integer;
+      AResponseText: string);
     procedure OnNoUpdateAvailable(Sender: TObject);
     procedure OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
   protected
@@ -54,6 +54,7 @@ type
     destructor Destroy; override;
     procedure AddListener(AListener: IUpdateListener);
     procedure CheckForUpdate(AUserUpdate: Boolean; ACurrentBuild: Cardinal = 0);
+    class function GetBuildNumber(): Cardinal;
     procedure RemoveListener(AListener: IUpdateListener);
   end;
 
@@ -68,30 +69,39 @@ type
     procedure FormShow(Sender: TObject);
   private
     FOnUserCancel: TNotifyEvent;
-    FThreadRuns: Boolean;
-    FDownloadDirectory, FTitle, FRemoteFileName, FLocalFileName, FFileName: string;
+    FThreadRuns,
+    FExecuteFile: Boolean;
+    FDownloadDirectory,
+    FTitle,
+    FRemoteFileName,
+    FLocalFileName,
+    FFileName: string;
     FLang: TLanguageFile;
     FListeners: TInterfaceList;
     FTaskBar: TTaskbar;
-    procedure Reset();
-    { TDownloadThread events }
     procedure OnDownloadCancel(Sender: TObject);
-    procedure OnDownloadError(Sender: TThread; AResponseCode: Integer);
+    procedure OnDownloadError(Sender: TThread; AResponseCode: Integer;
+      AResponseText: string);
     procedure OnDownloadFinished(Sender: TObject);
     procedure OnDownloading(Sender: TThread; ADownloadSize: Int64);
     procedure OnDownloadStart(Sender: TThread; AFileSize: Int64);
+    procedure Reset();
+  protected
+    function Download(ARemoteFileName, ALocalFileName: string;
+      ADownloadDirectory: string = ''): Boolean;
   public
-    constructor Create(AOwner: TComponent; ALang: TLanguageFile); reintroduce;
+    constructor Create(AOwner: TComponent; ALang: TLanguageFile);
     destructor Destroy; override;
     procedure AddListener(AListener: IUpdateListener);
-    procedure Download(ADownloadDirectory: string = ''); overload;
-    procedure Download(ARemoteFileName, ALocalFileName: string;
-      ADownloadDirectory: string = ''); overload;
-    procedure DownloadCertificate();
+    function Execute(): Boolean;
+    class function PMCertificateExists(): Boolean;
     procedure RemoveListener(AListener: IUpdateListener);
     { external }
-    property LanguageFile: TLanguageFile read FLang write FLang;
     property DownloadDirectory: string read FDownloadDirectory write FDownloadDirectory;
+    property ExecuteDownloadedFile: Boolean read FExecuteFile write FExecuteFile;
+    property FileNameLocal: string read FLocalFileName write FLocalFileName;
+    property FileNameRemote: string read FRemoteFileName write FRemoteFileName;
+    property LanguageFile: TLanguageFile read FLang write FLang;
     property Title: string read FTitle write FTitle;
   end;
 {$ENDIF}
@@ -124,7 +134,10 @@ constructor TUpdateCheck.Create(AOwner: TComponent; ARemoteDirName: string;
   ALang: TLanguageFile);
 begin
   Create(ARemoteDirName, ALang);
-  FListeners.Add(AOwner);
+
+  // Add owner to list to receive events
+  if Assigned(AOwner) then
+    FListeners.Add(AOwner);
 end;
 
 { public TUpdateCheck.Destroy
@@ -142,10 +155,14 @@ end;
   Event method that is called TUpdateCheckThread when error occurs while
   searching for update. }
 
-procedure TUpdateCheck.OnCheckError(Sender: TThread; AResponseCode: Integer);
+procedure TUpdateCheck.OnCheckError(Sender: TThread; AResponseCode: Integer;
+  AResponseText: string);
 begin
   if FUserUpdate then
-    FLang.ShowException(FLang.GetString([12, 13]), FLang.Format(19, [AResponseCode]));
+    if (AResponseCode <> -1) then
+      FLang.ShowException(FLang.GetString([12, 13]), AResponseText)
+    else
+      FLang.ShowMessage(12, 13, mtError);
 end;
 
 { private TUpdateCheck.OnNoUpdateAvailable
@@ -173,9 +190,9 @@ begin
     FNewBuild := ANewBuild;
 
   // Notify all listeners
-  for i := 0 to FListeners.Count -1 do
+  for i := 0 to FListeners.Count - 1 do
     if Supports(FListeners[i], IUpdateListener, Listener) then
-      Listener.BeforeUpdate(Self, ANewBuild);
+      Listener.OnUpdate(Self, ANewBuild);
 end;
 
 { public TUpdateCheck.AddListener
@@ -203,7 +220,7 @@ begin
   end;  //of begin
 
   if (ACurrentBuild = 0) then
-    ACurrentBuild := TOSUtils.GetBuildNumber();
+    ACurrentBuild := GetBuildNumber();
 
   // Search for update
   with TUpdateCheckThread.Create(ACurrentBuild, FRemoteDirName) do
@@ -214,6 +231,73 @@ begin
     Start;
   end;  //of with
 end;
+
+{ TUpdateCheck.GetBuildNumber
+
+  Returns build number of current running program. }
+
+class function TUpdateCheck.GetBuildNumber(): Cardinal;
+{$IFDEF MSWINDOWS}
+var
+  VerInfoSize, VerValueSize, Dummy: DWord;
+  VerInfo: Pointer;
+  VerValue: PVSFixedFileInfo;
+
+begin
+  VerInfoSize := GetFileVersionInfoSize(PChar(ParamStr(0)), Dummy);
+
+  if (VerInfoSize <> 0) then
+  begin
+    GetMem(VerInfo, VerInfoSize);
+
+    try
+      GetFileVersionInfo(PChar(ParamStr(0)), 0, VerInfoSize, VerInfo);
+
+      if VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize) then
+        with VerValue^ do
+          Result := (dwFileVersionLS and $FFFF)
+      else
+        Result := 0;
+
+    finally
+      FreeMem(VerInfo, VerInfoSize);
+    end;   //of try
+  end  //of begin
+  else
+    Result := 0;
+end;
+{$ELSE}
+var
+  RS : TResources;
+  E : TElfResourceReader;
+  VR : TVersionResource;
+  i : Cardinal;
+
+begin
+  RS := TResources.Create;
+  VR := nil;
+  i := 0;
+
+  try
+    E := TElfResourceReader.Create;
+    Rs.LoadFromFile(ParamStr(0), E);
+    E.Free;
+
+    while (VR = nil) and (i < RS.Count) do
+    begin
+      if RS.Items[i] is TVersionResource then
+        VR := TVersionResource(RS.Items[i]);
+      Inc(i);
+    end;  //of while
+
+    if Assigned(VR) then
+      Result := VR.FixedInfo.FileVersion[3];
+
+  finally
+    RS.FRee;
+  end;  //of try
+end;
+{$ENDIF}
 
 { public TUpdateCheck.RemoveListener
 
@@ -237,6 +321,7 @@ begin
   inherited Create(AOwner);
   FLang := ALang;
   FThreadRuns := False;
+  FExecuteFile := False;
 
   // Init list of listeners
   FListeners := TInterfaceList.Create;
@@ -254,6 +339,7 @@ end;
 
 destructor TUpdate.Destroy;
 begin
+  FTaskBar.ProgressState := TTaskBarProgressState.None;
   FTaskBar.Free;
   FreeAndNil(FListeners);
   inherited Destroy;
@@ -266,20 +352,7 @@ end;
 procedure TUpdate.FormShow(Sender: TObject);
 begin
   Caption := FTitle;
-end;
-
-{ private TUpdate.Reset
-
-  Resets Update GUI. }
-
-procedure TUpdate.Reset();
-begin
-  // Reset ProgressBar
-  pbProgress.Position := 0;
-
-  lSize.Caption := FLang.GetString(7);
-  bFinished.Caption := FLang.GetString(8);
-  FThreadRuns := False;
+  bFinished.Caption := FLang.GetString(6);
 end;
 
 { private TUpdate.OnDownloadCancel
@@ -288,8 +361,11 @@ end;
 
 procedure TUpdate.OnDownloadCancel(Sender: TObject);
 begin
+  FTaskBar.ProgressState := TTaskBarProgressState.Error;
+  pbProgress.State := TProgressBarState.pbsError;
   Reset();
   FLang.ShowMessage(FLang.GetString(30));
+  bFinished.ModalResult := mrCancel;
 end;
 
 { private TUpdate.OnDownloadError
@@ -297,12 +373,14 @@ end;
   Event method that is called by TDownloadThread when an error occurs while
   downloading the update. }
 
-procedure TUpdate.OnDownloadError(Sender: TThread; AResponseCode: Integer);
+procedure TUpdate.OnDownloadError(Sender: TThread; AResponseCode: Integer;
+  AResponseText: string);
 begin
-  FLang.ShowException(Caption + FLang.GetString(18), FLang.Format(19,
-    [AResponseCode]));
+  FTaskBar.ProgressState := TTaskBarProgressState.Error;
+  pbProgress.State := TProgressBarState.pbsError;
   Reset();
-  BringToFront;
+  FLang.ShowException(Caption + FLang.GetString(18), AResponseText);
+  bFinished.ModalResult := mrAbort;
 end;
 
 { private TUpdate.OnDownloadFinished
@@ -310,10 +388,6 @@ end;
   Event method that is called by TDownloadThread when download is finished. }
 
 procedure TUpdate.OnDownloadFinished(Sender: TObject);
-var
-  i: Word;
-  Listener: IUpdateListener;
-
 begin
   // Caption "finished"
   bFinished.Caption := FLang.GetString(8);
@@ -324,15 +398,14 @@ begin
 {$IFDEF MSWINDOWS}
   // Show dialog to add certificate
   if (ExtractFileExt(FFileName) = '.reg') then
-    ShowAddRegistryDialog('"'+ FFileName +'"');
+    ShellExecute(0, 'open', PChar('regedit.exe'), PChar(FFileName), nil, SW_SHOWNORMAL);
+
+  // Launch setup?
+  if FExecuteFile then
+    ShellExecute(0, 'open', PChar(FFileName), nil, nil, SW_SHOWNORMAL);
 {$ENDIF}
-
-  // Notify all listeners
-  for i := 0 to FListeners.Count -1 do
-    if Supports(FListeners[i], IUpdateListener, Listener) then
-      Listener.AfterUpdate(Self, FFileName);
-
   FlashWindow(Application.Handle, True);
+  bFinished.ModalResult := mrOk;
 end;
 
 { private TUpdate.OnDownloading
@@ -343,7 +416,7 @@ procedure TUpdate.OnDownloading(Sender: TThread; ADownloadSize: Int64);
 begin
   pbProgress.Position := ADownloadSize;
   FTaskBar.ProgressValue := ADownloadSize;
-  lSize.Caption := IntToStr(ADownloadSize) +'/'+ IntToStr(pbProgress.Max) +'KB';
+  lSize.Caption := Format('%d/%d KB', [ADownloadSize, pbProgress.Max]);
 end;
 
 { private TUpdate.OnDownloadStart
@@ -355,36 +428,25 @@ begin
   FTaskBar.ProgressMaxValue := AFileSize;
   FTaskBar.ProgressState := TTaskBarProgressState.Normal;
   pbProgress.Max := AFileSize;
-  BringToFront;
 end;
 
-{ public TUpdate.AddListener
+{ private TUpdate.Reset
 
-  Adds a listener to the notification list. }
+  Resets Update GUI. }
 
-procedure TUpdate.AddListener(AListener: IUpdateListener);
+procedure TUpdate.Reset();
 begin
-  FListeners.Add(AListener);
+  lSize.Caption := FLang.GetString(7);
+  bFinished.Caption := FLang.GetString(8);
+  FThreadRuns := False;
 end;
 
-{ public TUpdate.Download
+{ protected TUpdate.Download
 
   Starts downloading a file. }
 
-procedure TUpdate.Download(ADownloadDirectory: string = '');
-begin
-  if ((FRemoteFileName = '') or (FLocalFileName = '')) then
-    raise Exception.Create('Missing argument: "RemoteFileName" or "LocalFileName"!');
-
-  Download(FRemoteFileName, FLocalFileName, ADownloadDirectory);
-end;
-
-{ public TUpdate.Download
-
-  Starts downloading a file. }
-
-procedure TUpdate.Download(ARemoteFileName, ALocalFileName: string;
-  ADownloadDirectory: string = '');
+function TUpdate.Download(ARemoteFileName, ALocalFileName: string;
+  ADownloadDirectory: string = ''): Boolean;
 var
   Url: string;
   Continue: Boolean;
@@ -397,7 +459,7 @@ begin
   if (ADownloadDirectory <> '') then
     Continue := True
   else
-    // Show SelectDirectory dialog
+    // Show select directory dialog
     Continue := SelectDirectory(FLang.GetString(9), '', ADownloadDirectory);
 
   if Continue then
@@ -405,45 +467,74 @@ begin
     Url := URL_DOWNLOAD + FRemoteFileName;
     FFileName := IncludeTrailingPathDelimiter(ADownloadDirectory) + FLocalFileName;
 
-    // Try to init thread
-    try
-      with TDownloadThread.Create(Url, FFileName) do
-      begin
-        // Link download events
-        FOnUserCancel := OnUserCancel;
+    with TDownloadThread.Create(Url, FFileName) do
+    begin
+      // Link download events
+      FOnUserCancel := OnUserCancel;
 
-        // Link TProgressBar events and start download thread
-        OnDownloading := Self.OnDownloading;
-        OnCancel := OnDownloadCancel;
-        OnStart := OnDownloadStart;
-        OnFinish := OnDownloadFinished;
-        OnError := OnDownloadError;
-        Start;
-      end;  //of with
+      // Link TProgressBar events and start download thread
+      OnDownloading := Self.OnDownloading;
+      OnCancel := OnDownloadCancel;
+      OnStart := OnDownloadStart;
+      OnFinish := OnDownloadFinished;
+      OnError := OnDownloadError;
+      Start;
+    end;  //of with
 
-      // Caption "cancel"
-      bFinished.Caption := FLang.GetString(6);
-      FThreadRuns := True;
-
-    except
-      OnDownloadError(nil, 0);
-    end;  //of try
+    FThreadRuns := True;
   end  //of begin
   else
     // Cancel clicked
     Reset();
 
-  BringToFront;
   ShowModal;
+  Result := (bFinished.ModalResult = mrOk);
 end;
 
-{ TUpdate.DownloadCertificate
+{ public TUpdate.AddListener
 
-  Starts downloading the PMCW certificate. }
+  Adds a listener to the notification list. }
 
-procedure TUpdate.DownloadCertificate();
+procedure TUpdate.AddListener(AListener: IUpdateListener);
 begin
-  Download('cert.reg', 'Install_PMCW_Cert.reg', TOSUtils.GetTempDir());
+  FListeners.Add(AListener);
+end;
+
+{ public TUpdate.Execute
+
+  Executes the dialog. }
+
+function TUpdate.Execute(): Boolean;
+begin
+  if ((FRemoteFileName = '') or (FLocalFileName = '')) then
+    raise EArgumentException.Create('Missing argument: "RemoteFileName" or "LocalFileName"!');
+
+  Result := Download(FRemoteFileName, FLocalFileName, FDownloadDirectory);
+end;
+
+{ public TUpdate.PMCertificateExists
+
+  Returns if the PM Code Works certificate is already installed. }
+
+class function TUpdate.PMCertificateExists(): Boolean;
+var
+  Reg: TRegistry;
+
+const
+  CERT_KEY = 'SOFTWARE\Microsoft\SystemCertificates\ROOT\Certificates\';
+  PM_CERT_THUMBPRINT = '1350A832ED8A6A8FE8B95D2E674495021EB93A4D';
+
+begin
+  Reg := TRegistry.Create(KEY_WOW64_64KEY or KEY_READ);
+
+  try
+    Reg.RootKey := HKEY_LOCAL_MACHINE;
+    Result := (Reg.OpenKeyReadOnly(CERT_KEY) and Reg.KeyExists(PM_CERT_THUMBPRINT));
+
+  finally
+    Reg.CloseKey;
+    Reg.Free;
+  end;  //of try
 end;
 
 { public TUpdate.RemoveListener
@@ -478,7 +569,6 @@ begin
     CanClose := False;
   end  //of begin
   else
-    // Close form
     CanClose := True;
 end;
 {$ENDIF}

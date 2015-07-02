@@ -1,12 +1,12 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Update Thread v2.3                        }
+{ PM Code Works Cross Plattform Download Thread v2.3                      }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
-unit PMCW.DownloadThread;
+unit PMCWDownloadThread;
 
 {$IFDEF LINUX} {$mode delphi}{$H+} {$ENDIF}
 
@@ -18,7 +18,8 @@ uses
 type
   { Thread events }
   TOnDownloadEvent = procedure(Sender: TThread; AFileSize: Int64) of object;
-  TOnDownloadErrorEvent = procedure(Sender: TThread; AResponseCode: Integer) of object;
+  TOnDownloadErrorEvent = procedure(Sender: TThread; AResponseCode: Integer;
+    AResponseMessage: string) of object;
 
   { TDownloadThread }
   TDownloadThread = class(TThread)
@@ -28,7 +29,7 @@ type
     FOnFinish, FOnCancel: TNotifyEvent;
     FOnError: TOnDownloadErrorEvent;
     FFileSize, FDownloadSize: Int64;
-    FFileName, FUrl: string;
+    FFileName, FUrl, FResponseText: string;
     { Synchronized events }
     procedure DoNotifyOnCancel;
     procedure DoNotifyOnDownloading;
@@ -74,7 +75,7 @@ begin
     FFileName := GetUniqueFileName(AFileName);
 
   FUrl := AUrl;
-  
+
   // Init IdHTTP component dynamically
   FHttp := TIdHTTP.Create(nil);
 
@@ -86,7 +87,7 @@ begin
     OnWork := Downloading;
 
     // Set the user-agent because of some issues with default
-    Request.UserAgent := 'Updater/2.2 (PM Code Works Update Utility)';
+    Request.UserAgent := 'Updater/2.3 (PM Code Works Update Utility)';
 
     // Close connection after completion of the response
     Request.Connection := 'close';
@@ -106,7 +107,7 @@ end;
 { protected TDownloadThread.Execute
 
   Thread main method that downloads a file from an HTTP source. }
-  
+
 procedure TDownloadThread.Execute;
 var
   FileStream: TFileStream;
@@ -139,6 +140,7 @@ begin
 
     on E: Exception do
     begin
+      FResponseText := E.Message;
       DeleteFile(FFileName);
       Synchronize(DoNotifyOnError);
     end;  //of begin
@@ -197,7 +199,7 @@ begin
     Inc(i);
   end;  //of while
 
-  result := NewFileName;
+  Result := NewFileName;
 end;
 
 { public TDownloadThread.OnUserCancel
@@ -223,7 +225,7 @@ end;
 { private TDownloadThread.DoNotifyOnDownloading
 
   Synchronizable event method that is called when download is in progress. }
-  
+
 procedure TDownloadThread.DoNotifyOnDownloading;
 begin
   if Assigned(OnDownloading) then
@@ -234,18 +236,18 @@ end;
 
   Synchronizable event method that is called when an error occurs while download
   is in progress. }
-  
-procedure TDownloadThread.DoNotifyOnError;                  
+
+procedure TDownloadThread.DoNotifyOnError;
 begin
   if Assigned(OnError) then
-    OnError(Self, FHttp.ResponseCode);
+    OnError(Self, FHttp.ResponseCode, FResponseText);
 end;
 
 { private TDownloadThread.DoNotifyOnFinish
 
   Synchronizable event method that is called when download is finished. }
-  
-procedure TDownloadThread.DoNotifyOnFinish;                
+
+procedure TDownloadThread.DoNotifyOnFinish;
 begin
   if Assigned(OnFinish) then
     OnFinish(Self);
@@ -254,11 +256,11 @@ end;
 { private TDownloadThread.DoNotifyOnStart
 
   Synchronizable event method that is called when download starts. }
-  
+
 procedure TDownloadThread.DoNotifyOnStart;
 begin
   if Assigned(OnStart) then
     OnStart(Self, FFileSize);
 end;
 
-end.
+end.

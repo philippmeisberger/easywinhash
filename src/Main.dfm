@@ -97,7 +97,6 @@ object Form1: TForm1
     Width = 352
     Height = 21
     Anchors = [akLeft, akRight]
-    DragMode = dmAutomatic
     EditLabel.Width = 28
     EditLabel.Height = 13
     EditLabel.Caption = 'Hash:'

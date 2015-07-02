@@ -2,17 +2,17 @@
 {                                                                         }
 { PM Code Works Additional Dialogs Unit                                   }
 {                                                                         }
-{ Copyright (c) 2011-2015 P.Meisberger (PM Code Works)                    }
+{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
-unit PMCW.Dialogs;
+unit PMCWDialogs;
 
 interface
 
 uses
-  Classes, SysUtils, Types, Windows, Forms, StdCtrls, Graphics, Dialogs,
-  ShellAPI;
+  Windows, Classes, SysUtils, Forms, StdCtrls, Graphics, Controls, Types,
+  Dialogs, Consts;
 
 const
   tdiQuestion            = 99;
@@ -25,10 +25,8 @@ const
   tdiShieldOk            = 106;
   tdiShieldOkBanner      = 65528;
 
-function InputCombo(AOwner: TComponent; ACaption, APrompt: string; AList: TStrings;
-  var AValue: string): Boolean;
-
-function ShowAddRegistryDialog(ARegFilePath: string): Boolean;
+function InputCombo(AOwner: TComponent; ACaption, APrompt: string;
+  AList: TStrings; var AValue: string): Boolean;
 
 function ShowTaskDialog(AOwner: TComponent; ACaption, ATitle, AText: WideString;
   ACommonButtons: TTaskDialogCommonButtons; AIcon: TTaskDialogIcon;
@@ -36,7 +34,6 @@ function ShowTaskDialog(AOwner: TComponent; ACaption, ATitle, AText: WideString;
 
 procedure ShowException(AOwner: TComponent; ACaption, AText, AInformation: WideString;
   AFlags: TTaskDialogFlags = [tfExpandFooterArea]);
-
 
 implementation
 
@@ -122,18 +119,17 @@ begin
     with TButton.Create(Form) do
     begin
       Parent := Form;
-      Caption := 'OK';
+      Caption := SMsgDlgOK;
       ModalResult := IDOK;
       Default := True;
-      SetBounds(MulDiv(38, DialogUnits.X, 4), ButtonTop, ButtonWidth,
-        ButtonHeight);
+      SetBounds(MulDiv(38, DialogUnits.X, 4), ButtonTop, ButtonWidth, ButtonHeight);
     end;  //of with
 
     // Init "Cancel" TButton
     with TButton.Create(Form) do
     begin
       Parent := Form;
-      Caption := 'Cancel';
+      Caption := SMsgDlgCancel;
       ModalResult := IDCANCEL;
       Cancel := True;
       SetBounds(MulDiv(92, DialogUnits.X, 4), Combo.Top + Combo.Height + 15,
@@ -151,27 +147,6 @@ begin
   finally
     Form.Free;
   end;  // of try
-end;
-
-{ ShowAddRegistryDialog
-
-  Shows an dialog where user has the choice to add a *.reg file.  }
-
-function ShowAddRegistryDialog(ARegFilePath: string): Boolean;
-var
-  RegFilePath: string;
-
-begin
-  if (ARegFilePath = '') then
-    raise Exception.Create('Missing parameter with a .reg file!');
-
-  if (ARegFilePath[1] <> '"') then
-    RegFilePath := '"'+ ARegFilePath +'"'
-  else
-    RegFilePath := ARegFilePath;
-
-  Result := BOOL(ShellExecute(0, 'open', PChar('regedit.exe'), PChar(RegFilePath),
-    nil, SW_SHOWNORMAL));
 end;
 
 { ShowTaskDialog
