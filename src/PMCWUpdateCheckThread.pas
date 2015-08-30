@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Cross Plattform Update Check Thread v2.3                  }
+{ PM Code Works Cross Plattform Update Check Thread v3.0                  }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -28,6 +28,8 @@ type
   TUpdateCheckThread = class(TThread)
   private
     FHttp: TIdHTTP;
+    FResponseCode: Integer;
+    FResponseText: string;
     FOnUpdate: TOnUpdateAvailableEvent;
     FOnError: TOnUpdateCheckErrorEvent;
     FOnNoUpdate: TNotifyEvent;
@@ -43,7 +45,7 @@ type
     constructor Create(ACurrentBuild: Cardinal; ARemoteDirName: string;
       ACreateSuspended: Boolean = True);
     destructor Destroy; override;
-    { Externalized events }
+    { external }
     property OnError: TOnUpdateCheckErrorEvent read FOnError write FOnError;
     property OnNoUpdate: TNotifyEvent read FOnNoUpdate write FOnNoUpdate;
     property OnUpdate: TOnUpdateAvailableEvent read FOnUpdate write FOnUpdate;
@@ -75,7 +77,7 @@ begin
   with FHttp.Request do
   begin
     // Set the user-agent because of some issues with default
-    UserAgent := 'Updater/2.3 (PM Code Works Update Utility)';
+    UserAgent := 'Updater/3.0 (PM Code Works Update Utility)';
 
     // Only accept plain text
     Accept := 'text/plain';
@@ -102,12 +104,18 @@ end;
 procedure TUpdateCheckThread.Execute;
 var
   VersionUrl: string;
+  ErrorCode: Integer;
 
 begin
   try
     // Download version file for application
     VersionUrl := URL_DIR + FRemoteDirName +'/version.txt';
-    FNewBuild := StrToInt(FHttp.Get(VersionUrl));
+    Val(FHttp.Get(VersionUrl), FNewBuild, ErrorCode);
+
+    // Invalid response?
+    // Note: Should NEVER be raised!
+    if (ErrorCode <> 0) then
+      raise EConvertError.Create('Error while parsing response!');
 
     // Check if downloaded version is newer than current version
     if (FNewBuild > FCurBuild) then
@@ -118,7 +126,19 @@ begin
       Synchronize(DoNotifyOnNoUpdate);
 
   except
-    Synchronize(DoNotifyOnError);
+    on E: EConvertError do
+    begin
+      FResponseCode := 406;
+      FResponseText := E.Message;
+      Synchronize(DoNotifyOnError);
+    end;
+
+    on E: Exception do
+    begin
+      FResponseCode := FHttp.ResponseCode;
+      FResponseText := FHttp.ResponseText;
+      Synchronize(DoNotifyOnError);
+    end;
   end;  //of try
 end;
 
@@ -130,7 +150,7 @@ end;
 procedure TUpdateCheckThread.DoNotifyOnError;
 begin
   if Assigned(OnError) then
-    OnError(Self, FHttp.ResponseCode, FHttp.ResponseText);
+    OnError(Self, FResponseCode, FResponseText);
 end;
 
 { private TDownloadThread.DoNotifyOnNoUpdate

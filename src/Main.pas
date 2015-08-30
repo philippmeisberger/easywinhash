@@ -13,7 +13,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Taskbar,
-  System.Win.TaskbarCore, WinCrypt, PMCWLanguageFile, FileHashThread;
+  System.Win.TaskbarCore, CryptoAPI, PMCWLanguageFile, FileHashThread;
 
 type
   TForm1 = class(TForm)
@@ -38,11 +38,9 @@ type
     procedure bCalculateClick(Sender: TObject);
     procedure bBrowseClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
-    procedure cbxAlgorithmClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
   private
     FLang: TLanguageFile;
-    FHashAlgorithm: THashAlgorithm;
     FTaskBar: TTaskbar;
     procedure OnBeginHashing(Sender: TObject; const AFileSize: Int64);
     procedure OnHashing(Sender: TObject; const AProgress: Int64);
@@ -62,10 +60,8 @@ procedure TForm1.FormCreate(Sender: TObject);
 begin
   // Setup language
   FLang := TLanguageFile.Create(Self);
-  FLang.AddLanguage(LANG_GERMAN, 100);
-  FLang.AddLanguage(LANG_ENGLISH, 200);
-  FLang.AddLanguage(LANG_FRENCH, 300);
-  FLang.ChangeLanguage(LANG_USER);
+  FLang.BuildLanguageMenu(MainMenu, mmLang);
+  FLang.Update();
 
   // Enable drag & drop support
   DragAcceptFiles(Handle, True);
@@ -137,7 +133,7 @@ begin
     if (eFile.Text = '') then
       raise EAbort.Create('No file selected!');
 
-    with TFileHashThread.Create(eFile.Text, FHashAlgorithm) do
+    with TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex)) do
     begin
       OnStart := OnBeginHashing;
       OnFinish := OnEndHashing;
@@ -178,7 +174,7 @@ begin
     if (eHash.Text = '') then
       raise EAbort.Create('No hash entered or calculated!');
 
-    with TFileHashThread.Create(eFile.Text, FHashAlgorithm, eHash.Text) do
+    with TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex), eHash.Text) do
     begin
       OnStart := OnBeginHashing;
       OnVerify := OnVerified;
@@ -193,11 +189,6 @@ begin
     on E: Exception do
       FLang.ShowException('Calculation impossible!', E.Message);
   end;  //of try
-end;
-
-procedure TForm1.cbxAlgorithmClick(Sender: TObject);
-begin
-  FHashAlgorithm := THashAlgorithm(cbxAlgorithm.ItemIndex);
 end;
 
 end.

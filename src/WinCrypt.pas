@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ Windows CryptAPI Delphi wrapper Unit v0.7                               }
+{ Windows Cryptography Unit                                               }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -11,685 +11,372 @@ unit WinCrypt;
 interface
 
 uses
-  Windows, Classes, SysUtils, CryptAPI;
+  Windows;
 
 type
-  { TBase64Flag }
-  TBase64Flag = (
-    bfHeader, bfDefault, bfBinary, bfRequestHeader, bfHex, bfHexAscii,
-    bfBase64Any, bfAny, bfHexAny, bfX509CrlHeader, bfHexAddr, bfHexAsciiAddr,
-    bfHexRaw, bfStrict
-  );
+  ALG_ID     = Cardinal;
+  HCRYPTPROV = ULONG_PTR;
+  TCryptProv = HCRYPTPROV;
 
-  { TBase64AdditionalFlag }
-  TBase64AdditionalFlag = (
-    bfNone, bfNoCRLF, bfNoCR
-  );
+  HCRYPTKEY  = ULONG_PTR;
+  TCryptKey  = HCRYPTKEY;
 
-  { TBase64 }
-  TBase64 = class(TObject)
-  private
-    FFlag: TBase64Flag;
-  public
-    constructor Create(AFlag: TBase64Flag = bfDefault);
-    function Decode(const ABase64: string): string;
-    function DecodeBinary(const ABase64: TBytes): string; overload;
-    function DecodeBinary(const ABase64: string): TBytes; overload;
-    function Encode(const AString: string;
-      AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
-    function EncodeBinary(const AData: TBytes;
-      AAdditionalFlag: TBase64AdditionalFlag = bfNone): string; overload;
-    function EncodeBinary(const AString: string;
-      AAdditionalFlag: TBase64AdditionalFlag = bfNone): TBytes; overload;
-    { external }
-    property Flag: TBase64Flag read FFlag write FFlag;
+  HCRYPTHASH = ULONG_PTR;
+  TCryptHash = HCRYPTHASH;
+
+  _HMAC_INFO = record
+    HashAlgId: ALG_ID;
+    pbInnerString: PByte;
+    cbInnerString: DWORD;
+    pbOuterString: PByte;
+    cbOuterString: DWORD;
   end;
 
-  { Enumerations }
-  THashAlgorithm = (haMd5, haSha, haSha256, haSha384, haSha512);
-  TCryptAlgorithm = (caAes128, caAes192, caAes256);
-
-  { Events }
-  TProgressEvent = procedure(Sender: TObject; const AProgress: Int64) of object;
-
-  { TCryptBase }
-  TCryptBase = class(TObject)
-  protected
-    function DeriveKey(ACryptProvider: HCRYPTPROV; const APassword: string;
-      AHashAlgorithm: THashAlgorithm;
-      APasswordEncryptionAlgorithm: TCryptAlgorithm): HCRYPTKEY;
-    function HashToString(HashHandle: HCRYPTHASH): string;
-  end;
-
-  { TCrypt }
-  TCrypt = class(TCryptBase)
-  private
-    FCryptAlgorithm: TCryptAlgorithm;
-    FHashAlgorithm: THashAlgorithm;
-  public
-    constructor Create(ACryptAlgorithm: TCryptAlgorithm;
-      AHashAlgorithm: THashAlgorithm = haSha256);
-    function Decrypt(const AString, APassphrase: string): string;
-    function Encrypt(const AString, APassphrase: string): string;
-    { external }
-    property Algorithm: TCryptAlgorithm read FCryptAlgorithm write FCryptAlgorithm;
-  end;
-
-  { THash }
-  THash = class(TCryptBase)
-  private
-    FOnStart, FOnProgress: TProgressEvent;
-    FOnFinish: TNotifyEvent;
-    FHashAlgorithm: THashAlgorithm;
-  public
-    constructor Create(AHashAlgorithm: THashAlgorithm); overload;
-    function GenerateSalt(ALength: Cardinal): string;
-    function Hash(const AString: string): string;
-    function HashFile(const AFileName: TFileName): string;
-    function HashSalted(const AString, ASalt: string): string;
-    function VerifyHash(const AHash, AString: string): Boolean;
-    function VerifyHashSalted(const AHash, AString, ASalt: string): Boolean;
-    function VerifyFileHash(const AHash, AFileName: TFileName): Boolean;
-    { external }
-    property Algorithm: THashAlgorithm read FHashAlgorithm write FHashAlgorithm;
-    property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
-    property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
-    property OnStart: TProgressEvent read FOnStart write FOnStart;
-  end;
-
-  { THMac }
-  THMac = class(TCryptBase)
-  private
-    FHashAlgorithm: THashAlgorithm;
-    FPasswordEncryptionAlgorithm: TCryptAlgorithm;
-  public
-    constructor Create(AHashAlgorithm: THashAlgorithm;
-      APasswordEncryptionAlgorithm: TCryptAlgorithm = caAes128);
-    function HMac(const AMessage, APassword: string): string;
-  end;
+  HMAC_INFO = _HMAC_INFO;
+  PHMAC_INFO = ^HMAC_INFO;
+  THMacInfo = HMAC_INFO;
 
 const
-  { Enumeration to additional Base64 flag translator }
-  TBase64AddFlag: array[TBase64AdditionalFlag] of Cardinal = (
-    0,
-    CRYPT_STRING_NOCRLF,
-    CRYPT_STRING_NOCR
-  );
+  crypt32                = 'Crypt32.dll';
 
-  { Enumeration to hash algorithm ID translator }
-  THashAlgId: array[THashAlgorithm] of Cardinal = (
-    CALG_MD5,
-    CALG_SHA,
-    CALG_SHA_256,
-    CALG_SHA_384,
-    CALG_SHA_512
-  );
+  { ProviderType }
+  PROV_RSA_FULL          = 1;
+  PROV_RSA_SIG           = 2;
+  PROV_DSS               = 3;
+  PROV_FORTEZZA          = 4;
+  PROV_MS_EXCHANGE       = 5;
+  PROV_SSL               = 6;
+  PROV_RSA_SCHANNEL      = 12;
+  PROV_DSS_DH            = 13;
+  PROV_EC_ECDSA_SIG      = 14;
+  PROV_EC_ECNRA_SIG      = 15;
+  PROV_EC_ECDSA_FULL     = 16;
+  PROV_EC_ECNRA_FULL     = 17;
+  PROV_DH_SCHANNEL       = 18;
+  PROV_SPYRUS_LYNKS      = 20;
+  PROV_RNG               = 21;
+  PROV_INTEL_SEC         = 22;
+  PROV_REPLACE_OWF       = 23;
+  PROV_RSA_AES           = 24;
 
-  { Enumeration to encryption algorithm ID translator }
-  TCryptAlgId: array[TCryptAlgorithm] of Cardinal = (
-    CALG_AES_128,
-    CALG_AES_192,
-    CALG_AES_256
-  );
+  { Algorithm classes }
+  ALG_CLASS_ANY          = 0;
+  ALG_CLASS_SIGNATURE    = 1 shl 13;
+  ALG_CLASS_MSG_ENCRYPT  = 2 shl 13;
+  ALG_CLASS_DATA_ENCRYPT = 3 shl 13;
+  ALG_CLASS_HASH         = 4 shl 13;
+  ALG_CLASS_KEY_EXCHANGE = 5 shl 13;
+  ALG_CLASS_ALL          = 7 shl 13;
 
-{$IFNDEF UNICODE}
-{ Backward compatibility for older Delphi versions }
+  { Algorithm types }
+  ALG_TYPE_ANY           = 0;
+  ALG_TYPE_DSS           = 1 shl 9;
+  ALG_TYPE_RSA           = 2 shl 9;
+  ALG_TYPE_BLOCK         = 3 shl 9;
+  ALG_TYPE_STREAM        = 4 shl 9;
+  ALG_TYPE_DH            = 5 shl 9;
+  ALG_TYPE_SECURECHANNEL = 6 shl 9;
+
+  { Hash algorithm identifiers }
+  ALG_SID_MD5            = 3;
+  ALG_SID_SHA            = 4;
+  ALG_SID_SHA1           = 4;
+  ALG_SID_MAC            = 5;
+  ALG_SID_HMAC           = 9;
+  ALG_SID_SHA_256        = 12;
+  ALG_SID_SHA_384        = 13;
+  ALG_SID_SHA_512        = 14;
+
+  { Advanced Encryption Standard (AES) algorithm identifiers }
+  ALG_SID_AES            = 17;
+  ALG_SID_AES_128        = 14;
+  ALG_SID_AES_192        = 15;
+  ALG_SID_AES_256        = 16;
+
+  { Diffie-Hellman algorithm identifiers }
+  ALG_SID_DH_SANDF       = 1;
+  ALG_SID_DH_EPHEM       = 2;
+  ALG_SID_AGREED_KEY_ANY = 3;
+  ALG_SID_KEA            = 4;
+
+  { Advanced Encryption Standard (AES) algorithm }
+  CALG_AES               = (ALG_CLASS_DATA_ENCRYPT or ALG_TYPE_BLOCK or ALG_SID_AES);
+  CALG_AES_128           = (ALG_CLASS_DATA_ENCRYPT or ALG_TYPE_BLOCK or ALG_SID_AES_128);
+  CALG_AES_192           = (ALG_CLASS_DATA_ENCRYPT or ALG_TYPE_BLOCK or ALG_SID_AES_192);
+  CALG_AES_256           = (ALG_CLASS_DATA_ENCRYPT or ALG_TYPE_BLOCK or ALG_SID_AES_256);
+
+  { Cipher algorithm modes }
+  CRYPT_MODE_CBC         = 1;    // Cipher block chaining
+  CRYPT_MODE_ECB         = 2;    // Electronic code book
+  CRYPT_MODE_OFB         = 3;    // Output feedback mode
+  CRYPT_MODE_CFB         = 4;    // Cipher feedback mode
+  CRYPT_MODE_CTS         = 5;    // Ciphertext stealing mode
+
+  { Deprecated hashing algorithms }
+  CALG_MD5               = (ALG_CLASS_HASH or ALG_TYPE_ANY or ALG_SID_MD5);
+  CALG_SHA               = (ALG_CLASS_HASH or ALG_TYPE_ANY or ALG_SID_SHA);
+  CALG_SHA_160           = CALG_SHA;
+
+  { Message authentication code algorithms }
+  CALG_MAC               = (ALG_CLASS_HASH or ALG_TYPE_ANY or ALG_SID_MAC);
+  CALG_HMAC              = (ALG_CLASS_HASH or ALG_TYPE_ANY or ALG_SID_HMAC);
+
+  { SHA-2 hashing algorithm }
+  CALG_SHA_256           = (ALG_CLASS_HASH or ALG_TYPE_ANY or ALG_SID_SHA_256);
+  CALG_SHA_384           = (ALG_CLASS_HASH or ALG_TYPE_ANY or ALG_SID_SHA_384);
+  CALG_SHA_512           = (ALG_CLASS_HASH or ALG_TYPE_ANY or ALG_SID_SHA_512);
+
+  { Diffie-Hellman algorithm }
+  CALG_DH_SF             = (ALG_CLASS_KEY_EXCHANGE or ALG_TYPE_DH or ALG_SID_DH_SANDF);
+  CALG_DH_EPHEM          = (ALG_CLASS_KEY_EXCHANGE or ALG_TYPE_DH or ALG_SID_DH_EPHEM);
+
+  { Hash algorithm flags }
+  HP_ALGID               = $00000001;
+  HP_HASHVAL             = $00000002;
+  HP_HASHSIZE            = $00000004;
+  HP_HMAC_INFO           = $00000005;
+  HP_TLS1PRF_LABEL       = $00000006;
+  HP_TLS1PRF_SEED        = $00000007;
+
+  { dwParam }
+  KP_IV                  = 1;    // Initialization vector
+  KP_SALT                = 2;    // Salt value
+  KP_PADDING             = 3;    // Padding values
+  KP_MODE                = 4;    // Mode of the cipher
+  KP_MODE_BITS           = 5;    // Number of bits to feedback
+  KP_PERMISSIONS         = 6;    // Key permissions DWORD
+  KP_ALGID               = 7;    // Key algorithm
+  KP_BLOCKLEN            = 8;    // Block size of the cipher
+
+  { dwFlags definitions for CryptAquireContext }
+  CRYPT_VERIFYCONTEXT    = $F0000000;
+  CRYPT_NEWKEYSET        = $00000008;
+  CRYPT_DELETEKEYSET     = $00000010;
+  CRYPT_MACHINE_KEYSET   = $00000020;
+  CRYPT_SILENT           = $00000040;
+
+function CryptAcquireContext(var hProv: HCRYPTPROV; Container, Provider: PChar;
+  ProvType: LongWord; Flags: LongWord): LongBool; stdcall;
+function CryptAcquireContextA(var hProv: HCRYPTPROV; Container, Provider: PAnsiChar;
+  ProvType: LongWord; Flags: LongWord): LongBool; stdcall;
+function CryptAcquireContextW(var hProv: HCRYPTPROV; Container, Provider: PWideChar;
+  ProvType: LongWord; Flags: LongWord): LongBool; stdcall;
+function CryptCreateHash(Prov: HCRYPTPROV; Algid: ALG_ID; Key: HCRYPTKEY;
+  Flags: LongWord; var Hash: HCRYPTHASH): LongBool; stdcall;
+function CryptDecrypt(Key: HCRYPTKEY; Hash: HCRYPTHASH; Final: LongBool;
+  Flags: LongWord; pbData: PByte; var pdwDataLen: DWORD): LongBool; stdcall;
+function CryptDeriveKey(Prov: HCRYPTPROV; Algid: ALG_ID; BaseData: HCRYPTHASH;
+  Flags: LongWord; var Key: HCRYPTKEY): LongBool; stdcall;
+function CryptDestroyHash(hHash: HCRYPTHASH): LongBool; stdcall;
+function CryptDestroyKey(hKey: HCRYPTKEY): LongBool; stdcall;
+function CryptDuplicateHash(hHash: HCRYPTHASH; pdwReserved, dwFlags: DWORD;
+ var phHash: HCRYPTHASH): LongBool; stdcall;
+function CryptDuplicateKey(hKey: HCRYPTKEY; pdwReserved, dwFlags: DWORD;
+  var phKey: HCRYPTKEY): LongBool; stdcall;
+function CryptEncrypt(Key: HCRYPTKEY; Hash: HCRYPTHASH; Final: LongBool;
+  Flags: LongWord; pbData: PByte; var pdwDataLen, dwBufLen: DWORD): LongBool; stdcall;
+function CryptGenRandom(hProv: HCRYPTPROV; dwLen: DWORD;
+  pbBuffer: PByte): LongBool; stdcall;
+function CryptGetHashParam(hHash: HCRYPTHASH; dwParam: DWORD; pbData: PByte;
+  var pdwDataLen: DWORD; dwFlags: DWORD): LongBool; stdcall;
+function CryptGetKeyParam(hKey: HCRYPTKEY; dwParam: DWORD; var pbData: PByte;
+  var pdwDataLen: DWORD; dwFlags: DWORD): LongBool; stdcall;
+
+const
+  { dwParam definitions for CryptGetProvParam }
+  PP_CLIENT_HWND         = 1;
+  PP_ENUMALGS            = 1;
+  PP_ENUMCONTAINERS      = 2;
+  PP_IMPTYPE             = 3;
+  PP_NAME                = 4;
+  PP_VERSION             = 5;
+  PP_CONTAINER           = 6;
+  PP_CHANGE_PASSWORD     = 7;
+  PP_KEYSET_SEC_DESCR    = 8;
+  PP_CERTCHAIN           = 9;
+  PP_KEY_TYPE_SUBTYPE    = 10;
+  PP_CONTEXT_INFO        = 11;
+  PP_KEYEXCHANGE_KEYSIZE = 12;
+  PP_SIGNATURE_KEYSIZE   = 13;
+  PP_KEYEXCHANGE_ALG     = 14;
+  PP_SIGNATURE_ALG       = 15;
+  PP_PROVTYPE            = 16;
+  PP_KEYSTORAGE          = 17;
+  PP_APPLI_CERT          = 18;
+  PP_SYM_KEYSIZE         = 19;
+  PP_SESSION_KEYSIZE     = 20;
+  PP_UI_PROMPT           = 21;
+  PP_ENUMALGS_EX         = 22;
+  PP_DELETEKEY           = 24;
+  PP_ENUMMANDROOTS       = 25;
+  PP_ENUMELECTROOTS      = 26;
+  PP_KEYSET_TYPE         = 27;
+  PP_ADMIN_PIN           = 31;
+  PP_KEYEXCHANGE_PIN     = 32;
+  PP_SIGNATURE_PIN       = 33;
+  PP_SIG_KEYSIZE_INC     = 34;
+  PP_KEYX_KEYSIZE_INC    = 35;
+  PP_UNIQUE_CONTAINER    = 36;
+  PP_SGC_INFO            = 37;
+  PP_USE_HARDWARE_RNG    = 38;
+  PP_KEYSPEC             = 39;
+  PP_ENUMEX_SIGNING_PROT = 40;
+  PP_CRYPT_COUNT_KEY_USE = 41;
+
+function CryptGetProvParam(hProv: HCRYPTPROV; dwParam: DWORD; pbData: PByte;
+  var pdwDataLen: DWORD; dwFlags: DWORD): LongBool; stdcall;
+
+const
+  { dwKeySpec definitions for CryptGetUserKey }
+  AT_KEYEXCHANGE        = 1;
+  AT_SIGNATURE          = 2;
+
+function CryptGetUserKey(hProv: HCRYPTPROV; dwKeySpec: DWORD;
+  var phUserKey: HCRYPTKEY): LongBool; stdcall;
+function CryptHashData(Hash: HCRYPTHASH; Data: PChar; DataLen: LongWord;
+  Flags: LongWord): LongBool; stdcall;
+function CryptReleaseContext(hProv: HCRYPTPROV; dwFlags: LongWord): LongBool; stdcall;
+function CryptSetHashParam(hHash: HCRYPTHASH; dwParam: DWORD;
+  const pbData: PByte; dwFlags: DWORD): LongBool; stdcall;
+function CryptSetKeyParam(hKey: HCRYPTKEY; dwParam: DWORD; pbData: PByte;
+  dwFlags: DWORD): LongBool; stdcall;
+
+const
+  { dwFlags definitions for Base64 functions }
+  CRYPT_STRING_BASE64HEADER        = $00000000;
+  CRYPT_STRING_BASE64              = $00000001;
+  CRYPT_STRING_BINARY              = $00000002;
+  CRYPT_STRING_BASE64REQUESTHEADER = $00000003;
+  CRYPT_STRING_HEX                 = $00000004;
+  CRYPT_STRING_HEXASCII            = $00000005;
+
+  CRYPT_STRING_BASE64_ANY          = $00000006;
+  CRYPT_STRING_ANY                 = $00000007;
+  CRYPT_STRING_HEX_ANY             = $00000008;
+
+  CRYPT_STRING_BASE64X509CRLHEADER = $00000009;
+  CRYPT_STRING_HEXADDR             = $0000000a;
+  CRYPT_STRING_HEXASCIIADDR        = $0000000b;
+  CRYPT_STRING_HEXRAW              = $0000000c;
+
+  CRYPT_STRING_STRICT              = $20000000;
+  CRYPT_STRING_NOCRLF              = $40000000;
+  CRYPT_STRING_NOCR                = $80000000;
+
+function CryptStringToBinary(pszString: PChar; cchString, dwFlags: DWORD;
+  pbBinary: Pointer; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
+function CryptStringToBinaryA(pszString: PAnsiChar; cchString, dwFlags: DWORD;
+  pbBinary: Pointer; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
+function CryptStringToBinaryW(pszString: PWideChar; cchString, dwFlags: DWORD;
+  pbBinary: Pointer; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
+function CryptBinaryToString(pbBinary: Pointer; cbBinary, dwFlags: DWORD;
+  pszString: PChar; var pcchString: DWORD): Boolean; stdcall;
+function CryptBinaryToStringA(pbBinary: Pointer; cbBinary: DWORD; dwFlags: DWORD;
+  pszString: PAnsiChar; var pcchString: DWORD): Boolean; stdcall;
+function CryptBinaryToStringW(pbBinary: Pointer; cbBinary, dwFlags: DWORD;
+  pszString: PWideChar; var pcchString: DWORD): Boolean; stdcall;
+
+const
+  { dwFlag definitions for CryptGenKey }
+  CRYPT_EXPORTABLE                 = $00000001;
+  CRYPT_USER_PROTECTED             = $00000002;
+  CRYPT_CREATE_SALT                = $00000004;
+  CRYPT_UPDATE_KEY                 = $00000008;
+
+function CryptGenKey(hProv: HCRYPTPROV; Algid: ALG_ID; dwFlags: DWORD;
+  var phKey: HCRYPTKEY): LongBool; stdcall;
+
 type
-  TBytes: array of Byte;
+  _CRYPTOAPI_BLOB = record
+    cbData: DWORD;
+    pbData: PByte;
+  end;
 
-function BytesOf(AString: string): TBytes;
-begin
-  Result := TBytes(AString);
-end;
+  CRYPT_INTEGER_BLOB = _CRYPTOAPI_BLOB;
+  PCRYPT_INTEGER_BLOB = ^CRYPT_INTEGER_BLOB;
+  DATA_BLOB = _CRYPTOAPI_BLOB;
+  PDATA_BLOB = ^DATA_BLOB;
+  TDataBlob = DATA_BLOB;
 
-function StringOf(ABytes: TBytes): string;
-begin
-  Result := PChar(ABytes);
-end;
-{$ENDIF}
+  _CRYPTPROTECT_PROMPTSTRUCT = record
+    cbSize: DWORD;
+    dwPromptFlags: DWORD;
+    hwndApp: HWND;
+    szPrompt: PWideChar;
+  end;
 
+  CRYPTPROTECT_PROMPTSTRUCT = _CRYPTPROTECT_PROMPTSTRUCT;
+  PCRYPTPROTECT_PROMPTSTRUCT = ^CRYPTPROTECT_PROMPTSTRUCT;
+  TPromptStruct = CRYPTPROTECT_PROMPTSTRUCT;
+
+const
+  { dwFlags definitions for CryptProtectData and CryptUnprotectData }
+  CRYPTPROTECT_UI_FORBIDDEN        = $00000001;
+  CRYPTPROTECT_PROMPT_ON_PROTECT   = $00000002;
+  CRYPTPROTECT_LOCAL_MACHINE       = $00000004;
+  CRYPTPROTECT_CRED_SYNC           = $00000008;
+  CRYPTPROTECT_AUDIT               = $00000010;
+  CRYPTPROTECT_NO_RECOVERY         = $00000020;
+  CRYPTPROTECT_VERIFY_PROTECTION   = $00000040;
+
+function CryptProtectData(pDataIn: PDATA_BLOB; szDataDescr: PWideChar;
+  pOptionalEntropy: PDATA_BLOB; pvReserved: PVOID;
+  pPromptStruct: PCRYPTPROTECT_PROMPTSTRUCT; dwFlags: DWORD;
+  var pDataOut: DATA_BLOB): LongBool; stdcall;
+function CryptUnprotectData(pDataIn: PDATA_BLOB; ppszDataDescr: PWideChar;
+  pOptionalEntropy: PDATA_BLOB; pvReserved: PVOID;
+  pPromptStruct: PCRYPTPROTECT_PROMPTSTRUCT; dwFlags: DWORD;
+  var pDataOut: DATA_BLOB): LongBool; stdcall;
+
+const
+  { dwFlags definitions for CryptProtectMemory and CryptUnprotectMemory }
+  CRYPTPROTECTMEMORY_SAME_PROCESS  = $00000000;
+  CRYPTPROTECTMEMORY_CROSS_PROCESS = $00000001;
+  CRYPTPROTECTMEMORY_SAME_LOGON    = $00000002;
+  CRYPTPROTECTMEMORY_BLOCK_SIZE    = $00000010;
+
+function CryptProtectMemory(var pData: LPVOID; cbData, dwFlags: DWORD): LongBool; stdcall;
+function CryptUnProtectMemory(var pData: LPVOID; cbData, dwFlags: DWORD): LongBool; stdcall;
+
+const
+  { OID key type }
+  CRYPT_OID_INFO_OID_KEY           = 1;
+  CRYPT_OID_INFO_NAME_KEY          = 2;
+  CRYPT_OID_INFO_ALGID_KEY         = 3;
+  CRYPT_OID_INFO_SIGN_KEY          = 4;
 
 implementation
 
-{ TBase64 }
-
-{ public TBase64.Create
-
-  Constructor for creating a TBase64 instance. }
-
-constructor TBase64.Create(AFlag: TBase64Flag = bfDefault);
-begin
-  inherited Create;
-  FFlag := AFlag;
-end;
-
-{ public TBase64.Decode
-
-  Decodes a Base64 string value to a string. }
-
-function TBase64.Decode(const ABase64: string): string;
-begin
-  Result := StringOf(DecodeBinary(ABase64));
-end;
-
-{ public TBase64.DecodeBinary
-
-  Decodes a Base64 binary value to a string. }
-
-function TBase64.DecodeBinary(const ABase64: TBytes): string;
-begin
-  Result := StringOf(DecodeBinary(StringOf(ABase64)));
-end;
-
-{ public TBase64.DecodeBinary
-
-  Decodes a Base64 string to a binary string. }
-
-function TBase64.DecodeBinary(const ABase64: string): TBytes;
-var
-  BufferSize, Skipped, Flags: Cardinal;
-
-begin
-  // Retrieve and set required buffer size
-  if not CryptStringToBinary(PChar(ABase64), Length(ABase64), Ord(FFlag),
-    nil, BufferSize, Skipped, Flags) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  SetLength(Result, BufferSize);
-
-  // Decode string
-  if not CryptStringToBinary(PChar(ABase64), Length(ABase64), Ord(FFlag),
-    PByte(Result), BufferSize, Skipped, Flags) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-end;
-
-{ public TBase64.Encode
-
-  Encodes a string value to a Base64 string. }
-
-function TBase64.Encode(const AString: string;
-  AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
-begin
-  Result := EncodeBinary(BytesOf(AString), AAdditionalFlag);
-end;
-
-{ public TBase64.EncodeBinary
-
-  Encodes a binary value to a Base64 string. }
-
-function TBase64.EncodeBinary(const AData: TBytes;
-  AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
-var
-  BufferSize: Cardinal;
-
-begin
-  // Retrieve and set required buffer size
-  if not CryptBinaryToString(Pointer(AData), Length(AData), Ord(FFlag) +
-    TBase64AddFlag[AAdditionalFlag], nil, BufferSize) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  SetLength(Result, BufferSize);
-
-  // Encode string
-  if not CryptBinaryToString(Pointer(AData), Length(AData), Ord(FFlag) +
-    TBase64AddFlag[AAdditionalFlag], PChar(Result), BufferSize) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  // Remove null-terminator
-  Result := PChar(Result);
-end;
-
-{ public TBase64.EncodeBinary
-
-  Encodes a string value to a Base64 binary value. }
-
-function TBase64.EncodeBinary(const AString: string;
-  AAdditionalFlag: TBase64AdditionalFlag = bfNone): TBytes;
-begin
-  Result := BytesOf(EncodeBinary(BytesOf(AString), AAdditionalFlag));
-end;
-
-
-{ TCryptBase }
-
-{ protected TCryptBase.DeriveKey
-
-  Derives a symmetric key from a password string. }
-
-function TCryptBase.DeriveKey(ACryptProvider: HCRYPTPROV;
-  const APassword: string; AHashAlgorithm: THashAlgorithm;
-  APasswordEncryptionAlgorithm: TCryptAlgorithm): HCRYPTKEY;
-var
-  PasswordHash: HCRYPTHASH;
-
-begin
-  Result := 0;
-
-  // Init password hash object
-  if not CryptCreateHash(ACryptProvider, THashAlgId[AHashAlgorithm], 0, 0,
-    PasswordHash) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  try
-    // Create hash of the password
-    if not CryptHashData(PasswordHash, PChar(APassword), Length(APassword), 0) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    // Derive symmetric key from password
-    if not CryptDeriveKey(ACryptProvider, TCryptAlgId[APasswordEncryptionAlgorithm],
-      PasswordHash, 0, Result) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  finally
-    CryptDestroyHash(PasswordHash);
-  end;  //of try
-end;
-
-{ public TCryptBase.HashToString
-
-  Creates a string from a hash in buffer. }
-
-function TCryptBase.HashToString(HashHandle: HCRYPTHASH): string;
-var
-  Hash: TBytes;
-  HashLength, HashSize: Cardinal;
-  i: Byte;
-
-begin
-  HashSize := SizeOf(DWORD);
-
-  // Retrieve the length (in Byte) of the hash
-  if not CryptGetHashParam(HashHandle, HP_HASHSIZE, @HashLength, HashSize, 0) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  // Resize the buffer to the blocksize of the used hash algorithm
-  SetLength(Hash, HashLength * 8);
-
-  // Load the hash value into buffer
-  if not CryptGetHashParam(HashHandle, HP_HASHVAL, @Hash[0], HashLength, 0) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  // Build a string from buffer
-  for i := 0 to HashLength - 1 do
-    Result := Result + IntToHex(Hash[i], 2);
-
-  Result := LowerCase(Result);
-end;
-
-
-{ TCrypt }
-
-{ public TCrypt.Create
-
-  Constructor for creating a TCrypt instance. }
-
-constructor TCrypt.Create(ACryptAlgorithm: TCryptAlgorithm;
-  AHashAlgorithm: THashAlgorithm = haSha256);
-begin
-  inherited Create;
-  FCryptAlgorithm := ACryptAlgorithm;
-  FHashAlgorithm := AHashAlgorithm;
-end;
-
-{ public TCrypt.Decrypt
-
-  Decrypts a string using a the Windows implementation of symmetric encryption
-  algorithms, e.g. AES. }
-
-function TCrypt.Decrypt(const AString, APassphrase: string): string;
-var
-  Provider: HCRYPTPROV;
-  Key: HCRYPTKEY;
-  BufferSize, Skipped, Flags: Cardinal;
-  Buffer: PByte;
-
-begin
-  Result := '';
-
-  if not CryptAcquireContext(Provider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  Key := DeriveKey(Provider, APassphrase, FHashAlgorithm, FCryptAlgorithm);
-
-  CryptStringToBinary(PChar(AString), Length(AString), CRYPT_STRING_BASE64,
-    nil, BufferSize, Skipped, Flags);
-
-  GetMem(Buffer, BufferSize);
-
-  try
-    CryptStringToBinary(PChar(AString), Length(AString), CRYPT_STRING_BASE64,
-      Buffer, BufferSize, Skipped, Flags);
-
-    // Decrypt the buffer
-    CryptDecrypt(Key, 0, True, 0, Buffer, BufferSize);
-    SetLength(Result, BufferSize);
-    Move(Buffer^, Result[1], BufferSize);
-
-  finally
-    CryptReleaseContext(Provider, 0);
-    FreeMem(Buffer);
-  end;  //of try
-end;
-
-{ public TCrypt.Encrypt
-
-  Encrypts a string using a the Windows implementation of symmetric encryption
-  algorithms, e.g. AES. }
-
-function TCrypt.Encrypt(const AString, APassphrase: string): string;
-var
-  Provider: HCRYPTPROV;
-  Key: HCRYPTKEY;
-  DataLength, BufferSize: Cardinal;
-  Buffer: PByte;
-
-begin
-  Result := '';
-
-  if not CryptAcquireContext(Provider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  Key := DeriveKey(Provider, APassphrase, FHashAlgorithm, FCryptAlgorithm);
-  DataLength := Length(AString);
-
-  // Retrieve and set required buffer size
-  if not CryptEncrypt(Key, 0, True, 0, nil, BufferSize, DataLength) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  GetMem(Buffer, BufferSize);
-
-  try
-    Move(AString[1], Buffer^, DataLength);
-
-    // Encrypt the buffer
-    if not CryptEncrypt(Key, 0, True, 0, Buffer, DataLength, BufferSize) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    CryptBinaryToString(Buffer, DataLength, CRYPT_STRING_BASE64 or
-      CRYPT_STRING_NOCRLF, nil, BufferSize);
-    SetLength(Result, BufferSize);
-    CryptBinaryToString(Buffer, DataLength, CRYPT_STRING_BASE64 or
-            CRYPT_STRING_NOCRLF, @Result[1], BufferSize);
-
-    // Remove null-terminator
-    Result := PChar(Result);
-
-  finally
-    CryptReleaseContext(Provider, 0);
-    FreeMem(Buffer);
-  end;  //of try
-end;
-
-
-{ THash }
-
-{ public THash.Create
-
-  Constructor for creating a THash instance. }
-
-constructor THash.Create(AHashAlgorithm: THashAlgorithm);
-begin
-  inherited Create;
-  FHashAlgorithm := AHashAlgorithm;
-end;
-
-{ public THash.GenerateSalt
-
-  Generates a random salt of specified length. }
-
-function THash.GenerateSalt(ALength: Cardinal): string;
-var
-  CryptProvider: HCRYPTPROV;
-  Salt: TBytes;
-  Base64: TBase64;
-
-begin
-  Result := '';
-
-  if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-    CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  Base64 := TBase64.Create;
-
-  try
-    SetLength(Salt, ALength);
-
-    if not CryptGenRandom(CryptProvider, ALength, PByte(Salt)) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    Result := Base64.EncodeBinary(Salt, bfNoCRLF);
-
-  finally
-    Base64.Free;
-  end;  //of try
-end;
-
-{ public THash.Hash
-
-  Uses the internal Windows implementation of well-known hash algorithms e.g.
-  SHA or MD5 to create a hash from a string. }
-
-function THash.Hash(const AString: string): string;
-var
-  CryptProvider: HCRYPTPROV;
-  HashHandle: HCRYPTHASH;
-
-begin
-  if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-    CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  // Init hash object
-  if not CryptCreateHash(CryptProvider, THashAlgId[FHashAlgorithm], 0, 0, HashHandle) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  try
-    // Create the hash of the string
-    if not CryptHashData(HashHandle, PChar(AString), Length(AString), 0) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    Result := HashToString(HashHandle);
-
-  finally
-    CryptDestroyHash(HashHandle);
-    CryptReleaseContext(CryptProvider, 0);
-  end;  //of try
-end;
-
-{ public THash.HashFile
-
-  Uses the internal Windows implementation of well-known hash algorithms e.g.
-  SHA or MD5 to create a hash from a file. }
-
-function THash.HashFile(const AFileName: TFileName): string;
-var
-  CryptProvider: HCRYPTPROV;
-  HashHandle: HCRYPTHASH;
-  Buffer: array[0..1023] of Byte;
-  FileToHash: TFileStream;
-  Algorithm, BytesRead: Cardinal;
-
-begin
-  // Open file
-  FileToHash := TFileStream.Create(AFileName, fmOpenRead);
-
-  // Use chosen hash algorithm
-  Algorithm := THashAlgId[FHashAlgorithm];
-
-  try
-    if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-      CRYPT_VERIFYCONTEXT) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    // Init hash object
-    if not CryptCreateHash(CryptProvider, Algorithm, 0, 0, HashHandle) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    // Notify start of file hashing
-    if Assigned(FOnStart) then
-      FOnStart(Self, FileToHash.Size);
-
-    // Read first KB of file into buffer
-    BytesRead := FileToHash.Read(Buffer, Length(Buffer));
-
-    // EOF?
-    while (BytesRead <> 0) do
-    begin
-      if Assigned(FOnProgress) then
-        FOnProgress(Self, BytesRead);
-
-      // Create hash of read bytes in buffer
-      if not CryptHashData(HashHandle, @Buffer, BytesRead, 0) then
-        raise Exception.Create(SysErrorMessage(GetLastError()));
-
-      // Read next KB of file into buffer
-      BytesRead := FileToHash.Read(Buffer, Length(Buffer));
-    end;  //of while
-
-    Result := HashToString(HashHandle);
-
-  finally
-    FileToHash.Free;
-    CryptDestroyHash(HashHandle);
-    CryptReleaseContext(CryptProvider, 0);
-
-    // Notify end of file hashing
-    if Assigned(FOnFinish) then
-      FOnFinish(Self);
-  end;  //of try
-end;
-
-{ public THash.Hash
-
-  Uses the internal Windows implementation of well-known hash algorithms e.g.
-  SHA or MD5 to create a salted hash from a string. }
-
-function THash.HashSalted(const AString, ASalt: string): string;
-begin
-  Result := Hash(ASalt + AString);
-end;
-
-{ public THash.VerifyHash
-
-  Verifies a hash from a string. }
-
-function THash.VerifyHash(const AHash, AString: string): Boolean;
-begin
-  Result := AnsiSameStr(AHash, Hash(AString));
-end;
-
-{ public THash.VerifyHashSalted
-
-  Verifies a salted hash from a string. }
-
-function THash.VerifyHashSalted(const AHash, AString, ASalt: string): Boolean;
-begin
-  Result := AnsiSameStr(AHash, HashSalted(AString, ASalt));
-end;
-
-{ public THash.VerifyFileHash
-
-  Verifies a hash from a file. }
-
-function THash.VerifyFileHash(const AHash, AFileName: TFileName): Boolean;
-begin
-  Result := AnsiSameStr(AHash, HashFile(AFileName));
-end;
-
-
-{ THMac }
-
-{ public THMac.Create
-
-  Constructor for creating a THMac instance. }
-
-constructor THMac.Create(AHashAlgorithm: THashAlgorithm;
-  APasswordEncryptionAlgorithm: TCryptAlgorithm = caAes128);
-begin
-  inherited Create;
-  FHashAlgorithm := AHashAlgorithm;
-  FPasswordEncryptionAlgorithm := APasswordEncryptionAlgorithm;
-end;
-
-{ public THMac.HMac
-
-  Uses the internal Windows implementation of well-known hash algorithms e.g.
-  SHA or MD5 to create a HMAC from a message with password. }
-
-function THMac.HMac(const AMessage, APassword: string): string;
-var
-  CryptProvider: HCRYPTPROV;
-  HMacHash: HCRYPTHASH;
-  Hmac: HMAC_INFO;
-  Key: HCRYPTKEY;
-
-begin
-  if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-    CRYPT_VERIFYCONTEXT) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  Key := DeriveKey(CryptProvider, APassword, FHashAlgorithm,
-    FPasswordEncryptionAlgorithm);
-
-  try
-    // Init HMAC with usage of derived key
-    if not CryptCreateHash(CryptProvider, CALG_HMAC, Key, 0, HMacHash) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    // Init HMAC object
-    FillChar(Hmac, SizeOf(Hmac), 0);
-    Hmac.HashAlgId := THashAlgId[FHashAlgorithm];
-
-    // Set HMAC parameters
-    if not CryptSetHashParam(HMacHash, HP_HMAC_INFO, @Hmac, 0) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    // Create hash of the string
-    if not CryptHashData(HMacHash, PChar(AMessage), Length(AMessage), 0) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    Result := HashToString(HMacHash);
-
-  finally
-    CryptDestroyHash(HMacHash);
-    CryptDestroyKey(Key);
-    CryptReleaseContext(CryptProvider, 0);
-  end;  //of try
-end;
-
-
-{ public StringToBytes
-
-  Converts a string value into a byte array. }
-{
-function StringToBytes(const AString: string): TBytes;
-var
-  BinarySize: Integer;
-
-begin
-  BinarySize := (Length(AString) + 1) * SizeOf(Char);
-  SetLength(Result, BinarySize);
-  Move(AString[1], Result[0], BinarySize);
-end;
-
-{ public BytesToString
-
-  Converts a byte array into a string value. }
-{
-function BytesToString(const ABytes: TBytes): string;
-var
-  StringSize: Integer;
-
-begin
-  StringSize := (Length(ABytes) + 1) div SizeOf(Char);
-  Result := BytesToString(Pointer(ABytes), StringSize);
-end;
-
-function BytesToString(const ABytes: PByte; ALength: Integer): string;
-begin
-  SetLength(Result, ALength);
-  Move(ABytes^, Result[1], ALength);
-end;}
+function CryptAcquireContext; stdcall; external advapi32 name 'CryptAcquireContextW';
+function CryptAcquireContextA; stdcall; external advapi32 name 'CryptAcquireContextA';
+function CryptAcquireContextW; stdcall; external advapi32 name 'CryptAcquireContextW';
+function CryptBinaryToString; stdcall; external Crypt32 name 'CryptBinaryToStringW';
+function CryptBinaryToStringA; stdcall; external crypt32 name 'CryptBinaryToStringA';
+function CryptBinaryToStringW; stdcall; external crypt32 name 'CryptBinaryToStringW';
+function CryptCreateHash; stdcall; external advapi32 name 'CryptCreateHash';
+function CryptDecrypt; stdcall; external advapi32 name 'CryptDecrypt';
+function CryptDeriveKey; stdcall; external advapi32 name 'CryptDeriveKey';
+function CryptDestroyHash; stdcall; external advapi32 name 'CryptDestroyHash';
+function CryptDestroyKey; stdcall; external advapi32 name 'CryptDestroyKey';
+function CryptDuplicateHash; stdcall; external advapi32 name 'CryptDestroyKey';
+function CryptDuplicateKey; stdcall; external advapi32 name 'CryptDuplicateKey';
+function CryptEncrypt; stdcall; external advapi32 name 'CryptEncrypt';
+function CryptGenKey; stdcall; external advapi32 name 'CryptGenKey';
+function CryptGenRandom; stdcall; external advapi32 name 'CryptGenRandom';
+function CryptGetHashParam; stdcall; external advapi32 name 'CryptGetHashParam';
+function CryptGetKeyParam; stdcall; external advapi32 name 'CryptGetKeyParam';
+function CryptGetProvParam; stdcall; external advapi32 name 'CryptGetProvParam';
+function CryptGetUserKey; stdcall; external advapi32 name 'CryptGetUserKey';
+function CryptHashData; stdcall; external advapi32 name 'CryptHashData';
+function CryptReleaseContext; stdcall; external advapi32 name 'CryptReleaseContext';
+function CryptSetHashParam; stdcall; external advapi32 name 'CryptSetHashParam';
+function CryptSetKeyParam; stdcall; external advapi32 name 'CryptSetKeyParam';
+function CryptStringToBinary; stdcall; external Crypt32 name 'CryptStringToBinaryW';
+function CryptStringToBinaryA; stdcall; external crypt32 name 'CryptStringToBinaryA';
+function CryptStringToBinaryW; stdcall; external crypt32 name 'CryptStringToBinaryW';
+function CryptProtectData; stdcall; external crypt32 name 'CryptProtectData';
+function CryptProtectMemory; stdcall; external crypt32 name 'CryptProtectMemory';
+function CryptUnprotectData; stdcall; external crypt32 name 'CryptUnprotectData';
+function CryptUnProtectMemory; stdcall; external crypt32 name 'CryptUnProtectMemory';
 
 end.

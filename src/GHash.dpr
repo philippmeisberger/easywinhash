@@ -9,6 +9,7 @@ uses
 begin
   Application.Initialize;
   Application.Title := 'GHash';
+  Application.MainFormOnTaskbar := True;
   Application.CreateForm(TForm1, Form1);
   Application.Run;
 end.

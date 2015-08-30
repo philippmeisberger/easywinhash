@@ -32,7 +32,6 @@ object Form1: TForm1
     ItemIndex = 0
     TabOrder = 0
     Text = 'MD5'
-    OnClick = cbxAlgorithmClick
     Items.Strings = (
       'MD5'
       'SHA-1'

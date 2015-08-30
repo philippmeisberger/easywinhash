@@ -11,7 +11,7 @@ unit FileHashThread;
 interface
 
 uses
-  Classes, WinCrypt;
+  Classes, CryptoAPI;
 
 type
   TCalculatedHashEvent = procedure(Sender: TThread; const AHash: string) of object;
