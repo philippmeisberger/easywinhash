@@ -13,7 +13,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Taskbar,
-  System.Win.TaskbarCore, CryptoAPI, PMCWLanguageFile, FileHashThread;
+  System.Win.TaskbarCore, CryptoAPI, PMCWLanguageFile, FileHashThread, PMCWAbout;
 
 type
   TForm1 = class(TForm)
@@ -31,7 +31,7 @@ type
     mmUpdate: TMenuItem;
     N1: TMenuItem;
     mmAbout: TMenuItem;
-    mmDownloadCert: TMenuItem;
+    mmInstallCertificate: TMenuItem;
     mmReport: TMenuItem;
     N2: TMenuItem;
     procedure FormCreate(Sender: TObject);
@@ -39,6 +39,7 @@ type
     procedure bBrowseClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure mmAboutClick(Sender: TObject);
   private
     FLang: TLanguageFile;
     FTaskBar: TTaskbar;
@@ -73,6 +74,17 @@ procedure TForm1.FormDestroy(Sender: TObject);
 begin
   FTaskBar.Free;
   FLang.Free;
+end;
+
+
+procedure TForm1.mmAboutClick(Sender: TObject);
+var
+  Info: TInfo;
+
+begin
+  Application.CreateForm(TInfo, Info);
+  Info.ShowModal();
+  Info.Free;
 end;
 
 

@@ -1,4 +1,5 @@
 syntax: glob
-**.dcu
 src\__history\**
-bin\**.exe
+**.exe
+**.dcu
+**.stat

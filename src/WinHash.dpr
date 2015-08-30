@@ -1,4 +1,4 @@
-program GHash;
+program WinHash;
 
 uses
   Forms,
@@ -8,7 +8,7 @@ uses
 
 begin
   Application.Initialize;
-  Application.Title := 'GHash';
+  Application.Title := 'WinHash';
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TForm1, Form1);
   Application.Run;

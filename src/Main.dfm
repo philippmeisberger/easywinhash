@@ -1,7 +1,7 @@
 object Form1: TForm1
   Left = 192
   Top = 124
-  Caption = 'GHash'
+  Caption = 'WinHash'
   ClientHeight = 178
   ClientWidth = 400
   Color = clBtnFace
@@ -102,7 +102,8 @@ object Form1: TForm1
     TabOrder = 6
   end
   object MainMenu: TMainMenu
-    Left = 360
+    Left = 256
+    Top = 128
     object mmView: TMenuItem
       Caption = 'Ansicht'
       object mmLang: TMenuItem
@@ -117,8 +118,8 @@ object Form1: TForm1
       object N1: TMenuItem
         Caption = '-'
       end
-      object mmDownloadCert: TMenuItem
-        Caption = 'Zertifikat herunterladen'
+      object mmInstallCertificate: TMenuItem
+        Caption = 'Zertifikat installieren'
       end
       object mmReport: TMenuItem
         Caption = 'Fehler melden'
@@ -128,6 +129,7 @@ object Form1: TForm1
       end
       object mmAbout: TMenuItem
         Caption = #220'ber ...'
+        OnClick = mmAboutClick
       end
     end
   end
