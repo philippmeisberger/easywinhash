@@ -1,12 +1,12 @@
 { *********************************************************************** }
 {                                                                         }
-{ GHash Main Unit                                                         }
+{ WinHash Main Unit                                                       }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
-unit Main;
+unit WinHashMain;
 
 interface
 
@@ -16,7 +16,8 @@ uses
   System.Win.TaskbarCore, CryptoAPI, PMCWLanguageFile, FileHashThread, PMCWAbout;
 
 type
-  TForm1 = class(TForm)
+  { TMain }
+  TMain = class(TForm)
     cbxAlgorithm: TComboBox;
     bCalculate: TButton;
     pbProgress: TProgressBar;
@@ -34,15 +35,17 @@ type
     mmInstallCertificate: TMenuItem;
     mmReport: TMenuItem;
     N2: TMenuItem;
+    Taskbar: TTaskbar;
     procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
     procedure bBrowseClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure mmAboutClick(Sender: TObject);
+    procedure mmInfoClick(Sender: TObject);
+    procedure mmReportClick(Sender: TObject);
+    procedure mmUpdateClick(Sender: TObject);
   private
     FLang: TLanguageFile;
-    FTaskBar: TTaskbar;
     procedure OnBeginHashing(Sender: TObject; const AFileSize: Int64);
     procedure OnHashing(Sender: TObject; const AProgress: Int64);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
@@ -51,13 +54,19 @@ type
   end;
 
 var
-  Form1: TForm1;
+  Main: TMain;
 
 implementation
 
 {$R *.dfm}
 
-procedure TForm1.FormCreate(Sender: TObject);
+{ TMain }
+
+{ TMain.FormCreate
+
+  VCL event that is called when form is being created. }
+
+procedure TMain.FormCreate(Sender: TObject);
 begin
   // Setup language
   FLang := TLanguageFile.Create(Self);
@@ -66,18 +75,45 @@ begin
 
   // Enable drag & drop support
   DragAcceptFiles(Handle, True);
-  FTaskBar := TTaskbar.Create(Self);
+
+  // Set title
+  //Caption := Application.Title + PLATFORM_ARCH;
 end;
 
 
-procedure TForm1.FormDestroy(Sender: TObject);
+{ TMain.FormDestroy
+
+  VCL event that is called when form is being destroyed. }
+
+procedure TMain.FormDestroy(Sender: TObject);
 begin
-  FTaskBar.Free;
   FLang.Free;
 end;
 
+{ TMain.mmUpdateClick
 
-procedure TForm1.mmAboutClick(Sender: TObject);
+  MainMenu entry that allows users to manually search for updates. }
+
+procedure TMain.mmUpdateClick(Sender: TObject);
+begin
+  //FUpdateCheck.CheckForUpdate(True);
+end;
+
+{ TMain.mmReportClick
+
+  MainMenu entry that allows users to easily report a bug by opening the web
+  browser and using the "report bug" formular. }
+
+procedure TMain.mmReportClick(Sender: TObject);
+begin
+  //OpenUrl(URL_CONTACT);
+end;
+
+{ TMain.mmInfoClick
+
+  MainMenu entry that shows a info page with build number and version history. }
+
+procedure TMain.mmInfoClick(Sender: TObject);
 var
   Info: TInfo;
 
@@ -88,24 +124,24 @@ begin
 end;
 
 
-procedure TForm1.OnBeginHashing(Sender: TObject; const AFileSize: Int64);
+procedure TMain.OnBeginHashing(Sender: TObject; const AFileSize: Int64);
 begin
-  FTaskBar.ProgressMaxValue := AFileSize;
-  FTaskBar.ProgressValue := 0;
-  FTaskBar.ProgressState := TTaskBarProgressState.Normal;
+  TaskBar.ProgressMaxValue := AFileSize;
+  TaskBar.ProgressValue := 0;
+  TaskBar.ProgressState := TTaskBarProgressState.Normal;
   pbProgress.Max := AFileSize;
   pbProgress.Position := 0;
 end;
 
 
-procedure TForm1.OnHashing(Sender: TObject; const AProgress: Int64);
+procedure TMain.OnHashing(Sender: TObject; const AProgress: Int64);
 begin
   pbProgress.Position := pbProgress.Position + AProgress;
-  FTaskBar.ProgressValue := FTaskBar.ProgressValue + AProgress;
+  TaskBar.ProgressValue := TaskBar.ProgressValue + AProgress;
 end;
 
 
-procedure TForm1.OnEndHashing(Sender: TThread; const AHash: string);
+procedure TMain.OnEndHashing(Sender: TThread; const AHash: string);
 begin
   eHash.Text := AHash;
   //FTaskBar.ProgressState := TTaskBarProgressState.None;
@@ -114,7 +150,7 @@ begin
 end;
 
 
-procedure TForm1.OnVerified(Sender: TThread; const AMatches: Boolean);
+procedure TMain.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
   //FlashWindow(Application.Handle, True);
 
@@ -125,7 +161,7 @@ begin
 end;
 
 
-procedure TForm1.WMDropFiles(var AMsg: TMessage);
+procedure TMain.WMDropFiles(var AMsg: TMessage);
 var
   BufferSize: Integer;
   FileName: PChar;
@@ -139,7 +175,7 @@ begin
 end;
 
 
-procedure TForm1.bCalculateClick(Sender: TObject);
+procedure TMain.bCalculateClick(Sender: TObject);
 begin
   try
     if (eFile.Text = '') then
@@ -163,7 +199,7 @@ begin
 end;
 
 
-procedure TForm1.bBrowseClick(Sender: TObject);
+procedure TMain.bBrowseClick(Sender: TObject);
 var
   OpenDialog: TOpenDialog;
 
@@ -180,7 +216,7 @@ begin
 end;
 
 
-procedure TForm1.bVerifyClick(Sender: TObject);
+procedure TMain.bVerifyClick(Sender: TObject);
 begin
   try
     if (eHash.Text = '') then

@@ -2,7 +2,7 @@ program WinHash;
 
 uses
   Forms,
-  Main in 'Main.pas' {Form1};
+  WinHashMain in 'WinHashMain.pas' {Form1};
 
 {$R *.res}
 
@@ -10,6 +10,6 @@ begin
   Application.Initialize;
   Application.Title := 'WinHash';
   Application.MainFormOnTaskbar := True;
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TMain, Main);
   Application.Run;
 end.

@@ -1,4 +1,4 @@
-object Form1: TForm1
+object Main: TMain
   Left = 192
   Top = 124
   Caption = 'WinHash'
@@ -114,6 +114,7 @@ object Form1: TForm1
       Caption = 'Hilfe'
       object mmUpdate: TMenuItem
         Caption = 'Nach Update suchen'
+        OnClick = mmUpdateClick
       end
       object N1: TMenuItem
         Caption = '-'
@@ -129,8 +130,13 @@ object Form1: TForm1
       end
       object mmAbout: TMenuItem
         Caption = #220'ber ...'
-        OnClick = mmAboutClick
       end
     end
+  end
+  object Taskbar: TTaskbar
+    TaskBarButtons = <>
+    TabProperties = []
+    Left = 112
+    Top = 128
   end
 end
