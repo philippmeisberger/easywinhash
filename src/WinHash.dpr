@@ -2,7 +2,7 @@ program WinHash;
 
 uses
   Forms,
-  WinHashMain in 'WinHashMain.pas' {Form1};
+  WinHashMain in 'WinHashMain.pas' {Main};
 
 {$R *.res}
 

@@ -121,6 +121,7 @@ object Main: TMain
       end
       object mmInstallCertificate: TMenuItem
         Caption = 'Zertifikat installieren'
+        OnClick = mmInstallCertificateClick
       end
       object mmReport: TMenuItem
         Caption = 'Fehler melden'
@@ -130,6 +131,7 @@ object Main: TMain
       end
       object mmAbout: TMenuItem
         Caption = #220'ber ...'
+        OnClick = mmInfoClick
       end
     end
   end

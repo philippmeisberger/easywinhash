@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works Updater v3.0                                              }
+{ PM Code Works Updater v3.0.1                                            }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -98,7 +98,6 @@ type
       const AResponseText: string);
     procedure OnDownloadFinished(Sender: TThread; const AFileName: string);
     procedure OnDownloading(Sender: TThread; AContentLength, AReadCount: Int64);
-    procedure OnUnzipArchive(Sender: TObject);
     procedure Reset();
   protected
     function Download(ARemoteFileName, ALocalFileName: string;
@@ -464,15 +463,6 @@ begin
   lSize.Caption := Format('%d/%d KB', [AReadCount, AContentLength]);
 end;
 
-{ private TUpdate.OnUnzipArchive
-
-  Event method that is called by TDownloadThread when .zip archive gets unzipped. }
-
-procedure TUpdate.OnUnzipArchive(Sender: TObject);
-begin
-  FTaskBar.ProgressState := TTaskBarProgressState.Indeterminate;
-end;
-
 { private TUpdate.Reset
 
   Resets Update GUI. }
@@ -523,10 +513,6 @@ begin
       OnCancel := OnDownloadCancel;
       OnFinish := OnDownloadFinished;
       OnError := OnDownloadError;
-
-      // Remote file is an .zip archive?
-      if FUnzip then
-        OnUnzip := OnUnzipArchive;
 
       // Use HTTPS?
       if UseTls then
