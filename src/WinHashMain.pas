@@ -18,7 +18,7 @@ uses
 
 type
   { TMain }
-  TMain = class(TForm)
+  TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
     cbxAlgorithm: TComboBox;
     bCalculate: TButton;
     pbProgress: TProgressBar;
@@ -53,6 +53,8 @@ type
     procedure OnHashing(Sender: TObject; const AProgress: Int64);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
+    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+    procedure SetLanguage(Sender: TObject);
     procedure WMDropFiles(var AMsg: TMessage); message WM_DROPFILES;
   end;
 
@@ -73,6 +75,7 @@ procedure TMain.FormCreate(Sender: TObject);
 begin
   // Setup language
   FLang := TLanguageFile.Create(Self);
+  FLang.Interval := 100;
   FLang.BuildLanguageMenu(MainMenu, mmLang);
   FLang.Update();
 
@@ -134,6 +137,56 @@ begin
   //FlashWindow(Application.Handle, True);
 end;
 
+{ private TMain.OnUpdate
+
+  Event that is called by TUpdateCheck when an update is available. }
+
+procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+var
+  Updater: TUpdate;
+
+begin
+  mmUpdate.Caption := FLang.GetString(24);
+
+  // Ask user to permit download
+  if (FLang.ShowMessage(FLang.Format(21, [ANewBuild]), FLang.GetString(22),
+    mtConfirmation) = IDYES) then
+  begin
+    // init TUpdate instance
+    Updater := TUpdate.Create(Self, FLang);
+
+    try
+      // Set updater options
+      with Updater do
+      begin
+        FileNameLocal := 'WinHash.exe';
+
+      {$IFDEF WIN64}
+        FileNameRemote := 'winhash64.exe';
+      {$ELSE}
+        // Ask user to permit download of 64-Bit version
+        if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
+          FLang.Format([34, 35], ['WinHash']), mtConfirmation) = IDYES)) then
+          FileNameRemote := 'winhash64.exe'
+        else
+          FileNameRemote := 'winhash.exe';
+      {$ENDIF}
+      end;  //of begin
+
+      // Successfully downloaded update?
+      if Updater.Execute() then
+      begin
+        // Caption "Search for update"
+        mmUpdate.Caption := FLang.GetString(15);
+        mmUpdate.Enabled := False;
+      end;  //of begin
+
+    finally
+      Updater.Free;
+    end;  //of try
+  end;  //of begin
+end;
+
 { TMain.OnVerified
 
   Event method that is called when hash has been verified. }
@@ -146,6 +199,29 @@ begin
     FLang.ShowMessage('Hash matches!', mtInformation)
   else
     FLang.ShowMessage('Hash does not match!', mtWarning);
+end;
+
+{ private TMain.SetLanguage
+
+  Updates all component captions with new language text. }
+
+procedure TMain.SetLanguage(Sender: TObject);
+begin
+  with FLang do
+  begin
+    // View menu labels
+    mmView.Caption := GetString(10);
+    mmLang.Caption := GetString(25);
+
+    // Help menu labels
+    mmHelp.Caption := GetString(14);
+    mmUpdate.Caption := GetString(15);
+    mmInstallCertificate.Caption := GetString(16);
+    mmReport.Caption := GetString(26);
+    mmAbout.Caption := Format(17, [Application.Title]);
+
+    eFile.EditLabel.Caption := GetString(33) +':';
+  end;  //of with
 end;
 
 { TMain.WMDropFiles
