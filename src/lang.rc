@@ -41,6 +41,14 @@ BEGIN
   138, "Seit kurzem werden sichere Updates über eine verschlüsselte Verbindung "
   139, "zum Update-Server angeboten. Dazu wird ein neues Zertifikat benötigt."
   140, "Wollen Sie dieses installieren, um sichere Updates zu empfangen?"
+  141, "Hash stimmt überein!"
+  142, "Hash stimmt nicht überein!"
+  143, "Es wurde keine Datei ausgewählt!"
+  144, "Es wurde kein Hash eingegeben oder berechnet!"
+  145, "Berechnen"
+  146, "Überprüfen"
+  147, "Hash"
+  148, "Nach einer Datei suchen"
 END
 
 STRINGTABLE // english
@@ -86,6 +94,14 @@ BEGIN
   238, "Recently, secure updates are provided via an encrypted connection to the "
   239, "update server. For this purpose, a new certificate is required."
   240, "Do you want to install this to receive secure updates?"
+  241, "Hash matches!"
+  242, "Hash does not match!"
+  243, "No file selected!"
+  244, "No hash entered or calculated!"
+  245, "Calculate"
+  246, "Verify"
+  247, "Hash"
+  248, "Browse for a file"
 END
 
 STRINGTABLE // français
@@ -131,4 +147,12 @@ BEGIN
   338, "Récemment, mises à jour sécurisées sont fournies via une connexion cryptée sur"
   339, " le serveur de mise à jour. A cet effet, un nouveau certificat est nécessaire."
   340, "Voulez-vous installer ce pour recevoir des mises à jour sécurisées?"
+  341, "Hachage est correct!"
+  342, "Hachage n'est pas correct!"
+  343, "Il n'y avait aucun fichier sélectionné!"
+  344, "Il a été entré ou calculé aucune hachage!"
+  345, "Calculer"
+  346, "Vérifier"
+  347, "Hash"
+  348, "Rechercher un fichier"
 END

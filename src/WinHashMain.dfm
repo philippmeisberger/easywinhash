@@ -74,8 +74,11 @@ object Main: TMain
     Top = 30
     Width = 33
     Height = 25
+    Hint = 'Datei suchen'
     Anchors = [akTop, akRight]
     Caption = '...'
+    ParentShowHint = False
+    ShowHint = True
     TabOrder = 4
     OnClick = bBrowseClick
   end

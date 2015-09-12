@@ -196,9 +196,9 @@ begin
   //FlashWindow(Application.Handle, True);
 
   if AMatches then
-    FLang.ShowMessage('Hash matches!', mtInformation)
+    FLang.ShowMessage(FLang.GetString(41), mtInformation)
   else
-    FLang.ShowMessage('Hash does not match!', mtWarning);
+    FLang.ShowMessage(FLang.GetString(41), mtWarning);
 end;
 
 { private TMain.SetLanguage
@@ -220,7 +220,12 @@ begin
     mmReport.Caption := GetString(26);
     mmAbout.Caption := Format(17, [Application.Title]);
 
+    // Buttons and labels
     eFile.EditLabel.Caption := GetString(33) +':';
+    eHash.EditLabel.Caption := GetString(47) +':';
+    bBrowse.Hint := GetString(48);
+    bVerify.Caption := GetString(46);
+    bCalculate.Caption := GetString(45);
   end;  //of with
 end;
 
@@ -249,7 +254,7 @@ procedure TMain.bCalculateClick(Sender: TObject);
 begin
   try
     if (eFile.Text = '') then
-      raise EAbort.Create('No file selected!');
+      raise EAbort.Create(FLang.GetString(43));
 
     with TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex)) do
     begin
@@ -264,7 +269,7 @@ begin
       FLang.EditBalloonTip(eFile.Handle, FLang.GetString(1), E.Message, biWarning);
 
     on E: Exception do
-      FLang.ShowException('Calculation impossible!', E.Message);
+      FLang.ShowException(FLang.GetString([45, 18]), E.Message);
   end;  //of try
 end;
 
@@ -289,7 +294,7 @@ procedure TMain.bVerifyClick(Sender: TObject);
 begin
   try
     if (eHash.Text = '') then
-      raise EAbort.Create('No hash entered or calculated!');
+      raise EAbort.Create(FLang.GetString(44));
 
     with TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex), eHash.Text) do
     begin
@@ -304,7 +309,7 @@ begin
       FLang.EditBalloonTip(eHash.Handle, FLang.GetString(1), E.Message, biWarning);
 
     on E: Exception do
-      FLang.ShowException('Calculation impossible!', E.Message);
+      FLang.ShowException(FLang.GetString([46, 18]), E.Message);
   end;  //of try
 end;
 
