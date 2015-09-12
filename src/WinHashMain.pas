@@ -49,8 +49,9 @@ type
   private
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
-    procedure OnBeginHashing(Sender: TObject; const AFileSize: Int64);
-    procedure OnHashing(Sender: TObject; const AProgress: Int64);
+    FThread: TFileHashThread;
+    procedure OnBeginHashing(Sender: TObject);
+    procedure OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
     procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
@@ -121,7 +122,6 @@ begin
   end;  //of begin
 end;
 
-
 { TMain.FormDestroy
 
   VCL event that is called when form is being destroyed. }
@@ -135,22 +135,23 @@ end;
 
   Event method that is called when hashing starts . }
 
-procedure TMain.OnBeginHashing(Sender: TObject; const AFileSize: Int64);
+procedure TMain.OnBeginHashing(Sender: TObject);
 begin
-  TaskBar.ProgressMaxValue := AFileSize;
   TaskBar.ProgressValue := 0;
   TaskBar.ProgressState := TTaskBarProgressState.Normal;
-  pbProgress.Max := AFileSize;
   pbProgress.Position := 0;
+  pbProgress.State := pbsNormal;
 end;
 
 { TMain.OnHashing
 
   Event method that is called when hashing is in progress. }
 
-procedure TMain.OnHashing(Sender: TObject; const AProgress: Int64);
+procedure TMain.OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
 begin
+  pbProgress.Max := AFileSize;
   pbProgress.Position := pbProgress.Position + AProgress;
+  Taskbar.ProgressMaxValue := AFileSize;
   TaskBar.ProgressValue := TaskBar.ProgressValue + AProgress;
 end;
 
@@ -160,13 +161,18 @@ end;
 
 procedure TMain.OnEndHashing(Sender: TThread; const AHash: string);
 begin
+  FThread := nil;
+  bCalculate.Caption := FLang.GetString(45);
   eHash.Text := AHash;
   eHash.SelectAll;
-  TaskBar.ProgressState := TTaskBarProgressState.None;
-  MessageBeep(MB_ICONINFORMATION);
+
+  if TaskBar.ProgressState = TTaskBarProgressState.Normal then
+    TaskBar.ProgressState := TTaskBarProgressState.None;
 
   if (WindowState = wsMinimized) then
     FlashWindow(Handle, False);
+
+  MessageBeep(MB_ICONINFORMATION);
 end;
 
 { private TMain.OnUpdate
@@ -225,7 +231,8 @@ end;
 
 procedure TMain.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
-  //FlashWindow(Application.Handle, True);
+  if (WindowState = wsMinimized) then
+    FlashWindow(Handle, False);
 
   if AMatches then
     FLang.ShowMessage(FLang.GetString(41), mtInformation)
@@ -285,16 +292,28 @@ end;
 procedure TMain.bCalculateClick(Sender: TObject);
 begin
   try
+    if Assigned(FThread) then
+    begin
+      FThread.Terminate();
+      Taskbar.ProgressState := TTaskBarProgressState.Error;
+      pbProgress.State := pbsError;
+      Exit;
+    end;  //of begin
+
     if (eFile.Text = '') then
       raise EAbort.Create(FLang.GetString(43));
 
-    with TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex)) do
+    FThread := TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex));
+
+    with FThread do
     begin
       OnStart := OnBeginHashing;
       OnFinish := OnEndHashing;
       OnProgress := OnHashing;
       Start;
     end;  //of with
+
+    bCalculate.Caption := FLang.GetString(6);
 
   except
     on E: EAbort do

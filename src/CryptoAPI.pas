@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ Windows CryptoAPI Unit v1.0                                             }
+{ Windows CryptoAPI Unit v1.0.1                                           }
 {                                                                         }
 { Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -56,7 +56,8 @@ type
   );
 
   { Events }
-  TProgressEvent = procedure(Sender: TObject; const AProgress: Int64) of object;
+  TFileHashEvent = procedure(Sender: TObject; const AProgress, AProgressMax: Int64;
+    var ACancel: Boolean) of object;
 
   { TCryptBase }
   TCryptBase = class(TObject)
@@ -70,7 +71,8 @@ type
   { THash }
   THash = class(TCryptBase)
   private
-    FOnStart, FOnProgress: TProgressEvent;
+    FOnProgress: TFileHashEvent;
+    FOnStart,
     FOnFinish: TNotifyEvent;
     FHashAlgorithm: THashAlgorithm;
   public
@@ -85,8 +87,8 @@ type
     { external }
     property Algorithm: THashAlgorithm read FHashAlgorithm write FHashAlgorithm;
     property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
-    property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
-    property OnStart: TProgressEvent read FOnStart write FOnStart;
+    property OnProgress: TFileHashEvent read FOnProgress write FOnProgress;
+    property OnStart: TNotifyEvent read FOnStart write FOnStart;
   end;
 
   { THMac }
@@ -399,6 +401,7 @@ var
   Buffer: array[0..1023] of Byte;
   FileToHash: TFileStream;
   BytesRead: Cardinal;
+  Cancel: Boolean;
 
 begin
   // Open file
@@ -415,16 +418,17 @@ begin
 
     // Notify start of file hashing
     if Assigned(FOnStart) then
-      FOnStart(Self, FileToHash.Size);
+      FOnStart(Self);
 
     // Read first KB of file into buffer
     BytesRead := FileToHash.Read(Buffer, Length(Buffer));
+    Cancel := False;
 
     // EOF?
-    while (BytesRead <> 0) do
+    while ((BytesRead <> 0) and not Cancel) do
     begin
       if Assigned(FOnProgress) then
-        FOnProgress(Self, BytesRead);
+        FOnProgress(Self, BytesRead, FileToHash.Size, Cancel);
 
       // Create hash of read bytes in buffer
       if not CryptHashData(HashHandle, @Buffer, BytesRead, 0) then
@@ -434,7 +438,10 @@ begin
       BytesRead := FileToHash.Read(Buffer, Length(Buffer));
     end;  //of while
 
-    Result := HashToString(HashHandle);
+    if not Cancel then
+      Result := HashToString(HashHandle)
+    else
+      Result := '';
 
   finally
     FileToHash.Free;

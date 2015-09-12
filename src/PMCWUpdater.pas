@@ -82,9 +82,7 @@ type
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure FormShow(Sender: TObject);
   private
-    FOnUserCancel: TNotifyEvent;
-    FUnzip,
-    FThreadRuns: Boolean;
+    FThread: TThread;
     FDownloadDirectory,
     FTitle,
     FRemoteFileName,
@@ -118,7 +116,6 @@ type
     property FileNameRemote: string read FRemoteFileName write FRemoteFileName;
     property LanguageFile: TLanguageFile read FLang write FLang;
     property Title: string read FTitle write FTitle;
-    property Unzip: Boolean read FUnzip write FUnzip;
   end;
 {$ENDIF}
 
@@ -359,7 +356,6 @@ constructor TUpdate.Create(AOwner: TComponent; ALang: TLanguageFile);
 begin
   inherited Create(AOwner);
   FLang := ALang;
-  FThreadRuns := False;
 
   // Init list of listeners
   FListeners := TInterfaceList.Create;
@@ -446,7 +442,7 @@ begin
   FTaskBar.ProgressState := TTaskBarProgressState.Normal;
   bFinished.Caption := FLang.GetString(8);
   bFinished.SetFocus;
-  FThreadRuns := False;
+  FThread := nil;
   bFinished.ModalResult := mrOk;
 end;
 
@@ -471,7 +467,7 @@ procedure TUpdate.Reset();
 begin
   lSize.Caption := FLang.GetString(7);
   bFinished.Caption := FLang.GetString(8);
-  FThreadRuns := False;
+  FThread := nil;
 end;
 
 { protected TUpdate.Download
@@ -504,11 +500,11 @@ begin
   begin
     Url := URL_DOWNLOAD + FRemoteFileName;
     FFileName := IncludeTrailingPathDelimiter(FDownloadDirectory) + FLocalFileName;
+    FThread := TDownloadThread.Create(Url, FFileName);
 
-    with TDownloadThread.Create(Url, FFileName) do
+    with TDownloadThread(FThread) do
     begin
       // Link events
-      FOnUserCancel := Cancel;
       OnDownloading := Self.OnDownloading;
       OnCancel := OnDownloadCancel;
       OnFinish := OnDownloadFinished;
@@ -523,8 +519,6 @@ begin
 
       Start();
     end;  //of with
-
-    FThreadRuns := True;
   end  //of begin
   else
     // Cancel clicked
@@ -670,10 +664,10 @@ end;
 procedure TUpdate.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
 begin
   // Download still in progress?
-  if FThreadRuns then
+  if Assigned(FThread) then
   begin
     // Cancel download
-    FOnUserCancel(Self);
+    FThread.Terminate;
     CanClose := False;
   end  //of begin
   else

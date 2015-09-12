@@ -16,23 +16,30 @@ uses
 type
   TCalculatedHashEvent = procedure(Sender: TThread; const AHash: string) of object;
   TVerifiedHashEvent = procedure(Sender: TThread; const AMatches: Boolean) of object;
+  TProgressEvent = procedure(Sender: TThread; AProgress, AFileSize: Int64) of object;
 
   { TFileHashThread }
   TFileHashThread = class(TThread)
   private
     FHash: THash;
     FMatches: Boolean;
-    FBytes, FBytesRead: Cardinal;
-    FOnStart, FOnProgress: TProgressEvent;
+    FBytes,
+    FBytesRead: Cardinal;
+    FOnStart,
+    FOnCancel: TNotifyEvent;
+    FOnProgress: TProgressEvent;
     FOnFinish: TCalculatedHashEvent;
     FOnVerify: TVerifiedHashEvent;
-    FFileName, FHashValue: string;
+    FFileName,
+    FHashValue: string;
+    FCancel: Boolean;
+    procedure DoNotifyOnCancel();
     procedure DoNotifyOnStart();
     procedure DoNotifyOnFinish();
     procedure DoNotifyOnProgress();
     procedure DoNotifyOnVerified();
-    procedure OnStartHashing(Sender: TObject; const AFileSize: Int64);
-    procedure OnHashing(Sender: TObject; const ABytesRead: Int64);
+    procedure OnHashing(Sender: TObject; const AProgress, AProgressMax: Int64;
+      var ACancel: Boolean);
   protected
     procedure Execute; override;
   public
@@ -40,9 +47,10 @@ type
       AHashValue: string = '');
     destructor Destroy; override;
     { external }
+    property OnCancel: TNotifyEvent read FOnCancel write FOnCancel;
     property OnFinish: TCalculatedHashEvent read FOnFinish write FOnFinish;
     property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
-    property OnStart: TProgressEvent read FOnStart write FOnStart;
+    property OnStart: TNotifyEvent read FOnStart write FOnStart;
     property OnVerify: TVerifiedHashEvent read FOnVerify write FOnVerify;
   end;
 
@@ -62,12 +70,7 @@ begin
   FFileName := AFileName;
   FHashValue := AHashValue;
   FHash := THash.Create(AHashAlgorithm);
-
-  with FHash do
-  begin
-    OnStart := OnStartHashing;
-    OnProgress := OnHashing;
-  end;  //of with
+  FHash.OnProgress := OnHashing;
 end;
 
 { public TFileHashThread.Create
@@ -80,23 +83,53 @@ begin
   inherited Destroy;
 end;
 
-procedure TFileHashThread.DoNotifyOnStart;
+{ private TFileHashThread.DoNotifyOnFinish
+
+  Synchronizable event method that is called when hashing of a file has been
+  canceled. }
+
+procedure TFileHashThread.DoNotifyOnCancel();
 begin
-  if Assigned(FOnStart) then
-    FOnStart(Self, FBytes);
+  if Assigned(FOnCancel) then
+    FOnCancel(Self);
 end;
 
-procedure TFileHashThread.DoNotifyOnFinish;
+{ private TFileHashThread.DoNotifyOnFinish
+
+  Synchronizable event method that is called when hashing of a file has
+  finished. }
+
+procedure TFileHashThread.DoNotifyOnFinish();
 begin
   if Assigned(FOnFinish) then
     FOnFinish(Self, FHashValue);
 end;
 
-procedure TFileHashThread.DoNotifyOnProgress;
+{ private TFileHashThread.DoNotifyOnProgress
+
+  Synchronizable event method that is called when hashing of a file is in
+  progress. }
+
+procedure TFileHashThread.DoNotifyOnProgress();
 begin
   if Assigned(FOnProgress) then
-    FOnProgress(Self, FBytesRead);
+    FOnProgress(Self, FBytesRead, FBytes);
 end;
+
+{ private TFileHashThread.DoNotifyOnStart
+
+  Synchronizable event method that is called when hashing of a file starts. }
+
+procedure TFileHashThread.DoNotifyOnStart();
+begin
+  if Assigned(FOnStart) then
+    FOnStart(Self);
+end;
+
+{ private TFileHashThread.DoNotifyOnVerified
+
+  Synchronizable event method that is called when hash of a file has been
+  verified. }
 
 procedure TFileHashThread.DoNotifyOnVerified();
 begin
@@ -104,17 +137,19 @@ begin
     FOnVerify(Self, FMatches);
 end;
 
-procedure TFileHashThread.OnStartHashing(Sender: TObject; const AFileSize: Int64);
-begin
-  // Show progress in KB
-  FBytes := AFileSize div 1024;
-  Synchronize(DoNotifyOnStart);
-end;
+{ private TFileHashThread.OnHashing
 
-procedure TFileHashThread.OnHashing(Sender: TObject; const ABytesRead: Int64);
+  Event method that is called when hashing of a file is in progress. }
+
+procedure TFileHashThread.OnHashing(Sender: TObject; const AProgress,
+  AProgressMax: Int64; var ACancel: Boolean);
 begin
   // Show progress in KB
-  FBytesRead := ABytesRead div 1024;
+  if (FBytes = 0) then
+    FBytes := AProgressMax div 1024;
+
+  FBytesRead := AProgress div 1024;
+  ACancel := Terminated;
   Synchronize(DoNotifyOnProgress);
 end;
 
@@ -124,6 +159,8 @@ end;
 
 procedure TFileHashThread.Execute;
 begin
+  Synchronize(DoNotifyOnStart);
+
   if (FHashValue <> '') then
   begin
     FMatches := FHash.VerifyFileHash(FHashValue, FFileName);
@@ -134,6 +171,9 @@ begin
     FHashValue := FHash.HashFile(FFileName);
     Synchronize(DoNotifyOnFinish);
   end;  //of if
+
+  if Terminated then
+    Synchronize(DoNotifyOnCancel);
 end;
 
 end.
