@@ -11,10 +11,10 @@ unit FileHashThread;
 interface
 
 uses
-  Classes, CryptoAPI;
+  Classes, SysUtils, CryptoAPI;
 
 type
-  TCalculatedHashEvent = procedure(Sender: TThread; const AHash: string) of object;
+  TStringResultEvent = procedure(Sender: TThread; const AHash: string) of object;
   TVerifiedHashEvent = procedure(Sender: TThread; const AMatches: Boolean) of object;
   TProgressEvent = procedure(Sender: TThread; AProgress, AFileSize: Int64) of object;
 
@@ -28,15 +28,17 @@ type
     FOnStart,
     FOnCancel: TNotifyEvent;
     FOnProgress: TProgressEvent;
-    FOnFinish: TCalculatedHashEvent;
+    FOnFinish,
+    FOnError: TStringResultEvent;
     FOnVerify: TVerifiedHashEvent;
     FFileName,
-    FHashValue: string;
-    FCancel: Boolean;
+    FHashValue,
+    FErrorMessage: string;
     procedure DoNotifyOnCancel();
-    procedure DoNotifyOnStart();
+    procedure DoNotifyOnError();
     procedure DoNotifyOnFinish();
     procedure DoNotifyOnProgress();
+    procedure DoNotifyOnStart();
     procedure DoNotifyOnVerified();
     procedure OnHashing(Sender: TObject; const AProgress, AProgressMax: Int64;
       var ACancel: Boolean);
@@ -48,7 +50,8 @@ type
     destructor Destroy; override;
     { external }
     property OnCancel: TNotifyEvent read FOnCancel write FOnCancel;
-    property OnFinish: TCalculatedHashEvent read FOnFinish write FOnFinish;
+    property OnError: TStringResultEvent read FOnError write FOnError;
+    property OnFinish: TStringResultEvent read FOnFinish write FOnFinish;
     property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
     property OnStart: TNotifyEvent read FOnStart write FOnStart;
     property OnVerify: TVerifiedHashEvent read FOnVerify write FOnVerify;
@@ -83,7 +86,7 @@ begin
   inherited Destroy;
 end;
 
-{ private TFileHashThread.DoNotifyOnFinish
+{ private TFileHashThread.DoNotifyOnCancel
 
   Synchronizable event method that is called when hashing of a file has been
   canceled. }
@@ -92,6 +95,16 @@ procedure TFileHashThread.DoNotifyOnCancel();
 begin
   if Assigned(FOnCancel) then
     FOnCancel(Self);
+end;
+
+{ private TFileHashThread.DoNotifyOnError
+
+  Synchronizable event method that is called when an error has occured. }
+
+procedure TFileHashThread.DoNotifyOnError();
+begin
+  if Assigned(FOnError) then
+    FOnError(Self, FErrorMessage);
 end;
 
 { private TFileHashThread.DoNotifyOnFinish
@@ -161,19 +174,28 @@ procedure TFileHashThread.Execute;
 begin
   Synchronize(DoNotifyOnStart);
 
-  if (FHashValue <> '') then
-  begin
-    FMatches := FHash.VerifyFileHash(FHashValue, FFileName);
-    Synchronize(DoNotifyOnVerified);
-  end  //of begin
-  else
-  begin
-    FHashValue := FHash.HashFile(FFileName);
-    Synchronize(DoNotifyOnFinish);
-  end;  //of if
+  try
+    if (FHashValue <> '') then
+    begin
+      FMatches := FHash.VerifyFileHash(FHashValue, FFileName);
+      Synchronize(DoNotifyOnVerified);
+    end  //of begin
+    else
+    begin
+      FHashValue := FHash.HashFile(FFileName);
+      Synchronize(DoNotifyOnFinish);
+    end;  //of if
 
-  if Terminated then
-    Synchronize(DoNotifyOnCancel);
+    if Terminated then
+      Synchronize(DoNotifyOnCancel);
+
+  except
+    on E: Exception do
+    begin
+      FErrorMessage := E.Message;
+      Synchronize(DoNotifyOnError);
+    end;
+  end;  //of try
 end;
 
 end.

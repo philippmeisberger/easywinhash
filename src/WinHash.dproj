@@ -95,10 +95,11 @@
         <DCC_Optimize>false</DCC_Optimize>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
+        <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <VerInfo_Locale>1033</VerInfo_Locale>
-        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Windows hash calculator;FileVersion=1.0.0.75;InternalName=;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=WinHash.exe;ProductName=WinHash;ProductVersion=1.0;Comments=Delphi XE8</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=Windows hash calculator;FileVersion=1.0.0.90;InternalName=;LegalCopyright=Philipp Meisberger 2015;LegalTrademarks=PM Code Works;OriginalFilename=WinHash.exe;ProductName=WinHash;ProductVersion=1.0;Comments=Delphi XE8</VerInfo_Keys>
         <Icon_MainIcon>WinHash.ico</Icon_MainIcon>
-        <VerInfo_Build>75</VerInfo_Build>
+        <VerInfo_Build>90</VerInfo_Build>
     </PropertyGroup>
     <ItemGroup>
         <DelphiCompile Include="$(MainSource)">

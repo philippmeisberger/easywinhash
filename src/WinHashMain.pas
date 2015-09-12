@@ -52,6 +52,7 @@ type
     FThread: TFileHashThread;
     procedure OnBeginHashing(Sender: TObject);
     procedure OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
+    procedure OnHashingError(Sender: TThread; const AErrorMessage: string);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
     procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
@@ -155,6 +156,15 @@ begin
   TaskBar.ProgressValue := TaskBar.ProgressValue + AProgress;
 end;
 
+{ TMain.OnHashingError
+
+  Event method that is called when an error has occured during hashing. }
+
+procedure TMain.OnHashingError(Sender: TThread; const AErrorMessage: string);
+begin
+  FLang.ShowException(FLang.GetString([45, 18]), AErrorMessage);
+end;
+
 { TMain.OnEndHashing
 
   Event method that is called when hashing ends. }
@@ -163,10 +173,12 @@ procedure TMain.OnEndHashing(Sender: TThread; const AHash: string);
 begin
   FThread := nil;
   bCalculate.Caption := FLang.GetString(45);
+  bCalculate.Cancel := False;
   eHash.Text := AHash;
   eHash.SelectAll;
 
-  if TaskBar.ProgressState = TTaskBarProgressState.Normal then
+  // No error?
+  if (TaskBar.ProgressState = TTaskBarProgressState.Normal) then
     TaskBar.ProgressState := TTaskBarProgressState.None;
 
   if (WindowState = wsMinimized) then
@@ -310,10 +322,13 @@ begin
       OnStart := OnBeginHashing;
       OnFinish := OnEndHashing;
       OnProgress := OnHashing;
+      OnError := OnHashingError;
       Start;
     end;  //of with
 
+    // Caption "Cancel"
     bCalculate.Caption := FLang.GetString(6);
+    bCalculate.Cancel := True;
 
   except
     on E: EAbort do
