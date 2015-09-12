@@ -72,6 +72,9 @@ implementation
   VCL event that is called when form is being created. }
 
 procedure TMain.FormCreate(Sender: TObject);
+var
+  i, AlgorithmIndex: Integer;
+
 begin
   // Setup language
   FLang := TLanguageFile.Create(Self);
@@ -90,6 +93,32 @@ begin
 
   // Set title
   Caption := Application.Title + PLATFORM_ARCH;
+
+  // Parse arguments
+  for i := 1 to ParamCount() - 1 do
+  begin
+    if (ParamStr(i) = '-a') then
+    begin
+      AlgorithmIndex := cbxAlgorithm.Items.IndexOf(ParamStr(i+1));
+
+      if (AlgorithmIndex <> -1) then
+        cbxAlgorithm.ItemIndex := AlgorithmIndex;
+    end;  //of begin
+
+    if (ParamStr(i) = '-f') then
+    begin
+      eFile.Text := ParamStr(i+1);
+
+      if (ParamCount() <= 4) then
+        bCalculate.Click;
+    end;  //of begin
+
+    if (ParamStr(i) = '-h') then
+    begin
+      eHash.Text := ParamStr(i+1);
+      bVerify.Click;
+    end;  //of begin
+  end;  //of begin
 end;
 
 
@@ -132,9 +161,12 @@ end;
 procedure TMain.OnEndHashing(Sender: TThread; const AHash: string);
 begin
   eHash.Text := AHash;
-  //FTaskBar.ProgressState := TTaskBarProgressState.None;
+  eHash.SelectAll;
+  TaskBar.ProgressState := TTaskBarProgressState.None;
   MessageBeep(MB_ICONINFORMATION);
-  //FlashWindow(Application.Handle, True);
+
+  if (WindowState = wsMinimized) then
+    FlashWindow(Handle, False);
 end;
 
 { private TMain.OnUpdate
@@ -198,7 +230,7 @@ begin
   if AMatches then
     FLang.ShowMessage(FLang.GetString(41), mtInformation)
   else
-    FLang.ShowMessage(FLang.GetString(41), mtWarning);
+    FLang.ShowMessage(FLang.GetString(42), mtWarning);
 end;
 
 { private TMain.SetLanguage
