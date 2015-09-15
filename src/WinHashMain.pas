@@ -129,6 +129,7 @@ end;
 
 procedure TMain.FormDestroy(Sender: TObject);
 begin
+  FUpdateCheck.Free;
   FLang.Free;
 end;
 
@@ -142,6 +143,8 @@ begin
   TaskBar.ProgressState := TTaskBarProgressState.Normal;
   pbProgress.Position := 0;
   pbProgress.State := pbsNormal;
+  cbxAlgorithm.Enabled := False;
+  bBrowse.Enabled := False;
 end;
 
 { TMain.OnHashing
@@ -172,8 +175,17 @@ end;
 procedure TMain.OnEndHashing(Sender: TThread; const AHash: string);
 begin
   FThread := nil;
+  cbxAlgorithm.Enabled := True;
+  bBrowse.Enabled := True;
+
   bCalculate.Caption := FLang.GetString(45);
   bCalculate.Cancel := False;
+  bCalculate.Enabled := True;
+
+  bVerify.Caption := FLang.GetString(46);
+  bVerify.Cancel := False;
+  bVerify.Enabled := True;
+
   eHash.Text := AHash;
   eHash.SelectAll;
 
@@ -243,9 +255,6 @@ end;
 
 procedure TMain.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
-  if (WindowState = wsMinimized) then
-    FlashWindow(Handle, False);
-
   if AMatches then
     FLang.ShowMessage(FLang.GetString(41), mtInformation)
   else
@@ -329,6 +338,7 @@ begin
     // Caption "Cancel"
     bCalculate.Caption := FLang.GetString(6);
     bCalculate.Cancel := True;
+    bVerify.Enabled := False;
 
   except
     on E: EAbort do
@@ -359,16 +369,34 @@ end;
 procedure TMain.bVerifyClick(Sender: TObject);
 begin
   try
+    if Assigned(FThread) then
+    begin
+      FThread.Terminate();
+      Taskbar.ProgressState := TTaskBarProgressState.Error;
+      pbProgress.State := pbsError;
+      Exit;
+    end;  //of begin
+
     if (eHash.Text = '') then
       raise EAbort.Create(FLang.GetString(44));
 
-    with TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex), eHash.Text) do
+    FThread := TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex),
+      eHash.Text);
+
+    with FThread do
     begin
       OnStart := OnBeginHashing;
+      OnFinish := OnEndHashing;
       OnVerify := OnVerified;
       OnProgress := OnHashing;
+      OnError := OnHashingError;
       Start;
     end;  //of with
+
+    // Caption "Cancel"
+    bVerify.Caption := FLang.GetString(6);
+    bVerify.Cancel := True;
+    bCalculate.Enabled := False;
 
   except
     on E: EAbort do

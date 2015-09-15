@@ -176,23 +176,22 @@ begin
 
   try
     if (FHashValue <> '') then
-    begin
-      FMatches := FHash.VerifyFileHash(FHashValue, FFileName);
-      Synchronize(DoNotifyOnVerified);
-    end  //of begin
+      FMatches := FHash.VerifyFileHash(FHashValue, FFileName)
     else
-    begin
       FHashValue := FHash.HashFile(FFileName);
-      Synchronize(DoNotifyOnFinish);
-    end;  //of if
 
     if Terminated then
-      Synchronize(DoNotifyOnCancel);
+      Synchronize(DoNotifyOnCancel)
+    else
+      if (FHashValue <> '') then
+        Synchronize(DoNotifyOnVerified);
+
+    Synchronize(DoNotifyOnFinish);
 
   except
     on E: Exception do
     begin
-      FErrorMessage := E.Message;
+      FErrorMessage := E.ClassName +': '+ E.Message;
       Synchronize(DoNotifyOnError);
     end;
   end;  //of try

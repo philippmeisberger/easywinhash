@@ -61,7 +61,7 @@ object Main: TMain
   end
   object bVerify: TButton
     Left = 164
-    Top = 130
+    Top = 129
     Width = 75
     Height = 25
     Anchors = [akBottom]
