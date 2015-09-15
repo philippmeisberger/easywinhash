@@ -49,6 +49,7 @@ BEGIN
   146, "Überprüfen"
   147, "Hash"
   148, "Nach einer Datei suchen"
+  149, "In Zwischenablage kopieren"
 END
 
 STRINGTABLE // english
@@ -102,6 +103,7 @@ BEGIN
   246, "Verify"
   247, "Hash"
   248, "Browse for a file"
+  249, "Copy to clipboard"
 END
 
 STRINGTABLE // français
@@ -155,4 +157,5 @@ BEGIN
   346, "Vérifier"
   347, "Hash"
   348, "Rechercher un fichier"
+  349, "Copier dans le presse-papier"
 END

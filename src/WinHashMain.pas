@@ -12,9 +12,9 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, System.Win.TaskbarCore,
-  Vcl.Taskbar, CryptoAPI, PMCWLanguageFile, FileHashThread, PMCWOSUtils,
-  PMCWUpdater, PMCWAbout;
+  ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Buttons, Vcl.ClipBrd,
+  System.Win.TaskbarCore, Vcl.Taskbar, CryptoAPI, PMCWLanguageFile,
+  FileHashThread, PMCWOSUtils, PMCWUpdater, PMCWAbout;
 
 type
   { TMain }
@@ -23,7 +23,6 @@ type
     bCalculate: TButton;
     pbProgress: TProgressBar;
     bVerify: TButton;
-    bBrowse: TButton;
     eFile: TLabeledEdit;
     eHash: TLabeledEdit;
     MainMenu: TMainMenu;
@@ -37,6 +36,8 @@ type
     mmReport: TMenuItem;
     N2: TMenuItem;
     Taskbar: TTaskbar;
+    bBrowse: TSpeedButton;
+    bCopyToClipboard: TSpeedButton;
     procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
     procedure bBrowseClick(Sender: TObject);
@@ -46,6 +47,7 @@ type
     procedure mmUpdateClick(Sender: TObject);
     procedure mmReportClick(Sender: TObject);
     procedure mmInfoClick(Sender: TObject);
+    procedure bCopyToClipboardClick(Sender: TObject);
   private
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
@@ -284,6 +286,7 @@ begin
     eFile.EditLabel.Caption := GetString(33) +':';
     eHash.EditLabel.Caption := GetString(47) +':';
     bBrowse.Hint := GetString(48);
+    bCopyToClipboard.Hint := GetString(49);
     bVerify.Caption := GetString(46);
     bCalculate.Caption := GetString(45);
   end;  //of with
@@ -347,6 +350,15 @@ begin
     on E: Exception do
       FLang.ShowException(FLang.GetString([45, 18]), E.Message);
   end;  //of try
+end;
+
+{ TMain.bBrowseClick
+
+  Event method that is called when user copies the hash into clipboard. }
+
+procedure TMain.bCopyToClipboardClick(Sender: TObject);
+begin
+  Clipboard.AsText := eHash.Text;
 end;
 
 { TMain.bBrowseClick
