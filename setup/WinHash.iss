@@ -3,7 +3,7 @@
 #define MyAppExeName "WinHash.exe"
 #define MyAppExePath "..\bin\win32\"
 #define URLVersionDirectory "WinHash"
-#define FileVersion GetFileVersion(MyAppExeName)
+#define FileVersion GetFileVersion(MyAppExePath + MyAppExeName)
 #define ProductVersion GetFileProductVersion(MyAppExePath + MyAppExeName)
 
 #define VersionFile FileOpen("version.txt")
