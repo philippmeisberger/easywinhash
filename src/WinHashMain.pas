@@ -252,17 +252,17 @@ begin
       // Set updater options
       with Updater do
       begin
-        FileNameLocal := 'WinHash.exe';
+        FileNameLocal := 'WinHash Setup.exe';
 
       {$IFDEF WIN64}
-        FileNameRemote := 'winhash64.exe';
+        FileNameRemote := 'winhash_setup64.exe';
       {$ELSE}
         // Ask user to permit download of 64-Bit version
         if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
-          FLang.Format([34, 35], ['WinHash']), mtConfirmation) = IDYES)) then
-          FileNameRemote := 'winhash64.exe'
+          FLang.Format([34, 35], [Application.Title]), mtConfirmation) = IDYES)) then
+          FileNameRemote := 'winhash_setup64.exe'
         else
-          FileNameRemote := 'winhash.exe';
+          FileNameRemote := 'winhash_setup.exe';
       {$ENDIF}
       end;  //of begin
 
@@ -272,6 +272,7 @@ begin
         // Caption "Search for update"
         mmUpdate.Caption := FLang.GetString(15);
         mmUpdate.Enabled := False;
+        Updater.LaunchSetup();
       end;  //of begin
 
     finally

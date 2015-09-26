@@ -113,20 +113,6 @@ ContextMenuCalculate=Calculate hash
 ContextMenuVerify=Verify hash
 
 [Code]
-const 
-  WM_Close = $0010;
-
-procedure CloseWindow(AAppName: string);
-var
-  WinID: Integer;
-
-begin                                                              
-  WinID := FindWindowByWindowName(AAppName);
-  
-  if (WinID <> 0) then
-    SendMessage(WinID, WM_CLOSE, 0, 0);
-end;
-
 procedure UrlLabelClick(Sender: TObject);
 var
   ErrorCode : Integer;
@@ -210,10 +196,7 @@ var
   Arch, Uninstall: string;
   ErrorCode: Integer;
 
-begin
-  // Be sure that no instance of program is running!
-  CloseWindow('{#MyAppName}');
-      
+begin     
   // Install 32 Bit version over 64 Bit?
   if (RegQueryStringValue(HKCU, 'SOFTWARE\PM Code Works\{#MyAppName}', 'Architecture', Arch) and (Arch <> 'x86')) then
     // Uninstall 64 Bit version first
