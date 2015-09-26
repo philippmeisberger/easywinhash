@@ -99,9 +99,9 @@ begin
   Caption := Application.Title + PLATFORM_ARCH;
 
   // Parse arguments
-  for i := 1 to ParamCount() - 1 do
+  for i := 1 to ParamCount() do
   begin
-    if (ParamStr(i) = '-a') then
+    if ((ParamStr(i) = '-a') or (ParamStr(i) = '--algorithm')) then
     begin
       AlgorithmIndex := cbxAlgorithm.Items.IndexOf(ParamStr(i+1));
 
@@ -109,7 +109,7 @@ begin
         cbxAlgorithm.ItemIndex := AlgorithmIndex;
     end;  //of begin
 
-    if (ParamStr(i) = '-f') then
+    if ((ParamStr(i) = '-f') or (ParamStr(i) = '--file')) then
     begin
       eFile.Text := ParamStr(i+1);
 
@@ -117,10 +117,19 @@ begin
         bCalculate.Click;
     end;  //of begin
 
-    if (ParamStr(i) = '-h') then
+    if ((ParamStr(i) = '-h') or (ParamStr(i) = '--hash')) then
     begin
       eHash.Text := ParamStr(i+1);
       bVerify.Click;
+    end;  //of begin
+
+    if ((ParamStr(i) = '--help') or (ParamStr(i) <> '')) then
+    begin
+      TaskMessageDlg(Application.Title +' usage', Application.Title +'.exe '+
+        '[--algorithm | --file | --hash | --help]'+ sLineBreak +
+        '  --algorithm [MD5 | SHA-1 | SHA-256 | SHA-384 | SHA-512]'+ sLineBreak +
+        '  --file FILENAME'+ sLineBreak +
+        '  --hash HASHVALUE', mtCustom, [mbOk], 0);
     end;  //of begin
   end;  //of begin
 end;
