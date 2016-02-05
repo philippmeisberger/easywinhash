@@ -5,3 +5,4 @@ src\__history\**
 **.stat
 **.reg
 **.identcache
+**.dproj.local
