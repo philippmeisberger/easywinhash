@@ -2,7 +2,7 @@
 {                                                                         }
 { FileHashThread                                                          }
 {                                                                         }
-{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -24,14 +24,14 @@ type
     FHash: THash;
     FMatches: Boolean;
     FBytes,
-    FBytesRead: Cardinal;
+    FBytesRead: Int64;
     FOnStart,
     FOnCancel: TNotifyEvent;
     FOnProgress: TProgressEvent;
     FOnFinish,
     FOnError: TStringResultEvent;
     FOnVerify: TVerifiedHashEvent;
-    FFileName,
+    FFileName: TFileName;
     FHashValue,
     FErrorMessage: string;
     procedure DoNotifyOnCancel();
@@ -45,15 +45,55 @@ type
   protected
     procedure Execute; override;
   public
-    constructor Create(const AFileName: string; AHashAlgorithm: THashAlgorithm;
+    /// <summary>
+    ///   Constructor for creating a <c>TFileHashThread</c> instance.
+    /// <summary>
+    /// <param name="AFileName">
+    ///   The absolute path to a file.
+    /// </param>
+    /// <param name="AHashAlgorithm">
+    ///   The hash algorithm to use.
+    /// </param>
+    /// <param name="AHashValue">
+    ///   A hash value. If this is set the hash gets verified else it gets
+    ///   calculated.
+    /// </param>
+    constructor Create(const AFileName: TFileName; AHashAlgorithm: THashAlgorithm;
       AHashValue: string = '');
+
+    /// <summary>
+    ///   Destructor for destroying a <c>TFileHashThread</c> instance.
+    /// <summary>
     destructor Destroy; override;
-    { external }
+
+    /// <summary>
+    ///   Event that is called when hash calculation has been canceled.
+    /// </summary>
     property OnCancel: TNotifyEvent read FOnCancel write FOnCancel;
+
+    /// <summary>
+    ///   Event that is called when hash calculation failed.
+    /// </summary>
     property OnError: TStringResultEvent read FOnError write FOnError;
+
+    /// <summary>
+    ///   Event that is called when hash calculation has finished.
+    /// </summary>
     property OnFinish: TStringResultEvent read FOnFinish write FOnFinish;
+
+    /// <summary>
+    ///   Event that is called during hash calculation.
+    /// </summary>
     property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
+
+    /// <summary>
+    ///   Event that is called when hash calculation has started.
+    /// </summary>
     property OnStart: TNotifyEvent read FOnStart write FOnStart;
+
+    /// <summary>
+    ///   Event that is called when hash has been verified.
+    /// </summary>
     property OnVerify: TVerifiedHashEvent read FOnVerify write FOnVerify;
   end;
 
@@ -61,11 +101,7 @@ implementation
 
 { TFileHashThread }
 
-{ public TFileHashThread.Create
-
-  Constructor for creating a TFileHashThread instance. }
-
-constructor TFileHashThread.Create(const AFileName: string;
+constructor TFileHashThread.Create(const AFileName: TFileName;
   AHashAlgorithm: THashAlgorithm; AHashValue: string = '');
 begin
   inherited Create(True);
@@ -76,20 +112,11 @@ begin
   FHash.OnProgress := OnHashing;
 end;
 
-{ public TFileHashThread.Create
-
-  Destructor for destroying a TFileHashThread instance. }
-
 destructor TFileHashThread.Destroy;
 begin
   FHash.Free;
   inherited Destroy;
 end;
-
-{ private TFileHashThread.DoNotifyOnCancel
-
-  Synchronizable event method that is called when hashing of a file has been
-  canceled. }
 
 procedure TFileHashThread.DoNotifyOnCancel();
 begin
@@ -97,20 +124,11 @@ begin
     FOnCancel(Self);
 end;
 
-{ private TFileHashThread.DoNotifyOnError
-
-  Synchronizable event method that is called when an error has occured. }
-
 procedure TFileHashThread.DoNotifyOnError();
 begin
   if Assigned(FOnError) then
     FOnError(Self, FErrorMessage);
 end;
-
-{ private TFileHashThread.DoNotifyOnFinish
-
-  Synchronizable event method that is called when hashing of a file has
-  finished. }
 
 procedure TFileHashThread.DoNotifyOnFinish();
 begin
@@ -118,20 +136,11 @@ begin
     FOnFinish(Self, FHashValue);
 end;
 
-{ private TFileHashThread.DoNotifyOnProgress
-
-  Synchronizable event method that is called when hashing of a file is in
-  progress. }
-
 procedure TFileHashThread.DoNotifyOnProgress();
 begin
   if Assigned(FOnProgress) then
     FOnProgress(Self, FBytesRead, FBytes);
 end;
-
-{ private TFileHashThread.DoNotifyOnStart
-
-  Synchronizable event method that is called when hashing of a file starts. }
 
 procedure TFileHashThread.DoNotifyOnStart();
 begin
@@ -139,20 +148,11 @@ begin
     FOnStart(Self);
 end;
 
-{ private TFileHashThread.DoNotifyOnVerified
-
-  Synchronizable event method that is called when hash of a file has been
-  verified. }
-
 procedure TFileHashThread.DoNotifyOnVerified();
 begin
   if Assigned(FOnVerify) then
     FOnVerify(Self, FMatches);
 end;
-
-{ private TFileHashThread.OnHashing
-
-  Event method that is called when hashing of a file is in progress. }
 
 procedure TFileHashThread.OnHashing(Sender: TObject; const AProgress,
   AProgressMax: Int64; var ACancel: Boolean);
@@ -165,10 +165,6 @@ begin
   ACancel := Terminated;
   Synchronize(DoNotifyOnProgress);
 end;
-
-{ protected TFileHashThread.Execute
-
-  Calculates a hash from a file. }
 
 procedure TFileHashThread.Execute;
 begin
