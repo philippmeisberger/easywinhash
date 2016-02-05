@@ -14,7 +14,8 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Buttons, Vcl.ClipBrd,
   System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, CryptoAPI, PMCWOSUtils,
-  PMCWLanguageFile, FileHashThread, PMCWUpdater, PMCWAbout;
+  PMCWLanguageFile, FileHashThread, PMCWUpdater, PMCWAbout, System.ImageList,
+  Vcl.ImgList;
 
 type
   { TMain }
@@ -23,8 +24,6 @@ type
     bCalculate: TButton;
     pbProgress: TProgressBar;
     bVerify: TButton;
-    eFile: TLabeledEdit;
-    eHash: TLabeledEdit;
     MainMenu: TMainMenu;
     mmHelp: TMenuItem;
     mmView: TMenuItem;
@@ -36,18 +35,21 @@ type
     mmReport: TMenuItem;
     N2: TMenuItem;
     Taskbar: TTaskbar;
-    bBrowse: TSpeedButton;
-    bCopyToClipboard: TSpeedButton;
+    ButtonImages: TImageList;
+    eHash: TButtonedEdit;
+    eFile: TButtonedEdit;
+    lHash: TLabel;
+    lFile: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
-    procedure bBrowseClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure mmInstallCertificateClick(Sender: TObject);
     procedure mmUpdateClick(Sender: TObject);
     procedure mmReportClick(Sender: TObject);
     procedure mmInfoClick(Sender: TObject);
-    procedure bCopyToClipboardClick(Sender: TObject);
+    procedure eFileRightButtonClick(Sender: TObject);
+    procedure eHashRightButtonClick(Sender: TObject);
   private
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
@@ -163,7 +165,7 @@ begin
   pbProgress.Position := 0;
   pbProgress.State := pbsNormal;
   cbxAlgorithm.Enabled := False;
-  bBrowse.Enabled := False;
+  eFile.RightButton.Enabled := False;
 end;
 
 procedure TMain.OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
@@ -184,7 +186,7 @@ procedure TMain.OnEndHashing(Sender: TThread; const AHash: string);
 begin
   FThread := nil;
   cbxAlgorithm.Enabled := True;
-  bBrowse.Enabled := True;
+  eFile.RightButton.Enabled := True;
 
   bCalculate.Caption := FLang.GetString(LID_HASH_CALCULATE);
   bCalculate.Cancel := False;
@@ -282,10 +284,10 @@ begin
     mmAbout.Caption := Format(LID_ABOUT, [Application.Title]);
 
     // Buttons and labels
-    eFile.EditLabel.Caption := GetString(LID_FILE) +':';
-    eHash.EditLabel.Caption := GetString(LID_HASH) +':';
-    bBrowse.Hint := GetString(LID_BROWSE_FOR_FILE);
-    bCopyToClipboard.Hint := GetString(LID_COPY_TO_CLIPBOARD);
+    lFile.Caption := GetString(LID_FILE) +':';
+    lHash.Caption := GetString(LID_HASH) +':';
+    eFile.RightButton.Hint := GetString(LID_BROWSE_FOR_FILE);
+    eHash.RightButton.Hint := GetString(LID_COPY_TO_CLIPBOARD);
     bVerify.Caption := GetString(LID_HASH_VERIFY);
     bCalculate.Caption := GetString(LID_HASH_CALCULATE);
   end;  //of with
@@ -343,12 +345,12 @@ begin
   end;  //of try
 end;
 
-procedure TMain.bCopyToClipboardClick(Sender: TObject);
+procedure TMain.eHashRightButtonClick(Sender: TObject);
 begin
   Clipboard.AsText := eHash.Text;
 end;
 
-procedure TMain.bBrowseClick(Sender: TObject);
+procedure TMain.eFileRightButtonClick(Sender: TObject);
 var
   FileName: string;
 
