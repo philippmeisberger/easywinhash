@@ -1,4 +1,7 @@
-program WinHash;
+program EasyWinHash;
+
+{$R 'changelog.res' 'changelog.rc'}
+{$R 'description.res' 'description.rc'}
 
 uses
   Forms,
