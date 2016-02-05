@@ -1,8 +1,8 @@
 { *********************************************************************** }
 {                                                                         }
-{ WinHash Main Unit                                                       }
+{ EasyWinHash Main Unit                                                   }
 {                                                                         }
-{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -13,8 +13,8 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Buttons, Vcl.ClipBrd,
-  System.Win.TaskbarCore, Vcl.Taskbar, CryptoAPI, PMCWLanguageFile,
-  FileHashThread, PMCWOSUtils, PMCWUpdater, PMCWAbout;
+  System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, CryptoAPI, PMCWOSUtils,
+  PMCWLanguageFile, FileHashThread, PMCWUpdater, PMCWAbout;
 
 type
   { TMain }
@@ -71,10 +71,6 @@ implementation
 
 { TMain }
 
-{ TMain.FormCreate
-
-  VCL event that is called when form is being created. }
-
 procedure TMain.FormCreate(Sender: TObject);
 var
   i, AlgorithmIndex: Integer;
@@ -84,13 +80,12 @@ begin
   FLang := TLanguageFile.Create(Self);
   FLang.Interval := 100;
   FLang.BuildLanguageMenu(MainMenu, mmLang);
-  FLang.Update();
 
   // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create(Self, 'WinHash', FLang);
+  FUpdateCheck := TUpdateCheck.Create(Self, 'EasyWinHash', FLang);
 
   // Check for update on startup
-  //FUpdateCheck.CheckForUpdate(False);
+  FUpdateCheck.CheckForUpdate(False);
 
   // Enable drag & drop support
   DragAcceptFiles(Handle, True);
@@ -154,19 +149,11 @@ begin
   end;  //of begin
 end;
 
-{ TMain.FormDestroy
-
-  VCL event that is called when form is being destroyed. }
-
 procedure TMain.FormDestroy(Sender: TObject);
 begin
   FUpdateCheck.Free;
   FLang.Free;
 end;
-
-{ TMain.OnBeginHashing
-
-  Event method that is called when hashing starts . }
 
 procedure TMain.OnBeginHashing(Sender: TObject);
 begin
@@ -178,10 +165,6 @@ begin
   bBrowse.Enabled := False;
 end;
 
-{ TMain.OnHashing
-
-  Event method that is called when hashing is in progress. }
-
 procedure TMain.OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
 begin
   pbProgress.Max := AFileSize;
@@ -190,18 +173,11 @@ begin
   TaskBar.ProgressValue := TaskBar.ProgressValue + AProgress;
 end;
 
-{ TMain.OnHashingError
-
-  Event method that is called when an error has occured during hashing. }
-
 procedure TMain.OnHashingError(Sender: TThread; const AErrorMessage: string);
 begin
   FLang.ShowException(FLang.GetString([45, 18]), AErrorMessage);
+  OnEndHashing(nil, '');
 end;
-
-{ TMain.OnEndHashing
-
-  Event method that is called when hashing ends. }
 
 procedure TMain.OnEndHashing(Sender: TThread; const AHash: string);
 begin
@@ -217,6 +193,9 @@ begin
   bVerify.Cancel := False;
   bVerify.Enabled := True;
 
+  if AHash.IsEmpty then
+    Exit;
+
   eHash.Text := AHash;
   eHash.SelectAll;
 
@@ -229,10 +208,6 @@ begin
 
   MessageBeep(MB_ICONINFORMATION);
 end;
-
-{ private TMain.OnUpdate
-
-  Event that is called by TUpdateCheck when an update is available. }
 
 procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
 var
@@ -281,10 +256,6 @@ begin
   end;  //of begin
 end;
 
-{ TMain.OnVerified
-
-  Event method that is called when hash has been verified. }
-
 procedure TMain.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
   if AMatches then
@@ -292,10 +263,6 @@ begin
   else
     FLang.ShowMessage(FLang.GetString(42), mtWarning);
 end;
-
-{ private TMain.SetLanguage
-
-  Updates all component captions with new language text. }
 
 procedure TMain.SetLanguage(Sender: TObject);
 begin
@@ -322,10 +289,6 @@ begin
   end;  //of with
 end;
 
-{ TMain.WMDropFiles
-
-  Event method that is called when user drops a file on form. }
-
 procedure TMain.WMDropFiles(var AMsg: TMessage);
 var
   BufferSize: Integer;
@@ -338,10 +301,6 @@ begin
   eFile.Text := StrPas(FileName);
   DragFinish(AMsg.WParam);
 end;
-
-{ TMain.bCalculateClick
-
-  Event method that is called when user wants to start hash calculation. }
 
 procedure TMain.bCalculateClick(Sender: TObject);
 begin
@@ -382,18 +341,10 @@ begin
   end;  //of try
 end;
 
-{ TMain.bBrowseClick
-
-  Event method that is called when user copies the hash into clipboard. }
-
 procedure TMain.bCopyToClipboardClick(Sender: TObject);
 begin
   Clipboard.AsText := eHash.Text;
 end;
-
-{ TMain.bBrowseClick
-
-  Event method that is called when user browses for a file. }
 
 procedure TMain.bBrowseClick(Sender: TObject);
 var
@@ -403,10 +354,6 @@ begin
   if PromptForFileName(FileName) then
     eFile.Text := FileName;
 end;
-
-{ TMain.bVerifyClick
-
-  Event method that is called when user wants to verify a hash. }
 
 procedure TMain.bVerifyClick(Sender: TObject);
 begin
@@ -449,18 +396,10 @@ begin
   end;  //of try
 end;
 
-{ TMain.mmUpdateClick
-
-  MainMenu entry that allows users to manually search for updates. }
-
 procedure TMain.mmUpdateClick(Sender: TObject);
 begin
   FUpdateCheck.CheckForUpdate(True);
 end;
-
-{ TMain.mmInstallCertificateClick
-
-  MainMenu entry that allows to install the PM Code Works certificate. }
 
 procedure TMain.mmInstallCertificateClick(Sender: TObject);
 var
@@ -481,19 +420,10 @@ begin
   end;  //of try
 end;
 
-{ TMain.mmReportClick
-
-  MainMenu entry that allows users to easily report a bug by opening the web
-  browser and using the "report bug" formular. }
-
 procedure TMain.mmReportClick(Sender: TObject);
 begin
   OpenUrl(URL_CONTACT);
 end;
-
-{ TMain.mmInfoClick
-
-  MainMenu entry that shows a info page with build number and version history. }
 
 procedure TMain.mmInfoClick(Sender: TObject);
 var

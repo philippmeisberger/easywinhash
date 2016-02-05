@@ -1,8 +1,8 @@
 { *********************************************************************** }
 {                                                                         }
-{ Windows CryptoAPI Unit v1.0.1                                           }
+{ Windows CryptoAPI Unit v1.0.2                                           }
 {                                                                         }
-{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -14,61 +14,210 @@ uses
   Windows, Classes, SysUtils, WinCrypt;
 
 type
-  { TBase64Flag }
+  /// <summary>
+  ///   General flags for the Base64 encoding/decoding.
+  /// </summary>
   TBase64Flag = (
     bfHeader, bfDefault, bfBinary, bfRequestHeader, bfHex, bfHexAscii,
     bfBase64Any, bfAny, bfHexAny, bfX509CrlHeader, bfHexAddr, bfHexAsciiAddr,
     bfHexRaw, bfStrict
   );
 
-  { TBase64AdditionalFlag }
+  /// <summary>
+  ///   Additional flags for the Base64 encoding/decoding.
+  /// </summary>
   TBase64AdditionalFlag = (
-    bfNone, bfNoCRLF, bfNoCR
+
+    /// <summary>
+    ///   No special options.
+    /// </summary>
+    bfNone,
+
+    /// <summary>
+    ///   Output has no CRLF at the end.
+    /// </summary>
+    bfNoCRLF,
+
+    /// <summary>
+    ///   Output has no CR at the end.
+    /// </summary>
+    bfNoCR
   );
 
-  { TBase64 }
+  /// <summary>
+  ///   A <c>TBase64</c> is a Base64 encoder/decoder.
+  /// </summary>
   TBase64 = class(TObject)
   private
     FFlag: TBase64Flag;
   public
+    /// <summary>
+    ///   Constructor for creating a <c>TBase64</c> instance.
+    /// </summary>
+    /// <param name="AFlag">
+    ///   A <see cref="TBase64Flag"/> special encoding flag that influences the
+    ///   output.
+    /// </param>
     constructor Create(AFlag: TBase64Flag = bfDefault);
+
+    /// <summary>
+    ///   Decodes a Base64 string value to a string.
+    /// </summary>
+    /// <param name="ABase64">
+    ///   A Base64 string value.
+    /// </param>
+    /// <returns>
+    ///   The decoded Base64 string value.
+    /// </returns>
     function Decode(const ABase64: string): string;
+
+    /// <summary>
+    ///   Decodes a Base64 binary value to a string.
+    /// </summary>
+    /// <param name="ABase64">
+    ///   A Base64 binary value.
+    /// </param>
+    /// <returns>
+    ///   The decoded Base64 string value.
+    /// </returns>
     function DecodeBinary(const ABase64: TBytes): string; overload;
+
+    /// <summary>
+    ///   Decodes a Base64 string to a binary string.
+    /// </summary>
+    /// <param name="ABase64">
+    ///   A Base64 string value.
+    /// </param>
+    /// <returns>
+    ///   The decoded Base64 binary value.
+    /// </returns>
     function DecodeBinary(const ABase64: string): TBytes; overload;
+
+    /// <summary>
+    ///   Encodes a string value to a Base64 string.
+    /// </summary>
+    /// <param name="ABase64">
+    ///   A Base64 string value.
+    /// </param>
+    /// <param name="AAdditionalFlag">
+    ///   A <see cref="TBase64AdditionalFlag"/> additional encoding flag.
+    /// </param>
+    /// <returns>
+    ///   The encoded Base64 string value.
+    /// </returns>
     function Encode(const AString: string;
       AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
+
+    /// <summary>
+    ///   Encodes a binary value to a Base64 string.
+    /// </summary>
+    /// <param name="AData">
+    ///   A binary value.
+    /// </param>
+    /// <param name="AAdditionalFlag">
+    ///   A <see cref="TBase64AdditionalFlag"/> additional encoding flag.
+    /// </param>
+    /// <returns>
+    ///   The encoded Base64 string value.
+    /// </returns>
     function EncodeBinary(const AData: TBytes;
       AAdditionalFlag: TBase64AdditionalFlag = bfNone): string; overload;
+
+    /// <summary>
+    ///   Encodes a string value to a Base64 binary value.
+    /// </summary>
+    /// <param name="AString">
+    ///   A string value.
+    /// </param>
+    /// <param name="AAdditionalFlag">
+    ///   A <see cref="TBase64AdditionalFlag"/> additional encoding flag.
+    /// </param>
+    /// <returns>
+    ///   The encoded Base64 binary value.
+    /// </returns>
     function EncodeBinary(const AString: string;
       AAdditionalFlag: TBase64AdditionalFlag = bfNone): TBytes; overload;
-    { external }
+
+    /// <summary>
+    ///   A <see cref="TBase64Flag"/> special encoding flag that influences the
+    ///   output.
+    /// </summary>
     property Flag: TBase64Flag read FFlag write FFlag;
   end;
 
-  { THashAlgorithm }
+  /// <summary>
+  ///   Possible hash algorithms.
+  /// </summary>
   THashAlgorithm = (
-    haMd5, haSha, haSha256, haSha384, haSha512
+
+    /// <summary>
+    ///   The MD5 hash algorithm.
+    /// </summary>
+    /// <remarks>
+    ///   Do not use! Better use a SHA hash algorithm.
+    /// </remarks>
+    haMd5,
+
+    /// <summary>
+    ///   The SHA-160 better known as SHA-1 hash algorithm.
+    /// </summary>
+    haSha,
+    /// <summary>
+    ///   The SHA-256 hash algorithm.
+    /// </summary>
+    haSha256,
+
+    /// <summary>
+    ///   The SHA-384 hash algorithm.
+    /// </summary>
+    haSha384,
+
+    /// <summary>
+    ///   The SHA-512 hash algorithm.
+    /// </summary>
+    haSha512
   );
 
-  { TCryptAlgorithm }
+  /// <summary>
+  ///   Possible encryption algorithms.
+  /// </summary>
   TCryptAlgorithm = (
-    caAes128, caAes192, caAes256
+
+    /// <summary>
+    ///   The AES-128 encryption algorithm.
+    /// </summary>
+    caAes128,
+
+    /// <summary>
+    ///   The AES-192 encryption algorithm.
+    /// </summary>
+    caAes192,
+
+    /// <summary>
+    ///   The AES-256 encryption algorithm.
+    /// </summary>
+    caAes256
   );
 
   { Events }
   TFileHashEvent = procedure(Sender: TObject; const AProgress, AProgressMax: Int64;
     var ACancel: Boolean) of object;
 
-  { TCryptBase }
+  /// <summary>
+  ///   The base class for encryption and hashing operations.
+  /// </summary>
   TCryptBase = class(TObject)
   protected
-    function DeriveKey(ACryptProvider: HCRYPTPROV; const APassword: string;
+    function DeriveKey(ACryptProvider: TCryptProv; const APassword: string;
       AHashAlgorithm: THashAlgorithm;
-      APasswordEncryptionAlgorithm: TCryptAlgorithm): HCRYPTKEY;
-    function HashToString(AHashHandle: HCRYPTHASH): string;
+      APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
+    function HashToString(AHashHandle: TCryptHash): string;
   end;
 
-  { THash }
+  /// <summary>
+  ///   A <c>THash</c> provides methods to calculate and verify hash values from
+  ///  strings and files.
+  /// </summary>
   THash = class(TCryptBase)
   private
     FOnProgress: TFileHashEvent;
@@ -76,80 +225,220 @@ type
     FOnFinish: TNotifyEvent;
     FHashAlgorithm: THashAlgorithm;
   public
-    constructor Create(AHashAlgorithm: THashAlgorithm); overload;
-    function GenerateSalt(ALength: Cardinal): string;
+    /// <summary>
+    ///   Constructor for creating a <c>THash</c> instance.
+    /// </summary>
+    /// <param name="AHashAlgorithm">
+    ///   The hash algorithm to use.
+    /// </param>
+    constructor Create(AHashAlgorithm: THashAlgorithm);
+
+    /// <summary>
+    ///   Generates a random salt of specified length.
+    /// </summary>
+    /// <param name="ALength">
+    ///   The length of the salt in bytes.
+    /// </param>
+    /// <returns>
+    ///   The salt.
+    /// </returns>
+    function GenerateSalt(ALength: DWORD): string;
+
+    /// <summary>
+    ///   Creates a hash from a string.
+    /// </summary>
+    /// <param name="AString">
+    ///   The string to be hashed.
+    /// </param>
+    /// <returns>
+    ///   The hash.
+    /// </returns>
     function Hash(const AString: string): string;
+
+    /// <summary>
+    ///   Creates a hash from a file.
+    /// </summary>
+    /// <param name="AFileName">
+    ///   The absolute path to a file.
+    /// </param>
+    /// <returns>
+    ///   The hash of the file.
+    /// </returns>
     function HashFile(const AFileName: TFileName): string;
+
+    /// <summary>
+    ///   Creates a salted hash from a string.
+    /// </summary>
+    /// <param name="AString">
+    ///   The string to be hashed.
+    /// </param>
+    /// <param name="ASalt">
+    ///   The used salt.
+    /// </param>
+    /// <returns>
+    ///   The salted hash.
+    /// </returns>
     function HashSalted(const AString, ASalt: string): string;
+
+    /// <summary>
+    ///   Verifies the hash from a string.
+    /// </summary>
+    /// <param name="AHash">
+    ///   The hash to be verified.
+    /// </param>
+    /// <param name="AString">
+    ///   The string to be verified.
+    /// </param>
+    /// <returns>
+    ///   <c>True</c> if the hash matches to the string or <c>False</c> otherwise.
+    /// </returns>
     function VerifyHash(const AHash, AString: string): Boolean;
+
+    /// <summary>
+    ///   Verifies the salted hash from a string.
+    /// </summary>
+    /// <param name="AHash">
+    ///   The hash to be verified.
+    /// </param>
+    /// <param name="AString">
+    ///   The string to be verified.
+    /// </param>
+    /// <param name="ASalt">
+    ///   The used salt.
+    /// </param>
+    /// <returns>
+    ///   <c>True</c> if the salted hash matches to the string or <c>False</c>
+    ///   otherwise.
+    /// </returns>
     function VerifyHashSalted(const AHash, AString, ASalt: string): Boolean;
+
+    /// <summary>
+    ///   Verifies the hash from a file.
+    /// </summary>
+    /// <param name="AHash">
+    ///   The hash to be verified.
+    /// </param>
+    /// <param name="AFileName">
+    ///   The absolute path to a file.
+    /// </param>
+    /// <returns>
+    ///   <c>True</c> if the hash matches to the file or <c>False</c> otherwise.
+    /// </returns>
     function VerifyFileHash(const AHash, AFileName: TFileName): Boolean;
-    { external }
+
+    /// <summary>
+    ///   Gets or sets the used hash algorithm.
+    /// </summary>
     property Algorithm: THashAlgorithm read FHashAlgorithm write FHashAlgorithm;
+
+    /// <summary>
+    ///   Event that is called when hash calculation has finished.
+    /// </summary>
     property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
+
+    /// <summary>
+    ///   Event that is called during hash calculation.
+    /// </summary>
     property OnProgress: TFileHashEvent read FOnProgress write FOnProgress;
+
+    /// <summary>
+    ///   Event that is called when hash calculation has started.
+    /// </summary>
     property OnStart: TNotifyEvent read FOnStart write FOnStart;
   end;
 
-  { THMac }
+  /// <summary>
+  ///   A <c>THMac</c> provides methods to calculate keyed hash values (HMACs)
+  ///   from strings.
+  /// </summary>
   THMac = class(TCryptBase)
   private
     FHashAlgorithm: THashAlgorithm;
     FPasswordEncryptionAlgorithm: TCryptAlgorithm;
   public
+    /// <summary>
+    ///   Constructor for creating a <c>THMac</c> instance.
+    /// </summary>
+    /// <param name="AHashAlgorithm">
+    ///   The hash algorithm to use.
+    /// </param>
+    /// <param name="APasswordEncryptionAlgorithm">
+    ///   The encryption algorithm to use.
+    /// </param>
     constructor Create(AHashAlgorithm: THashAlgorithm;
       APasswordEncryptionAlgorithm: TCryptAlgorithm = caAes128);
-    function HMac(const AMessage, APassword: string): string;
-  end;
 
-const
-  { Enumeration to additional Base64 flag translator }
-  TBase64AddFlag: array[TBase64AdditionalFlag] of Cardinal = (
-    0,
-    CRYPT_STRING_NOCRLF,
-    CRYPT_STRING_NOCR
-  );
-
-  { Enumeration to hash algorithm ID translator }
-  THashAlgId: array[THashAlgorithm] of Cardinal = (
-    CALG_MD5,
-    CALG_SHA,
-    CALG_SHA_256,
-    CALG_SHA_384,
-    CALG_SHA_512
-  );
-
-  { Enumeration to encryption algorithm ID translator }
-  TCryptAlgId: array[TCryptAlgorithm] of Cardinal = (
-    CALG_AES_128,
-    CALG_AES_192,
-    CALG_AES_256
-  );
-
-{$IFNDEF UNICODE}
-{ Backward compatibility for older Delphi versions }
-type
-  TBytes: array of Byte;
-
-function BytesOf(AString: string): TBytes;
-begin
-  Result := TBytes(AString);
-end;
-
-function StringOf(ABytes: TBytes): string;
-begin
-  Result := PChar(ABytes);
-end;
-{$ENDIF}
-
+    /// <summary>
+    ///   Creates an HMAC from a string.
+    /// </summary>
+    /// <param name="AString">
+    ///   The string to be hashed.
+    /// </param>
+    /// <param name="APassword">
+    ///   The used password for encryption.
+    /// </param>
+    /// <returns>
+    ///   The HMAC.
+    /// </returns>
+    function HMac(const AString, APassword: string): string;
+  end experimental;
 
 implementation
 
+type
+  TBase64AdditionalFlagHelper = record helper for TBase64AdditionalFlag
+    function GetAdditionalFlag(): DWORD;
+  end;
+
+  THashAlgorithmHelper = record helper for THashAlgorithm
+    function GetHashAlgorithm(): ALG_ID;
+  end;
+
+  TCryptAlgorithmHelper = record helper for TCryptAlgorithm
+    function GetEncryptionAlgorithm(): ALG_ID;
+  end;
+
+{ TBase64AdditionalFlagHelper }
+
+function TBase64AdditionalFlagHelper.GetAdditionalFlag(): DWORD;
+begin
+  Result := 0;
+
+  case Self of
+    bfNoCRLF: Result := CRYPT_STRING_NOCRLF;
+    bfNoCR:   Result := CRYPT_STRING_NOCR;
+  end;  //of case
+end;
+
+{ THashAlgorithmHelper }
+
+function THashAlgorithmHelper.GetHashAlgorithm(): ALG_ID;
+begin
+  Result := 0;
+
+  case Self of
+    haMd5:    Result := CALG_MD5;
+    haSha:    Result := CALG_SHA_160;
+    haSha256: Result := CALG_SHA_256;
+    haSha384: Result := CALG_SHA_384;
+    haSha512: Result := CALG_SHA_512;
+  end;  //of case
+end;
+
+{ TCryptAlgorithmHelper }
+
+function TCryptAlgorithmHelper.GetEncryptionAlgorithm(): ALG_ID;
+begin
+  Result := 0;
+
+  case Self of
+    caAes128: Result := CALG_AES_128;
+    caAes192: Result := CALG_AES_192;
+    caAes256: Result := CALG_AES_256;
+  end;  //of begin
+end;
+
 { TBase64 }
-
-{ public TBase64.Create
-
-  Constructor for creating a TBase64 instance. }
 
 constructor TBase64.Create(AFlag: TBase64Flag = bfDefault);
 begin
@@ -157,31 +446,19 @@ begin
   FFlag := AFlag;
 end;
 
-{ public TBase64.Decode
-
-  Decodes a Base64 string value to a string. }
-
 function TBase64.Decode(const ABase64: string): string;
 begin
   Result := StringOf(DecodeBinary(ABase64));
 end;
-
-{ public TBase64.DecodeBinary
-
-  Decodes a Base64 binary value to a string. }
 
 function TBase64.DecodeBinary(const ABase64: TBytes): string;
 begin
   Result := StringOf(DecodeBinary(StringOf(ABase64)));
 end;
 
-{ public TBase64.DecodeBinary
-
-  Decodes a Base64 string to a binary string. }
-
 function TBase64.DecodeBinary(const ABase64: string): TBytes;
 var
-  BufferSize, Skipped, Flags: Cardinal;
+  BufferSize, Skipped, Flags: DWORD;
 
 begin
   // Retrieve and set required buffer size
@@ -197,45 +474,33 @@ begin
     raise Exception.Create(SysErrorMessage(GetLastError()));
 end;
 
-{ public TBase64.Encode
-
-  Encodes a string value to a Base64 string. }
-
 function TBase64.Encode(const AString: string;
   AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
 begin
   Result := EncodeBinary(BytesOf(AString), AAdditionalFlag);
 end;
 
-{ public TBase64.EncodeBinary
-
-  Encodes a binary value to a Base64 string. }
-
 function TBase64.EncodeBinary(const AData: TBytes;
   AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
 var
-  BufferSize: Cardinal;
+  BufferSize: DWORD;
 
 begin
   // Retrieve and set required buffer size
   if not CryptBinaryToString(Pointer(AData), Length(AData), Ord(FFlag) +
-    TBase64AddFlag[AAdditionalFlag], nil, BufferSize) then
+    AAdditionalFlag.GetAdditionalFlag(), nil, BufferSize) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   SetLength(Result, BufferSize);
 
   // Encode string
   if not CryptBinaryToString(Pointer(AData), Length(AData), Ord(FFlag) +
-    TBase64AddFlag[AAdditionalFlag], PChar(Result), BufferSize) then
+    AAdditionalFlag.GetAdditionalFlag(), PChar(Result), BufferSize) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   // Remove null-terminator
   Result := PChar(Result);
 end;
-
-{ public TBase64.EncodeBinary
-
-  Encodes a string value to a Base64 binary value. }
 
 function TBase64.EncodeBinary(const AString: string;
   AAdditionalFlag: TBase64AdditionalFlag = bfNone): TBytes;
@@ -250,17 +515,17 @@ end;
 
   Derives a symmetric key from a password string. }
 
-function TCryptBase.DeriveKey(ACryptProvider: HCRYPTPROV;
+function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
   const APassword: string; AHashAlgorithm: THashAlgorithm;
-  APasswordEncryptionAlgorithm: TCryptAlgorithm): HCRYPTKEY;
+  APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
 var
-  PasswordHash: HCRYPTHASH;
+  PasswordHash: TCryptHash;
 
 begin
   Result := 0;
 
   // Init password hash object
-  if not CryptCreateHash(ACryptProvider, THashAlgId[AHashAlgorithm], 0, 0,
+  if not CryptCreateHash(ACryptProvider, AHashAlgorithm.GetHashAlgorithm(), 0, 0,
     PasswordHash) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
@@ -270,7 +535,7 @@ begin
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Derive symmetric key from password
-    if not CryptDeriveKey(ACryptProvider, TCryptAlgId[APasswordEncryptionAlgorithm],
+    if not CryptDeriveKey(ACryptProvider, APasswordEncryptionAlgorithm.GetEncryptionAlgorithm(),
       PasswordHash, 0, Result) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
@@ -283,10 +548,10 @@ end;
 
   Creates a string from a hash in buffer. }
 
-function TCryptBase.HashToString(AHashHandle: HCRYPTHASH): string;
+function TCryptBase.HashToString(AHashHandle: TCryptHash): string;
 var
   Hash: TBytes;
-  HashLength, HashSize: Cardinal;
+  HashLength, HashSize: DWORD;
   i, Bytes: Byte;
 
 begin
@@ -315,23 +580,15 @@ end;
 
 { THash }
 
-{ public THash.Create
-
-  Constructor for creating a THash instance. }
-
 constructor THash.Create(AHashAlgorithm: THashAlgorithm);
 begin
   inherited Create;
   FHashAlgorithm := AHashAlgorithm;
 end;
 
-{ public THash.GenerateSalt
-
-  Generates a random salt of specified length. }
-
-function THash.GenerateSalt(ALength: Cardinal): string;
+function THash.GenerateSalt(ALength: DWORD): string;
 var
-  CryptProvider: HCRYPTPROV;
+  CryptProvider: TCryptProv;
   Salt: TBytes;
   Base64: TBase64;
 
@@ -357,15 +614,10 @@ begin
   end;  //of try
 end;
 
-{ public THash.Hash
-
-  Uses the internal Windows implementation of well-known hash algorithms e.g.
-  SHA or MD5 to create a hash from a string. }
-
 function THash.Hash(const AString: string): string;
 var
-  CryptProvider: HCRYPTPROV;
-  HashHandle: HCRYPTHASH;
+  CryptProvider: TCryptProv;
+  HashHandle: TCryptHash;
 
 begin
   if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
@@ -373,7 +625,8 @@ begin
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   // Init hash object
-  if not CryptCreateHash(CryptProvider, THashAlgId[FHashAlgorithm], 0, 0, HashHandle) then
+  if not CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0, 0,
+    HashHandle) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   try
@@ -389,18 +642,13 @@ begin
   end;  //of try
 end;
 
-{ public THash.HashFile
-
-  Uses the internal Windows implementation of well-known hash algorithms e.g.
-  SHA or MD5 to create a hash from a file. }
-
 function THash.HashFile(const AFileName: TFileName): string;
 var
-  CryptProvider: HCRYPTPROV;
-  HashHandle: HCRYPTHASH;
+  CryptProvider: TCryptProv;
+  HashHandle: TCryptHash;
   Buffer: array[0..1023] of Byte;
   FileToHash: TFileStream;
-  BytesRead: Cardinal;
+  BytesRead: LongWord;
   Cancel: Boolean;
 
 begin
@@ -413,7 +661,8 @@ begin
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Init hash object
-    if not CryptCreateHash(CryptProvider, THashAlgId[FHashAlgorithm], 0, 0, HashHandle) then
+    if not CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0,
+      0, HashHandle) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Notify start of file hashing
@@ -454,37 +703,20 @@ begin
   end;  //of try
 end;
 
-{ public THash.Hash
-
-  Uses the internal Windows implementation of well-known hash algorithms e.g.
-  SHA or MD5 to create a salted hash from a string. }
-
 function THash.HashSalted(const AString, ASalt: string): string;
 begin
   Result := Hash(ASalt + AString);
 end;
-
-{ public THash.VerifyHash
-
-  Verifies a hash from a string. }
 
 function THash.VerifyHash(const AHash, AString: string): Boolean;
 begin
   Result := AnsiSameStr(AHash, Hash(AString));
 end;
 
-{ public THash.VerifyHashSalted
-
-  Verifies a salted hash from a string. }
-
 function THash.VerifyHashSalted(const AHash, AString, ASalt: string): Boolean;
 begin
   Result := AnsiSameStr(AHash, HashSalted(AString, ASalt));
 end;
-
-{ public THash.VerifyFileHash
-
-  Verifies a hash from a file. }
 
 function THash.VerifyFileHash(const AHash, AFileName: TFileName): Boolean;
 begin
@@ -494,10 +726,6 @@ end;
 
 { THMac }
 
-{ public THMac.Create
-
-  Constructor for creating a THMac instance. }
-
 constructor THMac.Create(AHashAlgorithm: THashAlgorithm;
   APasswordEncryptionAlgorithm: TCryptAlgorithm = caAes128);
 begin
@@ -506,17 +734,12 @@ begin
   FPasswordEncryptionAlgorithm := APasswordEncryptionAlgorithm;
 end;
 
-{ public THMac.HMac
-
-  Uses the internal Windows implementation of well-known hash algorithms e.g.
-  SHA or MD5 to create a HMAC from a message with password. }
-
-function THMac.HMac(const AMessage, APassword: string): string;
+function THMac.HMac(const AString, APassword: string): string;
 var
-  CryptProvider: HCRYPTPROV;
-  HMacHash: HCRYPTHASH;
+  CryptProvider: TCryptProv;
+  HMacHash: TCryptHash;
   Hmac: HMAC_INFO;
-  Key: HCRYPTKEY;
+  Key: TCryptKey;
 
 begin
   if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
@@ -533,14 +756,14 @@ begin
 
     // Init HMAC object
     FillChar(Hmac, SizeOf(Hmac), 0);
-    Hmac.HashAlgId := THashAlgId[FHashAlgorithm];
+    Hmac.HashAlgId := FHashAlgorithm.GetHashAlgorithm();
 
     // Set HMAC parameters
     if not CryptSetHashParam(HMacHash, HP_HMAC_INFO, @Hmac, 0) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Create hash of the string
-    if not CryptHashData(HMacHash, PChar(AMessage), Length(AMessage), 0) then
+    if not CryptHashData(HMacHash, PChar(AString), Length(AString), 0) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     Result := HashToString(HMacHash);

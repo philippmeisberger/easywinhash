@@ -8,7 +8,7 @@ uses
 
 begin
   Application.Initialize;
-  Application.Title := 'WinHash';
+  Application.Title := 'EasyWinHash';
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(TMain, Main);
   Application.Run;

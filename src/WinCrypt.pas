@@ -2,7 +2,7 @@
 {                                                                         }
 { Windows Cryptography Unit                                               }
 {                                                                         }
-{ Copyright (c) 2011-2015 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -14,7 +14,7 @@ uses
   Windows;
 
 type
-  ALG_ID     = Cardinal;
+  ALG_ID     = UINT;
   HCRYPTPROV = ULONG_PTR;
   TCryptProv = HCRYPTPROV;
 

@@ -1,7 +1,7 @@
 object Main: TMain
   Left = 192
   Top = 124
-  Caption = 'WinHash'
+  Caption = 'EasyWinHash'
   ClientHeight = 177
   ClientWidth = 400
   Color = clBtnFace
