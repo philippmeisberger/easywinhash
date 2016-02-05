@@ -10,4 +10,4 @@
 @SET PlatformSDK=
 
 cd src\
-msbuild WinHash.dproj
+msbuild EasyWinHash.dproj
