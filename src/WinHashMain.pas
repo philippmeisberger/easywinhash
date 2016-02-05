@@ -67,6 +67,7 @@ var
 
 implementation
 
+{$I LanguageIDs.inc}
 {$R *.dfm}
 
 { TMain }
@@ -175,7 +176,7 @@ end;
 
 procedure TMain.OnHashingError(Sender: TThread; const AErrorMessage: string);
 begin
-  FLang.ShowException(FLang.GetString([45, 18]), AErrorMessage);
+  FLang.ShowException(FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), AErrorMessage);
   OnEndHashing(nil, '');
 end;
 
@@ -185,11 +186,11 @@ begin
   cbxAlgorithm.Enabled := True;
   bBrowse.Enabled := True;
 
-  bCalculate.Caption := FLang.GetString(45);
+  bCalculate.Caption := FLang.GetString(LID_HASH_CALCULATE);
   bCalculate.Cancel := False;
   bCalculate.Enabled := True;
 
-  bVerify.Caption := FLang.GetString(46);
+  bVerify.Caption := FLang.GetString(LID_HASH_VERIFY);
   bVerify.Cancel := False;
   bVerify.Enabled := True;
 
@@ -214,11 +215,11 @@ var
   Updater: TUpdate;
 
 begin
-  mmUpdate.Caption := FLang.GetString(24);
+  mmUpdate.Caption := FLang.GetString(LID_UPDATE_DOWNLOAD);
 
   // Ask user to permit download
-  if (FLang.ShowMessage(FLang.Format(21, [ANewBuild]), FLang.GetString(22),
-    mtConfirmation) = IDYES) then
+  if (FLang.ShowMessage(FLang.Format(LID_UPDATE_AVAILABLE, [ANewBuild]),
+    FLang.GetString(LID_UPDATE_CONFIRM_DOWNLOAD), mtConfirmation) = IDYES) then
   begin
     // init TUpdate instance
     Updater := TUpdate.Create(Self, FLang);
@@ -227,17 +228,18 @@ begin
       // Set updater options
       with Updater do
       begin
-        FileNameLocal := 'WinHash Setup.exe';
+        FileNameLocal := 'EasyWinHash Setup.exe';
 
       {$IFDEF WIN64}
-        FileNameRemote := 'winhash_setup64.exe';
+        FileNameRemote := 'easywinhash_setup64.exe';
       {$ELSE}
         // Ask user to permit download of 64-Bit version
         if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
-          FLang.Format([34, 35], [Application.Title]), mtConfirmation) = IDYES)) then
-          FileNameRemote := 'winhash_setup64.exe'
+          FLang.Format([LID_UPDATE_64BIT, LID_UPDATE_64BIT_CONFIRM],
+          [Application.Title]), mtConfirmation) = IDYES)) then
+          FileNameRemote := 'easywinhash_setup64.exe'
         else
-          FileNameRemote := 'winhash_setup.exe';
+          FileNameRemote := 'easywinhash_setup.exe';
       {$ENDIF}
       end;  //of begin
 
@@ -245,7 +247,7 @@ begin
       if Updater.Execute() then
       begin
         // Caption "Search for update"
-        mmUpdate.Caption := FLang.GetString(15);
+        mmUpdate.Caption := FLang.GetString(LID_UPDATE_SEARCH);
         mmUpdate.Enabled := False;
         Updater.LaunchSetup();
       end;  //of begin
@@ -259,9 +261,9 @@ end;
 procedure TMain.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
   if AMatches then
-    FLang.ShowMessage(FLang.GetString(41), mtInformation)
+    FLang.ShowMessage(FLang.GetString(LID_HASH_MATCHES), mtInformation)
   else
-    FLang.ShowMessage(FLang.GetString(42), mtWarning);
+    FLang.ShowMessage(FLang.GetString(LID_HASH_DOES_NOT_MATCH), mtWarning);
 end;
 
 procedure TMain.SetLanguage(Sender: TObject);
@@ -269,23 +271,23 @@ begin
   with FLang do
   begin
     // View menu labels
-    mmView.Caption := GetString(10);
-    mmLang.Caption := GetString(25);
+    mmView.Caption := GetString(LID_VIEW);
+    mmLang.Caption := GetString(LID_SELECT_LANGUAGE);
 
     // Help menu labels
-    mmHelp.Caption := GetString(14);
-    mmUpdate.Caption := GetString(15);
-    mmInstallCertificate.Caption := GetString(16);
-    mmReport.Caption := GetString(26);
-    mmAbout.Caption := Format(17, [Application.Title]);
+    mmHelp.Caption := GetString(LID_HELP);
+    mmUpdate.Caption := GetString(LID_UPDATE_SEARCH);
+    mmInstallCertificate.Caption := GetString(LID_CERTIFICATE_INSTALL);
+    mmReport.Caption := GetString(LID_REPORT_BUG);
+    mmAbout.Caption := Format(LID_ABOUT, [Application.Title]);
 
     // Buttons and labels
-    eFile.EditLabel.Caption := GetString(33) +':';
-    eHash.EditLabel.Caption := GetString(47) +':';
-    bBrowse.Hint := GetString(48);
-    bCopyToClipboard.Hint := GetString(49);
-    bVerify.Caption := GetString(46);
-    bCalculate.Caption := GetString(45);
+    eFile.EditLabel.Caption := GetString(LID_FILE) +':';
+    eHash.EditLabel.Caption := GetString(LID_HASH) +':';
+    bBrowse.Hint := GetString(LID_BROWSE_FOR_FILE);
+    bCopyToClipboard.Hint := GetString(LID_COPY_TO_CLIPBOARD);
+    bVerify.Caption := GetString(LID_HASH_VERIFY);
+    bCalculate.Caption := GetString(LID_HASH_CALCULATE);
   end;  //of with
 end;
 
@@ -314,7 +316,7 @@ begin
     end;  //of begin
 
     if (eFile.Text = '') then
-      raise EAbort.Create(FLang.GetString(43));
+      raise EAbort.Create(FLang.GetString(LID_NO_FILE_SELECTED));
 
     FThread := TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex));
 
@@ -328,16 +330,16 @@ begin
     end;  //of with
 
     // Caption "Cancel"
-    bCalculate.Caption := FLang.GetString(6);
+    bCalculate.Caption := FLang.GetString(LID_CANCEL);
     bCalculate.Cancel := True;
     bVerify.Enabled := False;
 
   except
     on E: EAbort do
-      FLang.EditBalloonTip(eFile.Handle, FLang.GetString(1), E.Message, biWarning);
+      FLang.EditBalloonTip(eFile.Handle, FLang.GetString(LID_WARNING), E.Message, biWarning);
 
     on E: Exception do
-      FLang.ShowException(FLang.GetString([45, 18]), E.Message);
+      FLang.ShowException(FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), E.Message);
   end;  //of try
 end;
 
@@ -367,7 +369,7 @@ begin
     end;  //of begin
 
     if (eHash.Text = '') then
-      raise EAbort.Create(FLang.GetString(44));
+      raise EAbort.Create(FLang.GetString(LID_NO_HASH_ENTERED));
 
     FThread := TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex),
       eHash.Text);
@@ -383,16 +385,16 @@ begin
     end;  //of with
 
     // Caption "Cancel"
-    bVerify.Caption := FLang.GetString(6);
+    bVerify.Caption := FLang.GetString(LID_CANCEL);
     bVerify.Cancel := True;
     bCalculate.Enabled := False;
 
   except
     on E: EAbort do
-      FLang.EditBalloonTip(eHash.Handle, FLang.GetString(1), E.Message, biWarning);
+      FLang.EditBalloonTip(eHash.Handle, FLang.GetString(LID_WARNING), E.Message, biWarning);
 
     on E: Exception do
-      FLang.ShowException(FLang.GetString([46, 18]), E.Message);
+      FLang.ShowException(FLang.GetString([LID_HASH_VERIFY, LID_IMPOSSIBLE]), E.Message);
   end;  //of try
 end;
 
@@ -413,7 +415,8 @@ begin
     if not Updater.CertificateExists() then
       Updater.InstallCertificate()
     else
-      FLang.ShowMessage(FLang.GetString(27), mtInformation);
+      FLang.ShowMessage(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED),
+        mtInformation);
 
   finally
     Updater.Free;

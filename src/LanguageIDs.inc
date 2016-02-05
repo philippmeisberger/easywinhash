@@ -1,0 +1,10 @@
+const
+  LID_HASH_MATCHES        = 41;
+  LID_HASH_DOES_NOT_MATCH = 42;
+  LID_NO_FILE_SELECTED    = 43;
+  LID_NO_HASH_ENTERED     = 44;
+  LID_HASH_CALCULATE      = 45;
+  LID_HASH_VERIFY         = 46;
+  LID_HASH                = 47;
+  LID_BROWSE_FOR_FILE     = 48;
+  LID_COPY_TO_CLIPBOARD   = 49;
