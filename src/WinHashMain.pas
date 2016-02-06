@@ -231,18 +231,7 @@ begin
       with Updater do
       begin
         FileNameLocal := 'EasyWinHash Setup.exe';
-
-      {$IFDEF WIN64}
-        FileNameRemote := 'easywinhash_setup64.exe';
-      {$ELSE}
-        // Ask user to permit download of 64-Bit version
-        if ((TOSVersion.Architecture = arIntelX64) and (FLang.ShowMessage(
-          FLang.Format([LID_UPDATE_64BIT, LID_UPDATE_64BIT_CONFIRM],
-          [Application.Title]), mtConfirmation) = IDYES)) then
-          FileNameRemote := 'easywinhash_setup64.exe'
-        else
-          FileNameRemote := 'easywinhash_setup.exe';
-      {$ENDIF}
+        FileNameRemote := 'easywinhash_setup.exe';
       end;  //of begin
 
       // Successfully downloaded update?
