@@ -165,7 +165,8 @@ begin
   pbProgress.Position := 0;
   pbProgress.State := pbsNormal;
   cbxAlgorithm.Enabled := False;
-  eFile.RightButton.Enabled := False;
+  eFile.Enabled := False;
+  eHash.Enabled := False;
 end;
 
 procedure TMain.OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
@@ -186,7 +187,8 @@ procedure TMain.OnEndHashing(Sender: TThread; const AHash: string);
 begin
   FThread := nil;
   cbxAlgorithm.Enabled := True;
-  eFile.RightButton.Enabled := True;
+  eFile.Enabled := True;
+  eHash.Enabled := True;
 
   bCalculate.Caption := FLang.GetString(LID_HASH_CALCULATE);
   bCalculate.Cancel := False;
@@ -200,7 +202,7 @@ begin
     Exit;
 
   eHash.Text := AHash;
-  eHash.SelectAll;
+  eHash.SetFocus;
 
   // No error?
   if (TaskBar.ProgressState = TTaskBarProgressState.Normal) then
@@ -254,7 +256,11 @@ begin
   if AMatches then
     FLang.ShowMessage(FLang.GetString(LID_HASH_MATCHES), mtInformation)
   else
+  begin
+    Taskbar.ProgressState := TTaskBarProgressState.Error;
+    pbProgress.State := pbsError;
     FLang.ShowMessage(FLang.GetString(LID_HASH_DOES_NOT_MATCH), mtWarning);
+  end;  //of if
 end;
 
 procedure TMain.SetLanguage(Sender: TObject);
@@ -345,7 +351,13 @@ var
 
 begin
   if PromptForFileName(FileName) then
+  begin
     eFile.Text := FileName;
+    TaskBar.ProgressState := TTaskBarProgressState.None;
+    TaskBar.ProgressValue := 0;
+    pbProgress.State := pbsNormal;
+    pbProgress.Position := 0;
+  end;  //of begin
 end;
 
 procedure TMain.bVerifyClick(Sender: TObject);
