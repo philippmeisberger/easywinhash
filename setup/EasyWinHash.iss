@@ -77,43 +77,43 @@ Root: HKCR; Subkey: "*\shell\VerifyHash"; ValueType: string; ValueName: "MUIVerb
 Root: HKCR; Subkey: "*\shell\VerifyHash"; ValueType: string; ValueName: "SubCommands"; ValueData: "EasyWinHash.Verify.MD5;EasyWinHash.Verify.SHA-1;EasyWinHash.Verify.SHA-256;EasyWinHash.Verify.SHA-384;EasyWinHash.Verify.SHA-512"; Tasks: "contextmenuverify"
 
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.MD5"; Flags: dontcreatekey uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.MD5"; ValueType: string; ValueName: ""; ValueData: "MD5"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.MD5"; ValueType: string; ValueName: ""; ValueData: "MD5"; Tasks: "contextmenucalculate"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.MD5\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a MD5 -f ""%1"""; Tasks: "contextmenucalculate"
 
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-1"; Flags: dontcreatekey uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-1"; ValueType: string; ValueName: ""; ValueData: "SHA-1"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-1"; ValueType: string; ValueName: ""; ValueData: "SHA-1"; Tasks: "contextmenucalculate"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-1\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a SHA-1 -f ""%1"""; Tasks: "contextmenucalculate"
 
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-256"; Flags: dontcreatekey uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-256"; ValueType: string; ValueName: ""; ValueData: "SHA-256"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-256"; ValueType: string; ValueName: ""; ValueData: "SHA-256"; Tasks: "contextmenucalculate"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-256\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a SHA-256 -f ""%1"""; Tasks: "contextmenucalculate"
 
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-384"; Flags: dontcreatekey uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-384"; ValueType: string; ValueName: ""; ValueData: "SHA-384"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-384"; ValueType: string; ValueName: ""; ValueData: "SHA-384"; Tasks: "contextmenucalculate"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-384\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a SHA-384 -f ""%1"""; Tasks: "contextmenucalculate"
 
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-512"; Flags: dontcreatekey uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-512"; ValueType: string; ValueName: ""; ValueData: "SHA-512"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-512"; ValueType: string; ValueName: ""; ValueData: "SHA-512"; Tasks: "contextmenucalculate"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Calculate.SHA-512\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a SHA-512 -f ""%1"""; Tasks: "contextmenucalculate"
 
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.MD5"; Flags: dontcreatekey uninsdeletekey
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.MD5"; ValueType: string; ValueName: ""; ValueData: "MD5"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.MD5"; ValueType: string; ValueName: ""; ValueData: "MD5"; Tasks: "contextmenuverify"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.MD5\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a MD5 -f ""%1"" -h"; Tasks: "contextmenuverify"
 
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-1"; Flags: dontcreatekey uninsdeletekey; Tasks: "contextmenuverify"
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-1"; ValueType: string; ValueName: ""; ValueData: "SHA-1"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-1"; Flags: dontcreatekey uninsdeletekey
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-1"; ValueType: string; ValueName: ""; ValueData: "SHA-1"; Tasks: "contextmenuverify"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-1\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a SHA-1 -f ""%1"" -h"; Tasks: "contextmenuverify"
 
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-256"; Flags: dontcreatekey uninsdeletekey; Tasks: "contextmenuverify"
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-256"; ValueType: string; ValueName: ""; ValueData: "SHA-256"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-256"; Flags: dontcreatekey uninsdeletekey
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-256"; ValueType: string; ValueName: ""; ValueData: "SHA-256"; Tasks: "contextmenuverify"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-256\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a SHA-256 -f ""%1"" -h"; Tasks: "contextmenuverify"
 
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-384"; Flags: dontcreatekey uninsdeletekey; Tasks: "contextmenuverify"
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-384"; ValueType: string; ValueName: ""; ValueData: "SHA-384"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-384"; Flags: dontcreatekey uninsdeletekey
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-384"; ValueType: string; ValueName: ""; ValueData: "SHA-384"; Tasks: "contextmenuverify"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-384\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a SHA-384 -f ""%1"" -h"; Tasks: "contextmenuverify"
 
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-512"; Flags: dontcreatekey uninsdeletekey; Tasks: "contextmenuverify"
-Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-512"; ValueType: string; ValueName: ""; ValueData: "SHA-512"
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-512"; Flags: dontcreatekey uninsdeletekey
+Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-512"; ValueType: string; ValueName: ""; ValueData: "SHA-512"; Tasks: "contextmenuverify"
 Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandStore\shell\EasyWinHash.Verify.SHA-512\command"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName} -a SHA-512 -f ""%1"" -h"; Tasks: "contextmenuverify"
 
 [Messages]
