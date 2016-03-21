@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ Windows CryptoAPI Unit v1.0.2                                           }
+{ Windows CryptoAPI Unit v1.1                                             }
 {                                                                         }
 { Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -208,10 +208,43 @@ type
   /// </summary>
   TCryptBase = class(TObject)
   protected
+    /// <summary>
+    ///   Derives a symmetric key from a password string.
+    /// </summary>
+    /// <param name="ACryptProvider">
+    ///   The handle to a cryptographic provider.
+    /// </param>
+    /// <param name="APassword">
+    ///   The password used for key derivation.
+    /// </param>
+    /// <param name="AHashAlgorithm">
+    ///   The used hash algorithm.
+    /// </param>
+    /// <param name="APasswordEncryptionAlgorithm">
+    ///   The used encryption algorithm to encrypt the password.
+    /// </param>
+    /// <returns>
+    ///   A symmetric key.
+    /// </returns>
     function DeriveKey(ACryptProvider: TCryptProv; const APassword: string;
       AHashAlgorithm: THashAlgorithm;
       APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
+
+    /// <summary>
+    ///   Creates a string representation from a hash in buffer.
+    /// </summary>
+    /// <returns>
+    ///   A string hash value.
+    /// </returns>
     function HashToString(AHashHandle: TCryptHash): string;
+
+    /// <summary>
+    ///   Creates a binary representation from a hash in buffer.
+    /// </summary>
+    /// <returns>
+    ///   A binary hash value.
+    /// </returns>
+    function HashToBytes(AHashHandle: TCryptHash): TBytes;
   end;
 
   /// <summary>
@@ -240,9 +273,20 @@ type
     ///   The length of the salt in bytes.
     /// </param>
     /// <returns>
-    ///   The salt.
+    ///   A Base64 encoded salt.
     /// </returns>
     function GenerateSalt(ALength: DWORD): string;
+
+    /// <summary>
+    ///   Creates a hash from a byte array.
+    /// </summary>
+    /// <param name="AData">
+    ///   The bytes to be hashed.
+    /// </param>
+    /// <returns>
+    ///   The hash.
+    /// </returns>
+    function Hash(const AData: TBytes): TBytes; overload;
 
     /// <summary>
     ///   Creates a hash from a string.
@@ -253,7 +297,7 @@ type
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Hash(const AString: string): string;
+    function Hash(const AString: string): string; overload;
 
     /// <summary>
     ///   Creates a hash from a file.
@@ -380,7 +424,7 @@ type
     /// <returns>
     ///   The HMAC.
     /// </returns>
-    function HMac(const AString, APassword: string): string;
+    function HMac(const AData: TBytes; const APassword: string): string;
   end experimental;
 
 implementation
@@ -487,14 +531,14 @@ var
 
 begin
   // Retrieve and set required buffer size
-  if not CryptBinaryToString(Pointer(AData), Length(AData), Ord(FFlag) +
+  if not CryptBinaryToString(Pointer(AData), Length(AData), DWORD(Ord(FFlag)) +
     AAdditionalFlag.GetAdditionalFlag(), nil, BufferSize) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   SetLength(Result, BufferSize);
 
   // Encode string
-  if not CryptBinaryToString(Pointer(AData), Length(AData), Ord(FFlag) +
+  if not CryptBinaryToString(Pointer(AData), Length(AData), DWORD(Ord(FFlag)) +
     AAdditionalFlag.GetAdditionalFlag(), PChar(Result), BufferSize) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
@@ -511,15 +555,12 @@ end;
 
 { TCryptBase }
 
-{ protected TCryptBase.DeriveKey
-
-  Derives a symmetric key from a password string. }
-
 function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
   const APassword: string; AHashAlgorithm: THashAlgorithm;
   APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
 var
   PasswordHash: TCryptHash;
+  PasswordBinary: TBytes;
 
 begin
   Result := 0;
@@ -531,7 +572,9 @@ begin
 
   try
     // Create hash of the password
-    if not CryptHashData(PasswordHash, PChar(APassword), Length(APassword), 0) then
+    PasswordBinary := BytesOf(APassword);
+
+    if not CryptHashData(PasswordHash, @PasswordBinary[0], Length(APassword), 0) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Derive symmetric key from password
@@ -544,15 +587,9 @@ begin
   end;  //of try
 end;
 
-{ public TCryptBase.HashToString
-
-  Creates a string from a hash in buffer. }
-
-function TCryptBase.HashToString(AHashHandle: TCryptHash): string;
+function TCryptBase.HashToBytes(AHashHandle: TCryptHash): TBytes;
 var
-  Hash: TBytes;
   HashLength, HashSize: DWORD;
-  i, Bytes: Byte;
 
 begin
   HashSize := SizeOf(DWORD);
@@ -562,16 +599,24 @@ begin
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   // Resize the buffer to the blocksize of the used hash algorithm
-  SetLength(Hash, HashLength);
+  SetLength(Result, HashLength);
 
   // Load the hash value into buffer
-  if not CryptGetHashParam(AHashHandle, HP_HASHVAL, @Hash[0], HashLength, 0) then
+  if not CryptGetHashParam(AHashHandle, HP_HASHVAL, @Result[0], HashLength, 0) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
-  
+end;
+
+function TCryptBase.HashToString(AHashHandle: TCryptHash): string;
+var
+  Hash: TBytes;
+  i, Bytes: Integer;
+
+begin
+  Hash := HashToBytes(AHashHandle);
   Bytes := SizeOf(Char);
 
   // Build a string from buffer
-  for i := 0 to HashLength - 1 do
+  for i := Low(Hash) to High(Hash) do
     Result := Result + IntToHex(Hash[i], Bytes);
 
   Result := LowerCase(Result);
@@ -614,7 +659,7 @@ begin
   end;  //of try
 end;
 
-function THash.Hash(const AString: string): string;
+function THash.Hash(const AData: TBytes): TBytes;
 var
   CryptProvider: TCryptProv;
   HashHandle: TCryptHash;
@@ -631,15 +676,20 @@ begin
 
   try
     // Create the hash of the string
-    if not CryptHashData(HashHandle, PChar(BytesOf(AString)), Length(AString), 0) then
+    if not CryptHashData(HashHandle, @AData[0], Length(AData), 0) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
-    Result := HashToString(HashHandle);
+    Result := HashToBytes(HashHandle);
 
   finally
     CryptDestroyHash(HashHandle);
     CryptReleaseContext(CryptProvider, 0);
   end;  //of try
+end;
+
+function THash.Hash(const AString: string): string;
+begin
+  Result := StringOf(Hash(BytesOf(AString)));
 end;
 
 function THash.HashFile(const AFileName: TFileName): string;
@@ -680,7 +730,7 @@ begin
         FOnProgress(Self, BytesRead, FileToHash.Size, Cancel);
 
       // Create hash of read bytes in buffer
-      if not CryptHashData(HashHandle, @Buffer, BytesRead, 0) then
+      if not CryptHashData(HashHandle, @Buffer[0], BytesRead, 0) then
         raise Exception.Create(SysErrorMessage(GetLastError()));
 
       // Read next KB of file into buffer
@@ -734,11 +784,11 @@ begin
   FPasswordEncryptionAlgorithm := APasswordEncryptionAlgorithm;
 end;
 
-function THMac.HMac(const AString, APassword: string): string;
+function THMac.HMac(const AData: TBytes; const APassword: string): string;
 var
   CryptProvider: TCryptProv;
   HMacHash: TCryptHash;
-  Hmac: HMAC_INFO;
+  Hmac: THMacInfo;
   Key: TCryptKey;
 
 begin
@@ -763,7 +813,7 @@ begin
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Create hash of the string
-    if not CryptHashData(HMacHash, PChar(AString), Length(AString), 0) then
+    if not CryptHashData(HMacHash, @AData[0], Length(AData), 0) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     Result := HashToString(HMacHash);
