@@ -231,20 +231,37 @@ type
       APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
 
     /// <summary>
-    ///   Creates a string representation from a hash in buffer.
-    /// </summary>
-    /// <returns>
-    ///   A string hash value.
-    /// </returns>
-    function HashToString(AHashHandle: TCryptHash): string;
-
-    /// <summary>
     ///   Creates a binary representation from a hash in buffer.
     /// </summary>
+    /// <param name="AHashHandle">
+    ///   The handle to a hash in buffer.
+    /// </param>
     /// <returns>
     ///   A binary hash value.
     /// </returns>
     function HashToBytes(AHashHandle: TCryptHash): TBytes;
+
+    /// <summary>
+    ///   Creates a string representation from a hash in buffer.
+    /// </summary>
+    /// <param name="AHashHandle">
+    ///   The handle to a hash in buffer.
+    /// </param>
+    /// <returns>
+    ///   A string hash value.
+    /// </returns>
+    function HashToString(AHashHandle: TCryptHash): string;
+  public
+    /// <summary>
+    ///   Creates a hex string representation from a binary hash.
+    /// </summary>
+    /// <param name="AHash">
+    ///   The binary hash value.
+    /// </param>
+    /// <returns>
+    ///   The hex string hash value.
+    /// </returns>
+    function ToHex(const AHash: TBytes): string;
   end;
 
   /// <summary>
@@ -286,7 +303,7 @@ type
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Hash(const AData: TBytes): TBytes; overload;
+    function Compute(const AData: TBytes): TBytes; overload;
 
     /// <summary>
     ///   Creates a hash from a string.
@@ -294,10 +311,13 @@ type
     /// <param name="AString">
     ///   The string to be hashed.
     /// </param>
+    /// <param name="ASalt">
+    ///   Optional: A salt.
+    /// </param>
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Hash(const AString: string): string; overload;
+    function Compute(const AString: string; const ASalt: string = ''): string; overload;
 
     /// <summary>
     ///   Creates a hash from a file.
@@ -308,21 +328,7 @@ type
     /// <returns>
     ///   The hash of the file.
     /// </returns>
-    function HashFile(const AFileName: TFileName): string;
-
-    /// <summary>
-    ///   Creates a salted hash from a string.
-    /// </summary>
-    /// <param name="AString">
-    ///   The string to be hashed.
-    /// </param>
-    /// <param name="ASalt">
-    ///   The used salt.
-    /// </param>
-    /// <returns>
-    ///   The salted hash.
-    /// </returns>
-    function HashSalted(const AString, ASalt: string): string;
+    function Compute(const AFileName: TFileName): string; overload;
 
     /// <summary>
     ///   Verifies the hash from a string.
@@ -333,28 +339,13 @@ type
     /// <param name="AString">
     ///   The string to be verified.
     /// </param>
+    /// <param name="ASalt">
+    ///   Optional: The used salt.
+    /// </param>
     /// <returns>
     ///   <c>True</c> if the hash matches to the string or <c>False</c> otherwise.
     /// </returns>
-    function VerifyHash(const AHash, AString: string): Boolean;
-
-    /// <summary>
-    ///   Verifies the salted hash from a string.
-    /// </summary>
-    /// <param name="AHash">
-    ///   The hash to be verified.
-    /// </param>
-    /// <param name="AString">
-    ///   The string to be verified.
-    /// </param>
-    /// <param name="ASalt">
-    ///   The used salt.
-    /// </param>
-    /// <returns>
-    ///   <c>True</c> if the salted hash matches to the string or <c>False</c>
-    ///   otherwise.
-    /// </returns>
-    function VerifyHashSalted(const AHash, AString, ASalt: string): Boolean;
+    function Verify(const AHash, AString: string; const ASalt: string = ''): Boolean; overload;
 
     /// <summary>
     ///   Verifies the hash from a file.
@@ -368,7 +359,7 @@ type
     /// <returns>
     ///   <c>True</c> if the hash matches to the file or <c>False</c> otherwise.
     /// </returns>
-    function VerifyFileHash(const AHash, AFileName: TFileName): Boolean;
+    function Verify(const AHash: string; AFileName: TFileName): Boolean; overload;
 
     /// <summary>
     ///   Gets or sets the used hash algorithm.
@@ -607,17 +598,20 @@ begin
 end;
 
 function TCryptBase.HashToString(AHashHandle: TCryptHash): string;
+begin
+  Result := ToHex(HashToBytes(AHashHandle));
+end;
+
+function TCryptBase.ToHex(const AHash: TBytes): string;
 var
-  Hash: TBytes;
   i, Bytes: Integer;
 
 begin
-  Hash := HashToBytes(AHashHandle);
   Bytes := SizeOf(Char);
 
   // Build a string from buffer
-  for i := Low(Hash) to High(Hash) do
-    Result := Result + IntToHex(Hash[i], Bytes);
+  for i := Low(AHash) to High(AHash) do
+    Result := Result + IntToHex(AHash[i], Bytes);
 
   Result := LowerCase(Result);
 end;
@@ -640,6 +634,9 @@ var
 begin
   Result := '';
 
+  if (ALength = 0) then
+    Exit;
+
   if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
     CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
@@ -649,7 +646,7 @@ begin
   try
     SetLength(Salt, ALength);
 
-    if not CryptGenRandom(CryptProvider, ALength, PByte(Salt)) then
+    if not CryptGenRandom(CryptProvider, ALength, @Salt[0]) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     Result := Base64.EncodeBinary(Salt, bfNoCRLF);
@@ -659,7 +656,7 @@ begin
   end;  //of try
 end;
 
-function THash.Hash(const AData: TBytes): TBytes;
+function THash.Compute(const AData: TBytes): TBytes;
 var
   CryptProvider: TCryptProv;
   HashHandle: TCryptHash;
@@ -687,18 +684,18 @@ begin
   end;  //of try
 end;
 
-function THash.Hash(const AString: string): string;
+function THash.Compute(const AString: string; const ASalt: string = ''): string;
 begin
-  Result := StringOf(Hash(BytesOf(AString)));
+  Result := ToHex(Compute(BytesOf(ASalt + AString)));
 end;
 
-function THash.HashFile(const AFileName: TFileName): string;
+function THash.Compute(const AFileName: TFileName): string;
 var
   CryptProvider: TCryptProv;
   HashHandle: TCryptHash;
   Buffer: array[0..1023] of Byte;
   FileToHash: TFileStream;
-  BytesRead: LongWord;
+  BytesRead: Integer;
   Cancel: Boolean;
 
 begin
@@ -753,24 +750,14 @@ begin
   end;  //of try
 end;
 
-function THash.HashSalted(const AString, ASalt: string): string;
+function THash.Verify(const AHash, AString: string; const ASalt: string = ''): Boolean;
 begin
-  Result := Hash(ASalt + AString);
+  Result := AnsiSameStr(AHash, Compute(AString, ASalt));
 end;
 
-function THash.VerifyHash(const AHash, AString: string): Boolean;
+function THash.Verify(const AHash: string; AFileName: TFileName): Boolean;
 begin
-  Result := AnsiSameStr(AHash, Hash(AString));
-end;
-
-function THash.VerifyHashSalted(const AHash, AString, ASalt: string): Boolean;
-begin
-  Result := AnsiSameStr(AHash, HashSalted(AString, ASalt));
-end;
-
-function THash.VerifyFileHash(const AHash, AFileName: TFileName): Boolean;
-begin
-  Result := AnsiSameStr(AHash, HashFile(AFileName));
+  Result := AnsiSameStr(AHash, Compute(AFileName));
 end;
 
 

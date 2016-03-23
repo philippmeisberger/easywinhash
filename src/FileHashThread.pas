@@ -172,9 +172,9 @@ begin
 
   try
     if (FHashValue <> '') then
-      FMatches := FHash.VerifyFileHash(FHashValue, FFileName)
+      FMatches := FHash.Verify(FHashValue, FFileName)
     else
-      FHashValue := FHash.HashFile(FFileName);
+      FHashValue := FHash.Compute(FFileName);
 
     if Terminated then
       Synchronize(DoNotifyOnCancel)
