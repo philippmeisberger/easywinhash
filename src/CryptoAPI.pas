@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ Windows CryptoAPI Unit v1.1                                             }
+{ Windows CryptoAPI Unit v1.2                                             }
 {                                                                         }
 { Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -224,7 +224,8 @@ type
     ///   The used encryption algorithm to encrypt the password.
     /// </param>
     /// <returns>
-    ///   A symmetric key.
+    ///   A symmetric key handle which MUST be freed after usage using
+    //   <c>CryptDestroyKey()</c>.
     /// </returns>
     function DeriveKey(ACryptProvider: TCryptProv; const APassword: string;
       AHashAlgorithm: THashAlgorithm;
@@ -265,7 +266,61 @@ type
   end;
 
   /// <summary>
-  ///   A <c>THash</c> provides methods to calculate and verify hash values from
+  ///   <c>TCrypt</c> provides methods for string encryption and decryption.
+  /// </summary>
+  TCrypt = class(TCryptBase)
+  private
+    FCryptAlgorithm: TCryptAlgorithm;
+    FHashAlgorithm: THashAlgorithm;
+  public
+    /// <summary>
+    ///   Constructor for creating a <c>TCrypt</c> instance.
+    /// </summary>
+    /// <param name="ACryptAlgorithm">
+    ///   The used encryption algorithm.
+    /// </param>
+    /// <param name="AHashAlgorithm">
+    ///   The used hash algorithm.
+    /// </param>
+    constructor Create(ACryptAlgorithm: TCryptAlgorithm;
+      AHashAlgorithm: THashAlgorithm = haSha256);
+
+    /// <summary>
+    ///   Decrypts a previously encrypted string with a specified passphrase.
+    /// </summary>
+    /// <param name="ACipherText">
+    ///   The Base64 encoded encrypted string.
+    /// </param>
+    /// <param name="APassphrase">
+    ///   The used passphrase for encryption.
+    /// </param>
+    /// <returns>
+    ///   The plain-text.
+    /// </returns>
+    function Decrypt(const ACipherText, APassphrase: string): string;
+
+    /// <summary>
+    ///   Encrypts a string with a specified passphrase.
+    /// </summary>
+    /// <param name="APlainText">
+    ///   A string.
+    /// </param>
+    /// <param name="APassphrase">
+    ///   A passphrase.
+    /// </param>
+    /// <returns>
+    ///   A ciphertext encoded with Base64.
+    /// </returns>
+    function Encrypt(const APlainText, APassphrase: string): string;
+
+    /// <summary>
+    ///   The used encryption algorithm.
+    /// </summary>
+    property Algorithm: TCryptAlgorithm read FCryptAlgorithm write FCryptAlgorithm;
+  end experimental;
+
+  /// <summary>
+  ///  <c>THash</c> provides methods to calculate and verify hash values from
   ///  strings and files.
   /// </summary>
   THash = class(TCryptBase)
@@ -421,57 +476,52 @@ type
 implementation
 
 type
-  TBase64AdditionalFlagHelper = record helper for TBase64AdditionalFlag
-    function GetAdditionalFlag(): DWORD;
-  end;
-
   THashAlgorithmHelper = record helper for THashAlgorithm
     function GetHashAlgorithm(): ALG_ID;
   end;
 
-  TCryptAlgorithmHelper = record helper for TCryptAlgorithm
-    function GetEncryptionAlgorithm(): ALG_ID;
+  TBase64FlagHelper = record helper for TBase64Flag
+    function GetFlag(): DWORD;
   end;
-
-{ TBase64AdditionalFlagHelper }
-
-function TBase64AdditionalFlagHelper.GetAdditionalFlag(): DWORD;
-begin
-  Result := 0;
-
-  case Self of
-    bfNoCRLF: Result := CRYPT_STRING_NOCRLF;
-    bfNoCR:   Result := CRYPT_STRING_NOCR;
-  end;  //of case
-end;
 
 { THashAlgorithmHelper }
 
 function THashAlgorithmHelper.GetHashAlgorithm(): ALG_ID;
 begin
-  Result := 0;
-
   case Self of
     haMd5:    Result := CALG_MD5;
     haSha:    Result := CALG_SHA_160;
     haSha256: Result := CALG_SHA_256;
     haSha384: Result := CALG_SHA_384;
     haSha512: Result := CALG_SHA_512;
+    else      Result := 0;
   end;  //of case
 end;
 
-{ TCryptAlgorithmHelper }
 
-function TCryptAlgorithmHelper.GetEncryptionAlgorithm(): ALG_ID;
+{ TBase64FlagHelper }
+
+function TBase64FlagHelper.GetFlag(): DWORD;
 begin
-  Result := 0;
-
   case Self of
-    caAes128: Result := CALG_AES_128;
-    caAes192: Result := CALG_AES_192;
-    caAes256: Result := CALG_AES_256;
-  end;  //of begin
+    bfHeader:        Result := CRYPT_STRING_BASE64HEADER;
+    bfDefault:       Result := CRYPT_STRING_BASE64;
+    bfBinary:        Result := CRYPT_STRING_BINARY;
+    bfRequestHeader: Result := CRYPT_STRING_BASE64REQUESTHEADER;
+    bfHex:           Result := CRYPT_STRING_HEX;
+    bfHexAscii:      Result := CRYPT_STRING_HEXASCII;
+    bfBase64Any:     Result := CRYPT_STRING_BASE64_ANY;
+    bfAny:           Result := CRYPT_STRING_ANY;
+    bfHexAny:        Result := CRYPT_STRING_HEX_ANY;
+    bfX509CrlHeader: Result := CRYPT_STRING_BASE64X509CRLHEADER;
+    bfHexAddr:       Result := CRYPT_STRING_HEXADDR;
+    bfHexAsciiAddr:  Result := CRYPT_STRING_HEXASCIIADDR;
+    bfHexRaw:        Result := CRYPT_STRING_HEXRAW;
+    bfStrict:        Result := CRYPT_STRING_STRICT;
+    else             Result := CRYPT_STRING_BASE64;
+  end;  //of case
 end;
+
 
 { TBase64 }
 
@@ -497,15 +547,15 @@ var
 
 begin
   // Retrieve and set required buffer size
-  if not CryptStringToBinary(PChar(ABase64), Length(ABase64), Ord(FFlag),
+  if not CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
     nil, BufferSize, Skipped, Flags) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   SetLength(Result, BufferSize);
 
   // Decode string
-  if not CryptStringToBinary(PChar(ABase64), Length(ABase64), Ord(FFlag),
-    PByte(Result), BufferSize, Skipped, Flags) then
+  if not CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
+    @Result[0], BufferSize, Skipped, Flags) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 end;
 
@@ -517,20 +567,27 @@ end;
 
 function TBase64.EncodeBinary(const AData: TBytes;
   AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
+const
+  cAdditionalFlags: array[TBase64AdditionalFlag] of DWORD = (
+    0,
+    CRYPT_STRING_NOCRLF,
+    CRYPT_STRING_NOCR
+  );
+
 var
   BufferSize: DWORD;
 
 begin
   // Retrieve and set required buffer size
-  if not CryptBinaryToString(Pointer(AData), Length(AData), DWORD(Ord(FFlag)) +
-    AAdditionalFlag.GetAdditionalFlag(), nil, BufferSize) then
+  if not CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
+    cAdditionalFlags[AAdditionalFlag], nil, BufferSize) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   SetLength(Result, BufferSize);
 
   // Encode string
-  if not CryptBinaryToString(Pointer(AData), Length(AData), DWORD(Ord(FFlag)) +
-    AAdditionalFlag.GetAdditionalFlag(), PChar(Result), BufferSize) then
+  if not CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
+    cAdditionalFlags[AAdditionalFlag], PChar(Result), BufferSize) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   // Remove null-terminator
@@ -549,6 +606,13 @@ end;
 function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
   const APassword: string; AHashAlgorithm: THashAlgorithm;
   APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
+const
+  cEncryptionAlgorithms: array[TCryptAlgorithm] of ALG_ID = (
+    CALG_AES_128,
+    CALG_AES_192,
+    CALG_AES_256
+  );
+
 var
   PasswordHash: TCryptHash;
   PasswordBinary: TBytes;
@@ -569,7 +633,7 @@ begin
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Derive symmetric key from password
-    if not CryptDeriveKey(ACryptProvider, APasswordEncryptionAlgorithm.GetEncryptionAlgorithm(),
+    if not CryptDeriveKey(ACryptProvider, cEncryptionAlgorithms[APasswordEncryptionAlgorithm],
       PasswordHash, 0, Result) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
@@ -614,6 +678,104 @@ begin
     Result := Result + IntToHex(AHash[i], Bytes);
 
   Result := LowerCase(Result);
+end;
+
+
+{ TCrypt }
+
+constructor TCrypt.Create(ACryptAlgorithm: TCryptAlgorithm;
+  AHashAlgorithm: THashAlgorithm = haSha256);
+begin
+  inherited Create;
+  FCryptAlgorithm := ACryptAlgorithm;
+  FHashAlgorithm := AHashAlgorithm;
+end;
+
+function TCrypt.Decrypt(const ACipherText, APassphrase: string): string;
+var
+  Provider: TCryptProv;
+  Key: TCryptKey;
+  BufferSize, Skipped, Flags: DWORD;
+  Buffer: PByte;
+
+begin
+  Result := '';
+
+  if not CryptAcquireContext(Provider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) then
+    raise Exception.Create(SysErrorMessage(GetLastError()));
+
+  Key := DeriveKey(Provider, APassphrase, FHashAlgorithm, FCryptAlgorithm);
+
+  // Get required buffer size for Base64 decoding
+  CryptStringToBinary(PChar(ACipherText), Length(ACipherText), CRYPT_STRING_BASE64,
+    nil, BufferSize, Skipped, Flags);
+
+  GetMem(Buffer, BufferSize);
+
+  try
+    // Decode Base64 string
+    CryptStringToBinary(PChar(ACipherText), Length(ACipherText), CRYPT_STRING_BASE64,
+      @Buffer[0], BufferSize, Skipped, Flags);
+
+    // Decrypt the buffer
+    CryptDecrypt(Key, 0, True, 0, @Buffer[0], BufferSize);
+    SetLength(Result, BufferSize div SizeOf(Char));
+    Move(Buffer^, Result[1], BufferSize);
+
+  finally
+    CryptReleaseContext(Provider, 0);
+    CryptDestroyKey(Key);
+    FreeMem(Buffer);
+  end;  //of try
+end;
+
+function TCrypt.Encrypt(const APlainText, APassphrase: string): string;
+var
+  Provider: TCryptProv;
+  Key: TCryptKey;
+  DataLength, BufferSize: DWORD;
+  Buffer: PByte;
+
+begin
+  Result := '';
+
+  if not CryptAcquireContext(Provider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT) then
+    raise Exception.Create(SysErrorMessage(GetLastError()));
+
+  Key := DeriveKey(Provider, APassphrase, FHashAlgorithm, FCryptAlgorithm);
+  DataLength := Length(APlainText) * SizeOf(Char);
+
+  // Retrieve and set required buffer size
+  if not CryptEncrypt(Key, 0, True, 0, nil, BufferSize, DataLength) then
+    raise Exception.Create(SysErrorMessage(GetLastError()));
+
+  GetMem(Buffer, BufferSize);
+
+  try
+    // Copy plain-text into buffer
+    Move(APlainText[1], Buffer^, DataLength);
+
+    // Encrypt the buffer
+    // Note: This buffer is encrypted in-place so input = output!
+    if not CryptEncrypt(Key, 0, True, 0, @Buffer[0], DataLength, BufferSize) then
+      raise Exception.Create(SysErrorMessage(GetLastError()));
+
+    // Get required buffer size for Base64 encoding
+    CryptBinaryToString(@Buffer[0], DataLength, CRYPT_STRING_BASE64 or
+      CRYPT_STRING_NOCRLF, nil, BufferSize);
+
+    // Remove null-terminator
+    SetLength(Result, BufferSize - 1);
+
+    // Encode Base64
+    CryptBinaryToString(@Buffer[0], DataLength, CRYPT_STRING_BASE64 or
+      CRYPT_STRING_NOCRLF, PChar(Result), BufferSize);
+
+  finally
+    CryptReleaseContext(Provider, 0);
+    CryptDestroyKey(Key);
+    FreeMem(Buffer);
+  end;  //of try
 end;
 
 
