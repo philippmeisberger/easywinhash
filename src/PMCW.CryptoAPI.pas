@@ -6,7 +6,7 @@
 {                                                                         }
 { *********************************************************************** }
 
-unit CryptoAPI;
+unit PMCW.CryptoAPI;
 
 interface
 
@@ -229,7 +229,30 @@ type
     /// </returns>
     function DeriveKey(ACryptProvider: TCryptProv; const APassword: string;
       AHashAlgorithm: THashAlgorithm;
-      APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
+      APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey; overload;
+
+    /// <summary>
+    ///   Derives a symmetric key from a binary password.
+    /// </summary>
+    /// <param name="ACryptProvider">
+    ///   The handle to a cryptographic provider.
+    /// </param>
+    /// <param name="APassword">
+    ///   The password used for key derivation.
+    /// </param>
+    /// <param name="AHashAlgorithm">
+    ///   The used hash algorithm.
+    /// </param>
+    /// <param name="APasswordEncryptionAlgorithm">
+    ///   The used encryption algorithm to encrypt the password.
+    /// </param>
+    /// <returns>
+    ///   A symmetric key handle which MUST be freed after usage using
+    ///   <c>CryptDestroyKey()</c>.
+    /// </returns>
+    function DeriveKey(ACryptProvider: TCryptProv; const APassword: TBytes;
+      AHashAlgorithm: THashAlgorithm;
+      APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey; overload;
 
     /// <summary>
     ///   Creates a binary representation from a hash in buffer.
@@ -280,7 +303,7 @@ type
     ///   The used encryption algorithm.
     /// </param>
     /// <param name="AHashAlgorithm">
-    ///   The used hash algorithm.
+    ///   The used hash algorithm to derive a key from a password.
     /// </param>
     constructor Create(ACryptAlgorithm: TCryptAlgorithm;
       AHashAlgorithm: THashAlgorithm = haSha256);
@@ -309,7 +332,7 @@ type
     ///   A passphrase.
     /// </param>
     /// <returns>
-    ///   A ciphertext encoded with Base64.
+    ///   The ciphertext encoded with Base64.
     /// </returns>
     function Encrypt(const APlainText, APassphrase: string): string;
 
@@ -438,8 +461,8 @@ type
   end;
 
   /// <summary>
-  ///   A <c>THMac</c> provides methods to calculate keyed hash values (HMACs)
-  ///   from strings.
+  ///   <c>THMac</c> provides methods to calculate keyed hash values (HMACs)
+  ///   from strings and binary data.
   /// </summary>
   THMac = class(TCryptBase)
   private
@@ -450,27 +473,41 @@ type
     ///   Constructor for creating a <c>THMac</c> instance.
     /// </summary>
     /// <param name="AHashAlgorithm">
-    ///   The hash algorithm to use.
+    ///   The used hash algorithm.
     /// </param>
     /// <param name="APasswordEncryptionAlgorithm">
-    ///   The encryption algorithm to use.
+    ///   The used encryption algorithm.
     /// </param>
     constructor Create(AHashAlgorithm: THashAlgorithm;
       APasswordEncryptionAlgorithm: TCryptAlgorithm = caAes128);
 
     /// <summary>
-    ///   Creates an HMAC from a string.
+    ///   Creates an HMAC from binary data.
     /// </summary>
-    /// <param name="AString">
-    ///   The string to be hashed.
+    /// <param name="AData">
+    ///   The data to be hashed.
     /// </param>
-    /// <param name="APassword">
-    ///   The used password for encryption.
+    /// <param name="APassphrase">
+    ///   The used passphrase for encryption.
     /// </param>
     /// <returns>
     ///   The HMAC.
     /// </returns>
-    function HMac(const AData: TBytes; const APassword: string): string;
+    function Compute(const AData: TBytes; const APassphrase: string): string; overload;
+
+    /// <summary>
+    ///   Creates an HMAC from a string.
+    /// </summary>
+    /// <param name="AData">
+    ///   The string to be hashed.
+    /// </param>
+    /// <param name="APassphrase">
+    ///   The used passphrase for encryption.
+    /// </param>
+    /// <returns>
+    ///   The HMAC.
+    /// </returns>
+    function Compute(const AString, APassphrase: string): string; overload;
   end experimental;
 
 implementation
@@ -604,7 +641,7 @@ end;
 { TCryptBase }
 
 function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
-  const APassword: string; AHashAlgorithm: THashAlgorithm;
+  const APassword: TBytes; AHashAlgorithm: THashAlgorithm;
   APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
 const
   cEncryptionAlgorithms: array[TCryptAlgorithm] of ALG_ID = (
@@ -615,7 +652,6 @@ const
 
 var
   PasswordHash: TCryptHash;
-  PasswordBinary: TBytes;
 
 begin
   Result := 0;
@@ -627,9 +663,7 @@ begin
 
   try
     // Create hash of the password
-    PasswordBinary := BytesOf(APassword);
-
-    if not CryptHashData(PasswordHash, @PasswordBinary[0], Length(APassword), 0) then
+    if not CryptHashData(PasswordHash, @APassword[0], Length(APassword), 0) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Derive symmetric key from password
@@ -640,6 +674,14 @@ begin
   finally
     CryptDestroyHash(PasswordHash);
   end;  //of try
+end;
+
+function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
+  const APassword: string; AHashAlgorithm: THashAlgorithm;
+  APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
+begin
+  Result := DeriveKey(ACryptProvider, BytesOf(APassword), AHashAlgorithm,
+    APasswordEncryptionAlgorithm);
 end;
 
 function TCryptBase.HashToBytes(AHashHandle: TCryptHash): TBytes;
@@ -933,7 +975,7 @@ begin
   FPasswordEncryptionAlgorithm := APasswordEncryptionAlgorithm;
 end;
 
-function THMac.HMac(const AData: TBytes; const APassword: string): string;
+function THMac.Compute(const AData: TBytes; const APassphrase: string): string;
 var
   CryptProvider: TCryptProv;
   HMacHash: TCryptHash;
@@ -945,7 +987,7 @@ begin
     CRYPT_VERIFYCONTEXT) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
-  Key := DeriveKey(CryptProvider, APassword, FHashAlgorithm,
+  Key := DeriveKey(CryptProvider, APassphrase, FHashAlgorithm,
     FPasswordEncryptionAlgorithm);
 
   try
@@ -954,7 +996,7 @@ begin
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Init HMAC object
-    FillChar(Hmac, SizeOf(Hmac), 0);
+    //ZeroMemory(@Hmac, SizeOf(THMacInfo));
     Hmac.HashAlgId := FHashAlgorithm.GetHashAlgorithm();
 
     // Set HMAC parameters
@@ -972,6 +1014,11 @@ begin
     CryptDestroyKey(Key);
     CryptReleaseContext(CryptProvider, 0);
   end;  //of try
+end;
+
+function THMac.Compute(const AString, APassphrase: string): string;
+begin
+  Result := Compute(BytesOf(AString), APassphrase);
 end;
 
 end.

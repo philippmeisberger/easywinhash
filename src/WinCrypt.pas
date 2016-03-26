@@ -248,49 +248,49 @@ const
   {$EXTERNALSYM CRYPT_SILENT}
 
 function CryptAcquireContext(out hProv: HCRYPTPROV; Container, Provider: PWideChar;
-  ProvType, Flags: DWORD): LongBool; stdcall;
+  ProvType, Flags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptAcquireContext}
 
 function CryptCreateHash(Prov: HCRYPTPROV; Algid: ALG_ID; Key: HCRYPTKEY;
-  Flags: DWORD; var Hash: HCRYPTHASH): LongBool; stdcall;
+  Flags: DWORD; var Hash: HCRYPTHASH): BOOL; stdcall;
 {$EXTERNALSYM CryptCreateHash}
 
-function CryptDecrypt(Key: HCRYPTKEY; Hash: HCRYPTHASH; Final: LongBool;
-  Flags: DWORD; pbData: PByte; var pdwDataLen: DWORD): LongBool; stdcall;
+function CryptDecrypt(Key: HCRYPTKEY; Hash: HCRYPTHASH; Final: BOOL;
+  Flags: DWORD; pbData: PByte; var pdwDataLen: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptDecrypt}
 
 function CryptDeriveKey(Prov: HCRYPTPROV; Algid: ALG_ID; BaseData: HCRYPTHASH;
-  Flags: DWORD; var Key: HCRYPTKEY): LongBool; stdcall;
+  Flags: DWORD; var Key: HCRYPTKEY): BOOL; stdcall;
 {$EXTERNALSYM CryptDeriveKey}
 
-function CryptDestroyHash(hHash: HCRYPTHASH): LongBool; stdcall;
+function CryptDestroyHash(hHash: HCRYPTHASH): BOOL; stdcall;
 {$EXTERNALSYM CryptDestroyHash}
 
-function CryptDestroyKey(hKey: HCRYPTKEY): LongBool; stdcall;
+function CryptDestroyKey(hKey: HCRYPTKEY): BOOL; stdcall;
 {$EXTERNALSYM CryptDestroyKey}
 
 function CryptDuplicateHash(hHash: HCRYPTHASH; pdwReserved, dwFlags: DWORD;
- var phHash: HCRYPTHASH): LongBool; stdcall;
+ var phHash: HCRYPTHASH): BOOL; stdcall;
 {$EXTERNALSYM CryptDuplicateHash}
 
 function CryptDuplicateKey(hKey: HCRYPTKEY; pdwReserved, dwFlags: DWORD;
-  var phKey: HCRYPTKEY): LongBool; stdcall;
+  var phKey: HCRYPTKEY): BOOL; stdcall;
 {$EXTERNALSYM CryptDuplicateKey}
 
-function CryptEncrypt(Key: HCRYPTKEY; Hash: HCRYPTHASH; Final: LongBool;
-  Flags: LongWord; pbData: PByte; var pdwDataLen, dwBufLen: DWORD): LongBool; stdcall;
+function CryptEncrypt(Key: HCRYPTKEY; Hash: HCRYPTHASH; Final: BOOL;
+  Flags: LongWord; pbData: PByte; var pdwDataLen, dwBufLen: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptEncrypt}
 
 function CryptGenRandom(hProv: HCRYPTPROV; dwLen: DWORD;
-  pbBuffer: PByte): LongBool; stdcall;
+  pbBuffer: PByte): BOOL; stdcall;
 {$EXTERNALSYM CryptGenRandom}
 
 function CryptGetHashParam(hHash: HCRYPTHASH; dwParam: DWORD; pbData: PByte;
-  var pdwDataLen: DWORD; dwFlags: DWORD): LongBool; stdcall;
+  var pdwDataLen: DWORD; dwFlags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptGetHashParam}
 
 function CryptGetKeyParam(hKey: HCRYPTKEY; dwParam: DWORD; var pbData: PByte;
-  var pdwDataLen: DWORD; dwFlags: DWORD): LongBool; stdcall;
+  var pdwDataLen: DWORD; dwFlags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptGetKeyParam}
 
 const
@@ -373,7 +373,7 @@ const
   {$EXTERNALSYM PP_CRYPT_COUNT_KEY_USE}
 
 function CryptGetProvParam(hProv: HCRYPTPROV; dwParam: DWORD; pbData: PByte;
-  var pdwDataLen: DWORD; dwFlags: DWORD): LongBool; stdcall;
+  var pdwDataLen: DWORD; dwFlags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptGetProvParam}
 
 const
@@ -384,22 +384,22 @@ const
   {$EXTERNALSYM AT_SIGNATURE}
 
 function CryptGetUserKey(hProv: HCRYPTPROV; dwKeySpec: DWORD;
-  var phUserKey: HCRYPTKEY): LongBool; stdcall;
+  var phUserKey: HCRYPTKEY): BOOL; stdcall;
 {$EXTERNALSYM CryptGetUserKey}
 
 function CryptHashData(Hash: HCRYPTHASH; Data: PByte; DataLen: LongWord;
-  Flags: LongWord): LongBool; stdcall;
+  Flags: LongWord): BOOL; stdcall;
 {$EXTERNALSYM CryptHashData}
 
-function CryptReleaseContext(hProv: HCRYPTPROV; dwFlags: LongWord): LongBool; stdcall;
+function CryptReleaseContext(hProv: HCRYPTPROV; dwFlags: LongWord): BOOL; stdcall;
 {$EXTERNALSYM CryptReleaseContext}
 
 function CryptSetHashParam(hHash: HCRYPTHASH; dwParam: DWORD;
-  const pbData: PByte; dwFlags: DWORD): LongBool; stdcall;
+  const pbData: PByte; dwFlags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptSetHashParam}
 
 function CryptSetKeyParam(hKey: HCRYPTKEY; dwParam: DWORD; pbData: PByte;
-  dwFlags: DWORD): LongBool; stdcall;
+  dwFlags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptSetKeyParam}
 
 const
@@ -458,7 +458,7 @@ const
   {$EXTERNALSYM CRYPT_UPDATE_KEY}
 
 function CryptGenKey(hProv: HCRYPTPROV; Algid: ALG_ID; dwFlags: DWORD;
-  var phKey: HCRYPTKEY): LongBool; stdcall;
+  var phKey: HCRYPTKEY): BOOL; stdcall;
 {$EXTERNALSYM CryptGenKey}
 
 type
@@ -510,13 +510,13 @@ const
 function CryptProtectData(pDataIn: PDATA_BLOB; szDataDescr: PWideChar;
   pOptionalEntropy: PDATA_BLOB; pvReserved: PVOID;
   pPromptStruct: PCRYPTPROTECT_PROMPTSTRUCT; dwFlags: DWORD;
-  var pDataOut: DATA_BLOB): LongBool; stdcall;
+  var pDataOut: DATA_BLOB): BOOL; stdcall;
 {$EXTERNALSYM CryptProtectData}
 
 function CryptUnprotectData(pDataIn: PDATA_BLOB; ppszDataDescr: PWideChar;
   pOptionalEntropy: PDATA_BLOB; pvReserved: PVOID;
   pPromptStruct: PCRYPTPROTECT_PROMPTSTRUCT; dwFlags: DWORD;
-  var pDataOut: DATA_BLOB): LongBool; stdcall;
+  var pDataOut: DATA_BLOB): BOOL; stdcall;
 {$EXTERNALSYM CryptUnprotectData}
 
 const
@@ -530,10 +530,10 @@ const
   CRYPTPROTECTMEMORY_BLOCK_SIZE    = $00000010;
   {$EXTERNALSYM CRYPTPROTECTMEMORY_BLOCK_SIZE}
 
-function CryptProtectMemory(var pData: LPVOID; cbData, dwFlags: DWORD): LongBool; stdcall;
+function CryptProtectMemory(var pData: LPVOID; cbData, dwFlags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptProtectMemory}
 
-function CryptUnProtectMemory(var pData: LPVOID; cbData, dwFlags: DWORD): LongBool; stdcall;
+function CryptUnProtectMemory(var pData: LPVOID; cbData, dwFlags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptUnProtectMemory}
 
 const
@@ -546,6 +546,21 @@ const
   {$EXTERNALSYM CRYPT_OID_INFO_ALGID_KEY}
   CRYPT_OID_INFO_SIGN_KEY          = 4;
   {$EXTERNALSYM CRYPT_OID_INFO_SIGN_KEY}
+
+{ Possible flags for CryptSignHash() and CryptVerifySignature() }
+const
+  CRYPT_NOHASHOID                  = 1;
+  {$EXTERNALSYM CRYPT_NOHASHOID}
+  CRYPT_X931_FORMAT                = 4;
+  {$EXTERNALSYM CRYPT_X931_FORMAT}
+
+function CryptSignHash(hHash: HCRYPTHASH; dwKeySpec: DWORD; sDescription: LPCWSTR;
+  dwFlags: DWORD; out pbSignature: PByte; var pdwSigLen: DWORD): BOOL; stdcall;
+{$EXTERNALSYM CryptSignHash}
+
+function CryptVerifySignature(hHash: HCRYPTHASH; pbSignature: PByte; dwSigLen: DWORD;
+  hPubKey: HCRYPTKEY; sDescription: LPCWSTR; dwFlags: DWORD): BOOL; stdcall;
+{$EXTERNALSYM CryptVerifySignature}
 
 implementation
 
@@ -569,10 +584,12 @@ function CryptHashData; stdcall; external advapi32 name 'CryptHashData';
 function CryptReleaseContext; stdcall; external advapi32 name 'CryptReleaseContext';
 function CryptSetHashParam; stdcall; external advapi32 name 'CryptSetHashParam';
 function CryptSetKeyParam; stdcall; external advapi32 name 'CryptSetKeyParam';
+function CryptSignHash; stdcall; external crypt32 name 'CryptSignHashW';
 function CryptStringToBinary; stdcall; external Crypt32 name 'CryptStringToBinaryW';
 function CryptProtectData; stdcall; external crypt32 name 'CryptProtectData';
 function CryptProtectMemory; stdcall; external crypt32 name 'CryptProtectMemory';
 function CryptUnprotectData; stdcall; external crypt32 name 'CryptUnprotectData';
 function CryptUnProtectMemory; stdcall; external crypt32 name 'CryptUnProtectMemory';
+function CryptVerifySignature; stdcall; external advapi32 name 'CryptVerifySignatureW';
 
 end.
