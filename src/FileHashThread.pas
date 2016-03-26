@@ -11,7 +11,7 @@ unit FileHashThread;
 interface
 
 uses
-  Classes, SysUtils, CryptoAPI;
+  Classes, SysUtils, PMCW.CryptoAPI;
 
 type
   TStringResultEvent = procedure(Sender: TThread; const AHash: string) of object;

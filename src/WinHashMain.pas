@@ -13,7 +13,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Buttons, Vcl.ClipBrd,
-  System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, CryptoAPI, PMCWOSUtils,
+  System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, PMCW.CryptoAPI, PMCWOSUtils,
   PMCWLanguageFile, FileHashThread, PMCWUpdater, PMCWAbout, System.ImageList,
   Vcl.ImgList;
 
