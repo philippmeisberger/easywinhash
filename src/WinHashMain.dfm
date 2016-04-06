@@ -88,6 +88,7 @@ object Main: TMain
     Top = 78
     Width = 351
     Height = 21
+    Anchors = [akLeft, akRight]
     Images = ButtonImages
     ParentShowHint = False
     RightButton.DisabledImageIndex = 0
@@ -104,6 +105,7 @@ object Main: TMain
     Top = 30
     Width = 351
     Height = 21
+    Anchors = [akLeft, akTop, akRight]
     AutoSelect = False
     Images = ButtonImages
     ParentShowHint = False
@@ -117,8 +119,7 @@ object Main: TMain
     OnRightButtonClick = eFileRightButtonClick
   end
   object MainMenu: TMainMenu
-    Left = 256
-    Top = 136
+    Left = 304
     object mmView: TMenuItem
       Caption = 'Ansicht'
       object mmLang: TMenuItem
@@ -153,14 +154,12 @@ object Main: TMain
   object Taskbar: TTaskbar
     TaskBarButtons = <>
     TabProperties = []
-    Left = 112
-    Top = 136
+    Left = 168
   end
   object ButtonImages: TImageList
-    Left = 184
-    Top = 104
+    Left = 232
     Bitmap = {
-      494C010102000C00280010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010102000C00300010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       00000000000000000000000000000000000000000000CDD3DE00B7C9D600B6C7
       D600B7C8D700B7C8D700B7C8D700B7C9D700B7C9D800B7C8D800B5C7D600B5C7

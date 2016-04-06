@@ -644,7 +644,7 @@ function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
   const APassword: TBytes; AHashAlgorithm: THashAlgorithm;
   APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
 const
-  cEncryptionAlgorithms: array[TCryptAlgorithm] of ALG_ID = (
+  cEncryptionAlgorithms: array[TCryptAlgorithm] of TAlgId = (
     CALG_AES_128,
     CALG_AES_192,
     CALG_AES_256
@@ -757,10 +757,10 @@ begin
   try
     // Decode Base64 string
     CryptStringToBinary(PChar(ACipherText), Length(ACipherText), CRYPT_STRING_BASE64,
-      @Buffer[0], BufferSize, Skipped, Flags);
+      Buffer, BufferSize, Skipped, Flags);
 
     // Decrypt the buffer
-    CryptDecrypt(Key, 0, True, 0, @Buffer[0], BufferSize);
+    CryptDecrypt(Key, 0, True, 0, Buffer, BufferSize);
     SetLength(Result, BufferSize div SizeOf(Char));
     Move(Buffer^, Result[1], BufferSize);
 
@@ -799,18 +799,18 @@ begin
 
     // Encrypt the buffer
     // Note: This buffer is encrypted in-place so input = output!
-    if not CryptEncrypt(Key, 0, True, 0, @Buffer[0], DataLength, BufferSize) then
+    if not CryptEncrypt(Key, 0, True, 0, Buffer, DataLength, BufferSize) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Get required buffer size for Base64 encoding
-    CryptBinaryToString(@Buffer[0], DataLength, CRYPT_STRING_BASE64 or
+    CryptBinaryToString(Buffer, DataLength, CRYPT_STRING_BASE64 or
       CRYPT_STRING_NOCRLF, nil, BufferSize);
 
     // Remove null-terminator
     SetLength(Result, BufferSize - 1);
 
     // Encode Base64
-    CryptBinaryToString(@Buffer[0], DataLength, CRYPT_STRING_BASE64 or
+    CryptBinaryToString(Buffer, DataLength, CRYPT_STRING_BASE64 or
       CRYPT_STRING_NOCRLF, PChar(Result), BufferSize);
 
   finally

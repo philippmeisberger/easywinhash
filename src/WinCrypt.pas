@@ -16,6 +16,8 @@ uses
 type
   ALG_ID     = UINT;
   {$EXTERNALSYM ALG_ID}
+  TAlgId     = ALG_ID;
+
   HCRYPTPROV = ULONG_PTR;
   {$EXTERNALSYM HCRYPTPROV}
   TCryptProv = HCRYPTPROV;
@@ -254,6 +256,11 @@ function CryptAcquireContext(out hProv: HCRYPTPROV; Container, Provider: PWideCh
 function CryptCreateHash(Prov: HCRYPTPROV; Algid: ALG_ID; Key: HCRYPTKEY;
   Flags: DWORD; var Hash: HCRYPTHASH): BOOL; stdcall;
 {$EXTERNALSYM CryptCreateHash}
+
+const
+  { Possible dwFlag for CryptDecrypt() and CryptEncrypt() }
+  CRYPT_OAEP             = $00000040;
+  {$EXTERNALSYM CRYPT_OAEP}
 
 function CryptDecrypt(Key: HCRYPTKEY; Hash: HCRYPTHASH; Final: BOOL;
   Flags: DWORD; pbData: PByte; var pdwDataLen: DWORD): BOOL; stdcall;
