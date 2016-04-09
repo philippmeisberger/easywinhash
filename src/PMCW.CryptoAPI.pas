@@ -11,7 +11,7 @@ unit PMCW.CryptoAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, WinCrypt;
+  Winapi.Windows, Classes, SysUtils, Winapi.WinCrypt;
 
 type
   /// <summary>
@@ -644,7 +644,7 @@ function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
   const APassword: TBytes; AHashAlgorithm: THashAlgorithm;
   APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
 const
-  cEncryptionAlgorithms: array[TCryptAlgorithm] of TAlgId = (
+  cEncryptionAlgorithms: array[TCryptAlgorithm] of ALG_ID = (
     CALG_AES_128,
     CALG_AES_192,
     CALG_AES_256
@@ -757,10 +757,10 @@ begin
   try
     // Decode Base64 string
     CryptStringToBinary(PChar(ACipherText), Length(ACipherText), CRYPT_STRING_BASE64,
-      Buffer, BufferSize, Skipped, Flags);
+      @Buffer[0], BufferSize, Skipped, Flags);
 
     // Decrypt the buffer
-    CryptDecrypt(Key, 0, True, 0, Buffer, BufferSize);
+    CryptDecrypt(Key, 0, True, 0, @Buffer[0], BufferSize);
     SetLength(Result, BufferSize div SizeOf(Char));
     Move(Buffer^, Result[1], BufferSize);
 
@@ -799,18 +799,18 @@ begin
 
     // Encrypt the buffer
     // Note: This buffer is encrypted in-place so input = output!
-    if not CryptEncrypt(Key, 0, True, 0, Buffer, DataLength, BufferSize) then
+    if not CryptEncrypt(Key, 0, True, 0, @Buffer[0], DataLength, BufferSize) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
     // Get required buffer size for Base64 encoding
-    CryptBinaryToString(Buffer, DataLength, CRYPT_STRING_BASE64 or
+    CryptBinaryToString(@Buffer[0], DataLength, CRYPT_STRING_BASE64 or
       CRYPT_STRING_NOCRLF, nil, BufferSize);
 
     // Remove null-terminator
     SetLength(Result, BufferSize - 1);
 
     // Encode Base64
-    CryptBinaryToString(Buffer, DataLength, CRYPT_STRING_BASE64 or
+    CryptBinaryToString(@Buffer[0], DataLength, CRYPT_STRING_BASE64 or
       CRYPT_STRING_NOCRLF, PChar(Result), BufferSize);
 
   finally
