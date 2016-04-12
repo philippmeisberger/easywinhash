@@ -1,6 +1,7 @@
 syntax: glob
 src\__history\**
 **.exe
+**.zip
 **.dcu
 **.stat
 **.reg
