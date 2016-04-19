@@ -279,8 +279,8 @@ begin
     mmAbout.Caption := Format(LID_ABOUT, [Application.Title]);
 
     // Buttons and labels
-    lFile.Caption := GetString(LID_FILE) +':';
-    lHash.Caption := GetString(LID_HASH) +':';
+    lFile.Caption := '&'+ GetString(LID_FILE) +':';
+    lHash.Caption := '&'+ GetString(LID_HASH) +':';
     eFile.RightButton.Hint := GetString(LID_BROWSE_FOR_FILE);
     eHash.RightButton.Hint := GetString(LID_COPY_TO_CLIPBOARD);
     bVerify.Caption := GetString(LID_HASH_VERIFY);

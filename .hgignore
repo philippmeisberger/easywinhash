@@ -1,5 +1,6 @@
 syntax: glob
 src\__history\**
+tests\__history\**
 **.exe
 **.zip
 **.dcu
@@ -7,3 +8,5 @@ src\__history\**
 **.reg
 **.identcache
 **.dproj.local
+**.ini
+**.db

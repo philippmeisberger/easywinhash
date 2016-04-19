@@ -28,6 +28,7 @@ object Main: TMain
     Width = 28
     Height = 13
     Caption = 'Hash:'
+    FocusControl = eHash
   end
   object lFile: TLabel
     Left = 24
@@ -35,6 +36,7 @@ object Main: TMain
     Width = 28
     Height = 13
     Caption = 'Datei:'
+    FocusControl = eFile
   end
   object cbxAlgorithm: TComboBox
     Left = 24
@@ -159,7 +161,7 @@ object Main: TMain
   object ButtonImages: TImageList
     Left = 232
     Bitmap = {
-      494C010102000C00300010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010102000C00340010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       00000000000000000000000000000000000000000000CDD3DE00B7C9D600B6C7
       D600B7C8D700B7C8D700B7C8D700B7C9D700B7C9D800B7C8D800B5C7D600B5C7
