@@ -8,10 +8,16 @@
 
 unit Winapi.WinCrypt;
 
+{$ALIGN ON}
+{$MINENUMSIZE 4}
+{$WEAKPACKAGEUNIT}
+
 interface
 
 uses
   Winapi.Windows;
+
+{$HPPEMIT '#include <WinCrypt.h>'}
 
 type
   ALG_ID     = UINT;
@@ -565,7 +571,7 @@ function CryptVerifySignature(hHash: HCRYPTHASH; pbSignature: PByte; dwSigLen: D
 implementation
 
 function CryptAcquireContext; stdcall; external advapi32 name 'CryptAcquireContextW';
-function CryptBinaryToString; stdcall; external Crypt32 name 'CryptBinaryToStringW';
+function CryptBinaryToString; stdcall; external crypt32 name 'CryptBinaryToStringW';
 function CryptCreateHash; stdcall; external advapi32 name 'CryptCreateHash';
 function CryptDecrypt; stdcall; external advapi32 name 'CryptDecrypt';
 function CryptDeriveKey; stdcall; external advapi32 name 'CryptDeriveKey';
@@ -585,7 +591,7 @@ function CryptReleaseContext; stdcall; external advapi32 name 'CryptReleaseConte
 function CryptSetHashParam; stdcall; external advapi32 name 'CryptSetHashParam';
 function CryptSetKeyParam; stdcall; external advapi32 name 'CryptSetKeyParam';
 function CryptSignHash; stdcall; external crypt32 name 'CryptSignHashW';
-function CryptStringToBinary; stdcall; external Crypt32 name 'CryptStringToBinaryW';
+function CryptStringToBinary; stdcall; external crypt32 name 'CryptStringToBinaryW';
 function CryptProtectData; stdcall; external crypt32 name 'CryptProtectData';
 function CryptProtectMemory; stdcall; external crypt32 name 'CryptProtectMemory';
 function CryptUnprotectData; stdcall; external crypt32 name 'CryptUnprotectData';

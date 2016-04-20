@@ -7,11 +7,6 @@
 #define FileVersion GetFileVersion(MyAppExePath32 + MyAppExeName)
 #define ProductVersion GetFileProductVersion(MyAppExePath32 + MyAppExeName)
 
-#define VersionFile FileOpen("version.txt")
-#define Build FileRead(VersionFile)
-#expr FileClose(VersionFile)
-#undef VersionFile
-
 [Setup]
 AppId={{B2EFCA05-451F-4778-BF38-264C7F4CCA91}
 AppName={#MyAppName}
@@ -33,7 +28,7 @@ Compression=lzma
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=2.4
+VersionInfoVersion=2.5
 SignTool=Sign {srcexe}
 
 [Languages]
@@ -50,8 +45,6 @@ Name: "contextmenuverify"; Description: "{cm:ContextMenuVerify}"; GroupDescripti
 [Files]
 Source: "{#MyAppExePath32}{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion; Check: not Is64BitInstallMode
 Source: "{#MyAppExePath64}{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion; Check: Is64BitInstallMode
-Source: "Updater.exe"; DestDir: "{tmp}"; Flags: dontcopy
-Source: "version.txt"; DestDir: "{tmp}"; Flags: dontcopy
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -62,10 +55,6 @@ Name: "{commondesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: 
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram, {#MyAppName}}"; Flags: postinstall shellexec
 
 [Registry]
-Root: HKCU; Subkey: "SOFTWARE\PM Code Works\{#MyAppName}"; ValueType: string; ValueName: "Build"; ValueData: "{#Build}"; Flags: uninsdeletevalue
-Root: HKCU; Subkey: "SOFTWARE\PM Code Works\{#MyAppName}"; Flags: uninsdeletekey
-Root: HKCU; Subkey: "SOFTWARE\PM Code Works"; Flags: uninsdeletekeyifempty
-
 Root: HKCR; Subkey: "*\shell\CalculateHash"; Flags: dontcreatekey uninsdeletekey
 Root: HKCR; Subkey: "*\shell\CalculateHash"; ValueType: string; ValueName: "Icon"; ValueData: "{app}\{#MyAppExeName}"; Tasks: "contextmenucalculate"
 Root: HKCR; Subkey: "*\shell\CalculateHash"; ValueType: string; ValueName: "MUIVerb"; ValueData: "{cm:ContextMenuCalculate}"; Tasks: "contextmenucalculate"
@@ -150,55 +139,4 @@ begin
   UrlLabel.Font.Color := clHighlight;
   UrlLabel.OnClick := @UrlLabelClick;
   UrlLabel.Parent := WizardForm;
-end;
-
-
-function InitializeSetup(): Boolean;
-var
-  CurBuild: Cardinal;
-  ErrorCode: Integer;
-  Build, TempDir: string;
-
-begin
-  Result := True;
-  CurBuild := 0;
-
-  // Upgrade installation?
-  if RegValueExists(HKCU, 'SOFTWARE\PM Code Works\{#MyAppName}', 'Build') then
-  begin
-    if RegQueryStringValue(HKCU, 'SOFTWARE\PM Code Works\{#MyAppName}', 'Build', Build) then
-    try
-      CurBuild := StrToInt(Build);
-
-    except
-      CurBuild := 0;
-    end;  //of try
-
-    // Newer build already installed?
-    if ({#Build} < CurBuild) then
-    begin
-      MsgBox('Es ist bereits eine neuere Version von {#MyAppName} installiert!' +#13+ 'Das Setup wird beendet!', mbINFORMATION, MB_OK);
-      Result := False;
-    end;  //of begin
-
-    // Copy Updater and version file to tmp directory
-    ExtractTemporaryFile('Updater.exe');
-    ExtractTemporaryFile('version.txt');
-
-    // Get user temp dir
-    TempDir := ExpandConstant('{localappdata}\Temp\');
-
-    // Launch Updater
-    ShellExec('open', ExpandConstant('{tmp}\Updater.exe'), '-d {#URLVersionDirectory} -s '+ TempDir +' -i {#emit SetupSetting("OutputBaseFilename")}.exe -o "{#MyAppName} Setup.exe"', '', SW_SHOW, ewWaitUntilTerminated, ErrorCode);
-
-    // Update successful?
-    if (ErrorCode = 0) then
-    begin
-      // Launch downloaded setup
-      ShellExec('open', '"'+ TempDir +'{#MyAppName} Setup.exe"', '', TempDir, SW_SHOW, ewNoWait, ErrorCode);
-
-      // Terminate current setup
-      Result := False
-    end;  //of begin
-  end;  //of if
 end;
