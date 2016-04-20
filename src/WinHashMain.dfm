@@ -1,12 +1,14 @@
 object Main: TMain
   Left = 192
   Top = 124
+  BorderIcons = [biSystemMenu, biMinimize]
   Caption = 'EasyWinHash'
   ClientHeight = 177
-  ClientWidth = 400
+  ClientWidth = 434
   Color = clBtnFace
+  Constraints.MaxHeight = 236
   Constraints.MinHeight = 236
-  Constraints.MinWidth = 416
+  Constraints.MinWidth = 450
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
@@ -18,7 +20,7 @@ object Main: TMain
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   DesignSize = (
-    400
+    434
     177)
   PixelsPerInch = 96
   TextHeight = 13
@@ -56,7 +58,7 @@ object Main: TMain
       'SHA-512')
   end
   object bCalculate: TButton
-    Left = 301
+    Left = 335
     Top = 144
     Width = 75
     Height = 25
@@ -64,19 +66,21 @@ object Main: TMain
     Caption = 'Berechnen'
     TabOrder = 4
     OnClick = bCalculateClick
+    ExplicitLeft = 301
   end
   object pbProgress: TProgressBar
     Left = 24
     Top = 114
-    Width = 352
+    Width = 386
     Height = 17
     Anchors = [akLeft, akRight, akBottom]
     Smooth = True
     Step = 1
     TabOrder = 5
+    ExplicitWidth = 352
   end
   object bVerify: TButton
-    Left = 164
+    Left = 181
     Top = 144
     Width = 75
     Height = 25
@@ -84,11 +88,12 @@ object Main: TMain
     Caption = #220'berpr'#252'fen'
     TabOrder = 3
     OnClick = bVerifyClick
+    ExplicitLeft = 164
   end
   object eHash: TButtonedEdit
-    Left = 24
+    Left = 25
     Top = 78
-    Width = 351
+    Width = 385
     Height = 21
     Anchors = [akLeft, akRight]
     Images = ButtonImages
@@ -101,11 +106,13 @@ object Main: TMain
     ShowHint = True
     TabOrder = 1
     OnRightButtonClick = eHashRightButtonClick
+    ExplicitTop = 83
+    ExplicitWidth = 395
   end
   object eFile: TButtonedEdit
     Left = 24
     Top = 30
-    Width = 351
+    Width = 385
     Height = 21
     Anchors = [akLeft, akTop, akRight]
     AutoSelect = False
@@ -119,6 +126,7 @@ object Main: TMain
     ShowHint = True
     TabOrder = 0
     OnRightButtonClick = eFileRightButtonClick
+    ExplicitWidth = 351
   end
   object MainMenu: TMainMenu
     Left = 304
@@ -161,7 +169,7 @@ object Main: TMain
   object ButtonImages: TImageList
     Left = 232
     Bitmap = {
-      494C010102000C00340010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010102000C00380010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       00000000000000000000000000000000000000000000CDD3DE00B7C9D600B6C7
       D600B7C8D700B7C8D700B7C8D700B7C9D700B7C9D800B7C8D800B5C7D600B5C7
