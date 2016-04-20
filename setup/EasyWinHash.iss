@@ -3,7 +3,6 @@
 #define MyAppExeName "EasyWinHash.exe"
 #define MyAppExePath32 "..\bin\Win32\"
 #define MyAppExePath64 "..\bin\Win64\"
-#define URLVersionDirectory "EasyWinHash"
 #define FileVersion GetFileVersion(MyAppExePath32 + MyAppExeName)
 #define ProductVersion GetFileProductVersion(MyAppExePath32 + MyAppExeName)
 
