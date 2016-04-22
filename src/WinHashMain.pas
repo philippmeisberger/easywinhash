@@ -40,6 +40,7 @@ type
     eFile: TButtonedEdit;
     lHash: TLabel;
     lFile: TLabel;
+    lVersion: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);

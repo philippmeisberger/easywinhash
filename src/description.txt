@@ -1,4 +1,4 @@
-﻿EasyWinHash ist ein Werkzeug zum Erzeugen von kryptografischen Hashes von Dateien.
+﻿EasyWinHash ist ein Werkzeug zum einfachen Erzeugen und Überprüfen kryptografischer Prüfsummen (Hashes) von heruntergeladenen Dateien. Meist bieten Download-Portale solche Prüfsummen neben den eigentlichen Programmen an. Mit EasyWinHash können diese überprüft werden, um sicher zu gehen, dass die Datei nicht verändert bzw. manipuliert wurde.
 
 Copyright (C) 2016 Philipp Meisberger
 

@@ -40,6 +40,14 @@ object Main: TMain
     Caption = 'Datei:'
     FocusControl = eFile
   end
+  object lVersion: TLabel
+    Left = 405
+    Top = 3
+    Width = 21
+    Height = 13
+    Alignment = taRightJustify
+    Caption = 'v1.0'
+  end
   object cbxAlgorithm: TComboBox
     Left = 24
     Top = 144
@@ -66,7 +74,6 @@ object Main: TMain
     Caption = 'Berechnen'
     TabOrder = 4
     OnClick = bCalculateClick
-    ExplicitLeft = 301
   end
   object pbProgress: TProgressBar
     Left = 24
@@ -77,7 +84,6 @@ object Main: TMain
     Smooth = True
     Step = 1
     TabOrder = 5
-    ExplicitWidth = 352
   end
   object bVerify: TButton
     Left = 181
@@ -88,7 +94,6 @@ object Main: TMain
     Caption = #220'berpr'#252'fen'
     TabOrder = 3
     OnClick = bVerifyClick
-    ExplicitLeft = 164
   end
   object eHash: TButtonedEdit
     Left = 25
@@ -106,8 +111,6 @@ object Main: TMain
     ShowHint = True
     TabOrder = 1
     OnRightButtonClick = eHashRightButtonClick
-    ExplicitTop = 83
-    ExplicitWidth = 395
   end
   object eFile: TButtonedEdit
     Left = 24
@@ -126,7 +129,6 @@ object Main: TMain
     ShowHint = True
     TabOrder = 0
     OnRightButtonClick = eFileRightButtonClick
-    ExplicitWidth = 351
   end
   object MainMenu: TMainMenu
     Left = 304
@@ -169,7 +171,7 @@ object Main: TMain
   object ButtonImages: TImageList
     Left = 232
     Bitmap = {
-      494C010102000C00380010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010102000C003C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       00000000000000000000000000000000000000000000CDD3DE00B7C9D600B6C7
       D600B7C8D700B7C8D700B7C8D700B7C9D700B7C9D800B7C8D800B5C7D600B5C7
