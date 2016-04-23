@@ -62,7 +62,7 @@ end;
 
 procedure TBase64Test.TestEncode;
 begin
-  CheckEquals(Base64Value, FBase64.Encode(ExpectedStringValue, bfNoCRLF), 'Base64 encoding does not work!');
+  CheckEquals(Base64Value, FBase64.Encode(ExpectedStringValue), 'Base64 encoding does not work!');
 end;
 
 

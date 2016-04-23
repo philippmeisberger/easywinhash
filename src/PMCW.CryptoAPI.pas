@@ -24,27 +24,6 @@ type
   );
 
   /// <summary>
-  ///   Additional flags for the Base64 encoding/decoding.
-  /// </summary>
-  TBase64AdditionalFlag = (
-
-    /// <summary>
-    ///   No special options.
-    /// </summary>
-    bfNone,
-
-    /// <summary>
-    ///   Output has no CRLF at the end.
-    /// </summary>
-    bfNoCRLF,
-
-    /// <summary>
-    ///   Output has no CR at the end.
-    /// </summary>
-    bfNoCR
-  );
-
-  /// <summary>
   ///   A <c>TBase64</c> is a Base64 encoder/decoder.
   /// </summary>
   TBase64 = class(TObject)
@@ -99,14 +78,10 @@ type
     /// <param name="ABase64">
     ///   A Base64 string value.
     /// </param>
-    /// <param name="AAdditionalFlag">
-    ///   A <see cref="TBase64AdditionalFlag"/> additional encoding flag.
-    /// </param>
     /// <returns>
     ///   The encoded Base64 string value.
     /// </returns>
-    function Encode(const AString: string;
-      AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
+    function Encode(const AString: string): string;
 
     /// <summary>
     ///   Encodes a binary value to a Base64 string.
@@ -114,14 +89,10 @@ type
     /// <param name="AData">
     ///   A binary value.
     /// </param>
-    /// <param name="AAdditionalFlag">
-    ///   A <see cref="TBase64AdditionalFlag"/> additional encoding flag.
-    /// </param>
     /// <returns>
     ///   The encoded Base64 string value.
     /// </returns>
-    function EncodeBinary(const AData: TBytes;
-      AAdditionalFlag: TBase64AdditionalFlag = bfNone): string; overload;
+    function EncodeBinary(const AData: TBytes): string; overload;
 
     /// <summary>
     ///   Encodes a string value to a Base64 binary value.
@@ -129,14 +100,10 @@ type
     /// <param name="AString">
     ///   A string value.
     /// </param>
-    /// <param name="AAdditionalFlag">
-    ///   A <see cref="TBase64AdditionalFlag"/> additional encoding flag.
-    /// </param>
     /// <returns>
     ///   The encoded Base64 binary value.
     /// </returns>
-    function EncodeBinary(const AString: string;
-      AAdditionalFlag: TBase64AdditionalFlag = bfNone): TBytes; overload;
+    function EncodeBinary(const AString: string): TBytes; overload;
 
     /// <summary>
     ///   A <see cref="TBase64Flag"/> special encoding flag that influences the
@@ -542,45 +509,35 @@ begin
     raise Exception.Create(SysErrorMessage(GetLastError()));
 end;
 
-function TBase64.Encode(const AString: string;
-  AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
+function TBase64.Encode(const AString: string): string;
 begin
-  Result := EncodeBinary(BytesOf(AString), AAdditionalFlag);
+  Result := EncodeBinary(BytesOf(AString));
 end;
 
-function TBase64.EncodeBinary(const AData: TBytes;
-  AAdditionalFlag: TBase64AdditionalFlag = bfNone): string;
-const
-  cAdditionalFlags: array[TBase64AdditionalFlag] of DWORD = (
-    0,
-    CRYPT_STRING_NOCRLF,
-    CRYPT_STRING_NOCR
-  );
-
+function TBase64.EncodeBinary(const AData: TBytes): string;
 var
   BufferSize: DWORD;
 
 begin
   // Retrieve and set required buffer size
   if not CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
-    cAdditionalFlags[AAdditionalFlag], nil, BufferSize) then
+    CRYPT_STRING_NOCRLF, nil, BufferSize) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   SetLength(Result, BufferSize);
 
   // Encode string
   if not CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
-    cAdditionalFlags[AAdditionalFlag], PChar(Result), BufferSize) then
+    CRYPT_STRING_NOCRLF, PChar(Result), BufferSize) then
     raise Exception.Create(SysErrorMessage(GetLastError()));
 
   // Remove null-terminator
   Result := PChar(Result);
 end;
 
-function TBase64.EncodeBinary(const AString: string;
-  AAdditionalFlag: TBase64AdditionalFlag = bfNone): TBytes;
+function TBase64.EncodeBinary(const AString: string): TBytes;
 begin
-  Result := BytesOf(EncodeBinary(BytesOf(AString), AAdditionalFlag));
+  Result := BytesOf(EncodeBinary(BytesOf(AString)));
 end;
 
 
@@ -701,7 +658,7 @@ begin
     if not CryptGenRandom(CryptProvider, ALength, @Salt[0]) then
       raise Exception.Create(SysErrorMessage(GetLastError()));
 
-    Result := Base64.EncodeBinary(Salt, bfNoCRLF);
+    Result := Base64.EncodeBinary(Salt);
 
   finally
     Base64.Free;
