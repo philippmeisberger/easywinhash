@@ -5,7 +5,7 @@ program EasyWinHash;
 
 uses
   Forms,
-  WinHashMain in 'WinHashMain.pas' {Main};
+  EasyWinHashMain in 'EasyWinHashMain.pas' {Main};
 
 {$R *.res}
 

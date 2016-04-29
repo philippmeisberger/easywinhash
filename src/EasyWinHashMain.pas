@@ -6,7 +6,7 @@
 {                                                                         }
 { *********************************************************************** }
 
-unit WinHashMain;
+unit EasyWinHashMain;
 
 interface
 
