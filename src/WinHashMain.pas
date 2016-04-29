@@ -78,6 +78,7 @@ implementation
 procedure TMain.FormCreate(Sender: TObject);
 var
   i, AlgorithmIndex: Integer;
+  VersionInfo: TFileProductVersion;
 
 begin
   // Setup language
@@ -96,6 +97,13 @@ begin
 
   // Set title
   Caption := Application.Title + PLATFORM_ARCH;
+
+  // Get version information
+  if TUpdateCheck.GetFileVersion(Application.ExeName, VersionInfo) then
+  begin
+    lVersion.Caption := Format('v%d.%d', [VersionInfo[VERSION_MAJOR],
+      VersionInfo[VERSION_MINOR]]);
+  end;  //of begin
 
   // Parse arguments
   i := 1;
