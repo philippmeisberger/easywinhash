@@ -48,7 +48,7 @@ type
     procedure mmInstallCertificateClick(Sender: TObject);
     procedure mmUpdateClick(Sender: TObject);
     procedure mmReportClick(Sender: TObject);
-    procedure mmInfoClick(Sender: TObject);
+    procedure mmAboutClick(Sender: TObject);
     procedure eFileRightButtonClick(Sender: TObject);
     procedure eHashRightButtonClick(Sender: TObject);
   private
@@ -440,14 +440,20 @@ begin
   OpenUrl(URL_CONTACT);
 end;
 
-procedure TMain.mmInfoClick(Sender: TObject);
+procedure TMain.mmAboutClick(Sender: TObject);
 var
-  Info: TInfo;
+  AboutDialog: TAboutDialog;
 
 begin
-  Application.CreateForm(TInfo, Info);
-  Info.ShowModal();
-  Info.Free;
+  AboutDialog := TAboutDialog.Create(Self);
+
+  try
+    AboutDialog.Title := mmAbout.Caption;
+    AboutDialog.Execute();
+
+  finally
+    AboutDialog.Free;
+  end;  //of begin
 end;
 
 end.
