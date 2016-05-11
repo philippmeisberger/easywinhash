@@ -12,7 +12,7 @@ object Main: TMain
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -11
-  Font.Name = 'MS Sans Serif'
+  Font.Name = 'Arial'
   Font.Style = []
   Menu = MainMenu
   OldCreateOrder = False
@@ -23,36 +23,37 @@ object Main: TMain
     434
     177)
   PixelsPerInch = 96
-  TextHeight = 13
+  TextHeight = 14
   object lHash: TLabel
     Left = 24
     Top = 64
     Width = 28
-    Height = 13
-    Caption = 'Hash:'
+    Height = 14
+    Caption = '&Hash:'
     FocusControl = eHash
   end
   object lFile: TLabel
     Left = 24
     Top = 16
-    Width = 28
-    Height = 13
-    Caption = 'Datei:'
+    Width = 27
+    Height = 14
+    Caption = '&Datei:'
     FocusControl = eFile
   end
   object lVersion: TLabel
     Left = 405
     Top = 3
     Width = 21
-    Height = 13
+    Height = 14
     Alignment = taRightJustify
+    Anchors = [akTop, akRight]
     Caption = 'v1.0'
   end
   object cbxAlgorithm: TComboBox
     Left = 24
     Top = 144
     Width = 73
-    Height = 21
+    Height = 22
     Style = csDropDownList
     Anchors = [akLeft, akBottom]
     ItemIndex = 0
@@ -99,7 +100,7 @@ object Main: TMain
     Left = 25
     Top = 78
     Width = 385
-    Height = 21
+    Height = 22
     Anchors = [akLeft, akRight]
     Images = ButtonImages
     ParentShowHint = False
@@ -116,9 +117,8 @@ object Main: TMain
     Left = 24
     Top = 30
     Width = 385
-    Height = 21
+    Height = 22
     Anchors = [akLeft, akTop, akRight]
-    AutoSelect = False
     Images = ButtonImages
     ParentShowHint = False
     RightButton.DisabledImageIndex = 1
@@ -171,7 +171,7 @@ object Main: TMain
   object ButtonImages: TImageList
     Left = 232
     Bitmap = {
-      494C010102000C00480010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010102000C00540010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       00000000000000000000000000000000000000000000CDD3DE00B7C9D600B6C7
       D600B7C8D700B7C8D700B7C8D700B7C9D700B7C9D800B7C8D800B5C7D600B5C7
