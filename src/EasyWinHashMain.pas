@@ -18,6 +18,14 @@ uses
   Vcl.ImgList;
 
 type
+  ENothingEnteredException = class(EAbort)
+  private
+    FEditHandle: THandle;
+  public
+    constructor Create(const AMessage: string; AEditHandle: THandle); reintroduce;
+    property EditHandle: THandle read FEditHandle;
+  end;
+
   { TMain }
   TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
     cbxAlgorithm: TComboBox;
@@ -73,6 +81,16 @@ implementation
 
 {$I LanguageIDs.inc}
 {$R *.dfm}
+
+{ ENothingEnteredException }
+
+constructor ENothingEnteredException.Create(const AMessage: string;
+  AEditHandle: THandle);
+begin
+  inherited Create(AMessage);
+  FEditHandle := AEditHandle;
+end;
+
 
 { TMain }
 
@@ -323,7 +341,7 @@ begin
     end;  //of begin
 
     if (eFile.Text = '') then
-      raise EAbort.Create(FLang.GetString(LID_NO_FILE_SELECTED));
+      raise ENothingEnteredException.Create(FLang.GetString(LID_NO_FILE_SELECTED), eFile.Handle);
 
     FThread := TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex));
 
@@ -342,8 +360,8 @@ begin
     bVerify.Enabled := False;
 
   except
-    on E: EAbort do
-      FLang.EditBalloonTip(eFile.Handle, FLang.GetString(LID_WARNING), E.Message, biWarning);
+    on E: ENothingEnteredException do
+      FLang.EditBalloonTip(E.EditHandle, FLang.GetString(LID_WARNING), E.Message, biWarning);
 
     on E: Exception do
       FLang.ShowException(FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), E.Message);
@@ -388,7 +406,10 @@ begin
     end;  //of begin
 
     if (eHash.Text = '') then
-      raise EAbort.Create(FLang.GetString(LID_NO_HASH_ENTERED));
+      raise ENothingEnteredException.Create(FLang.GetString(LID_NO_HASH_ENTERED), eHash.Handle);
+
+    if (eFile.Text = '') then
+      raise ENothingEnteredException.Create(FLang.GetString(LID_NO_FILE_SELECTED), eFile.Handle);
 
     FThread := TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex),
       eHash.Text);
@@ -409,8 +430,8 @@ begin
     bCalculate.Enabled := False;
 
   except
-    on E: EAbort do
-      FLang.EditBalloonTip(eHash.Handle, FLang.GetString(LID_WARNING), E.Message, biWarning);
+    on E: ENothingEnteredException do
+      FLang.EditBalloonTip(E.EditHandle, FLang.GetString(LID_WARNING), E.Message, biWarning);
 
     on E: Exception do
       FLang.ShowException(FLang.GetString([LID_HASH_VERIFY, LID_IMPOSSIBLE]), E.Message);
