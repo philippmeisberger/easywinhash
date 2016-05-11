@@ -64,14 +64,16 @@ type
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
     FThread: TFileHashThread;
+    procedure WMDropFiles(var AMsg: TWMDropFiles); message WM_DROPFILES;
     procedure OnBeginHashing(Sender: TObject);
     procedure OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
     procedure OnHashingError(Sender: TThread; const AErrorMessage: string);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
+    { IUpdateListener }
     procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+    { IChangeLanguageListener }
     procedure SetLanguage(Sender: TObject);
-    procedure WMDropFiles(var AMsg: TMessage); message WM_DROPFILES;
   end;
 
 var
@@ -260,8 +262,17 @@ begin
       // Set updater options
       with Updater do
       begin
+      {$IFDEF PORTABLE}
+        FileNameLocal := 'EasyWinHash.exe';
+      {$IFDEF WIN64}
+        FileNameRemote := 'easywinhash64.exe';
+      {$ELSE}
+        FileNameRemote := 'easywinhash.exe';
+      {$ENDIF}
+      {$ELSE}
         FileNameLocal := 'EasyWinHash Setup.exe';
         FileNameRemote := 'easywinhash_setup.exe';
+      {$ENDIF}
       end;  //of begin
 
       // Successfully downloaded update?
@@ -316,17 +327,17 @@ begin
   end;  //of with
 end;
 
-procedure TMain.WMDropFiles(var AMsg: TMessage);
+procedure TMain.WMDropFiles(var AMsg: TWMDropFiles);
 var
   BufferSize: Integer;
   FileName: PChar;
 
 begin
-  BufferSize := DragQueryFile(AMsg.WParam, 0, nil, 0) + 1;
+  BufferSize := DragQueryFile(AMsg.Drop, 0, nil, 0) + 1;
   FileName := StrAlloc(BufferSize);
-  DragQueryFile(AMsg.WParam, 0, FileName, BufferSize);
+  DragQueryFile(AMsg.Drop, 0, FileName, BufferSize);
   eFile.Text := StrPas(FileName);
-  DragFinish(AMsg.WParam);
+  DragFinish(AMsg.Drop);
 end;
 
 procedure TMain.bCalculateClick(Sender: TObject);
