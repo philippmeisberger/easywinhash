@@ -4,7 +4,7 @@ program EasyWinHash;
 {$R 'description.res' 'description.rc'}
 
 uses
-  Forms,
+  Vcl.Forms,
   EasyWinHashMain in 'EasyWinHashMain.pas' {Main};
 
 {$R *.res}

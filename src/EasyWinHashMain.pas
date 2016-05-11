@@ -2,7 +2,7 @@
 {                                                                         }
 { EasyWinHash Main Unit                                                   }
 {                                                                         }
-{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2016 Philipp Meisberger (PM Code Works)                   }
 {                                                                         }
 { *********************************************************************** }
 
@@ -51,6 +51,7 @@ type
     procedure mmAboutClick(Sender: TObject);
     procedure eFileRightButtonClick(Sender: TObject);
     procedure eHashRightButtonClick(Sender: TObject);
+    procedure eFileDblClick(Sender: TObject);
   private
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
@@ -352,6 +353,12 @@ end;
 procedure TMain.eHashRightButtonClick(Sender: TObject);
 begin
   Clipboard.AsText := eHash.Text;
+end;
+
+procedure TMain.eFileDblClick(Sender: TObject);
+begin
+  if (eFile.Text = '') then
+    eFileRightButtonClick(Sender);
 end;
 
 procedure TMain.eFileRightButtonClick(Sender: TObject);
