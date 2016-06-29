@@ -656,8 +656,7 @@ var
   FileToHash: TFileStream;
   BytesRead: Integer;
   Cancel: Boolean;
-  Progress,
-  ProgressMax: Int64;
+  Progress: Int64;
 
 begin
   // Open file
@@ -679,18 +678,17 @@ begin
 
     // Read first KB of file into buffer
     BytesRead := FileToHash.Read(Buffer, Length(Buffer));
-    ProgressMax := FileToHash.Size div 1024;
     Progress := 0;
     Cancel := False;
 
     // EOF?
     while ((BytesRead <> 0) and not Cancel) do
     begin
-      // Progress in KB
+      // Progress in bytes
       if Assigned(FOnProgress) then
       begin
-        Progress := Progress + (BytesRead div 1024);
-        FOnProgress(Self, Progress, ProgressMax, Cancel);
+        Progress := Progress + BytesRead;
+        FOnProgress(Self, Progress, FileToHash.Size, Cancel);
       end;  //of begin
 
       // Create hash of read bytes in buffer
