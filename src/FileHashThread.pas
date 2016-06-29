@@ -157,11 +157,8 @@ end;
 procedure TFileHashThread.OnHashing(Sender: TObject; const AProgress,
   AProgressMax: Int64; var ACancel: Boolean);
 begin
-  // Show progress in KB
-  if (FBytes = 0) then
-    FBytes := AProgressMax div 1024;
-
-  FBytesRead := AProgress div 1024;
+  FBytes := AProgressMax;
+  FBytesRead := AProgress;
   ACancel := Terminated;
   Synchronize(DoNotifyOnProgress);
 end;

@@ -202,9 +202,9 @@ end;
 procedure TMain.OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
 begin
   pbProgress.Max := AFileSize;
-  pbProgress.Position := pbProgress.Position + AProgress;
+  pbProgress.Position := AProgress;
   Taskbar.ProgressMaxValue := AFileSize;
-  TaskBar.ProgressValue := TaskBar.ProgressValue + AProgress;
+  TaskBar.ProgressValue := AProgress;
 end;
 
 procedure TMain.OnHashingError(Sender: TThread; const AErrorMessage: string);
