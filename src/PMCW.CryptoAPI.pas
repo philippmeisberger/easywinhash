@@ -446,6 +446,9 @@ var
   BufferSize, Skipped, Flags: DWORD;
 
 begin
+  if (Length(ABase64) = 0) then
+    Exit;
+
   // Retrieve and set required buffer size
   if not CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
     nil, BufferSize, Skipped, Flags) then
@@ -469,6 +472,9 @@ var
   BufferSize: DWORD;
 
 begin
+  if (Length(AData) = 0) then
+    Exit;
+
   // Retrieve and set required buffer size
   if not CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
     CRYPT_STRING_NOCRLF, nil, BufferSize) then
