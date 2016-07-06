@@ -302,13 +302,10 @@ type
     /// <param name="AString">
     ///   The string to be hashed.
     /// </param>
-    /// <param name="ASalt">
-    ///   Optional: A salt.
-    /// </param>
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Compute(const AString: string; const ASalt: string = ''): string; overload;
+    function Compute(const AString: string): string; overload;
 
     /// <summary>
     ///   Creates a hash from a file.
@@ -330,13 +327,10 @@ type
     /// <param name="AString">
     ///   The string to be verified.
     /// </param>
-    /// <param name="ASalt">
-    ///   Optional: The used salt.
-    /// </param>
     /// <returns>
     ///   <c>True</c> if the hash matches to the string or <c>False</c> otherwise.
     /// </returns>
-    function Verify(const AHash, AString: string; const ASalt: string = ''): Boolean; overload;
+    function Verify(const AHash, AString: string): Boolean; overload;
 
     /// <summary>
     ///   Verifies the hash from a file.
@@ -649,9 +643,9 @@ begin
   end;  //of try
 end;
 
-function THash.Compute(const AString: string; const ASalt: string = ''): string;
+function THash.Compute(const AString: string): string;
 begin
-  Result := ToHex(Compute(BytesOf(ASalt + AString)));
+  Result := ToHex(Compute(BytesOf(AString)));
 end;
 
 function THash.Compute(const AFileName: TFileName): string;
@@ -721,9 +715,9 @@ begin
   end;  //of try
 end;
 
-function THash.Verify(const AHash, AString: string; const ASalt: string = ''): Boolean;
+function THash.Verify(const AHash, AString: string): Boolean;
 begin
-  Result := AnsiSameStr(AHash, Compute(AString, ASalt));
+  Result := AnsiSameStr(AHash, Compute(AString));
 end;
 
 function THash.Verify(const AHash: string; AFileName: TFileName): Boolean;
