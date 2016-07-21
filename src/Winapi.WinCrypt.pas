@@ -22,6 +22,8 @@ uses
 type
   ALG_ID     = UINT;
   {$EXTERNALSYM ALG_ID}
+  TAlgId     = ALG_ID;
+
   HCRYPTPROV = ULONG_PTR;
   {$EXTERNALSYM HCRYPTPROV}
   TCryptProv = HCRYPTPROV;

@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ Windows CryptoAPI Unit v1.1                                             }
+{ Windows CryptoAPI Unit v1.2                                             }
 {                                                                         }
 { Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -15,6 +15,30 @@ uses
 
 type
   /// <summary>
+  ///   WinCrypt exception class.
+  /// </summary>
+  EWinCryptError = class(EOSError);
+
+  /// <summary>
+  ///   The base class for WinCrypt operations.
+  /// </summary>
+  TCryptoBase = class abstract(TObject)
+
+    /// <summary>
+    ///   Checks the <c>BOOL</c> return value of certain WinCrypt functions and
+    ///   raises a <c>EWinCryptError</c> exception with matching error message
+    ///   if an error occured.
+    /// </summary>
+    /// <param name="AStatus">
+    ///   The <c>BOOL</c> value to check.
+    /// </param>
+    /// <exception>
+    ///   <c>EWinCryptError</c> if <c>AStatus</c> is <c>False</c>.
+    /// </exception>
+    procedure Check(AStatus: BOOL);
+  end;
+
+  /// <summary>
   ///   General flags for the Base64 encoding/decoding.
   /// </summary>
   TBase64Flag = (
@@ -26,7 +50,7 @@ type
   /// <summary>
   ///   A <c>TBase64</c> is a Base64 encoder/decoder.
   /// </summary>
-  TBase64 = class(TObject)
+  TBase64 = class(TCryptoBase)
   private
     FFlag: TBase64Flag;
   public
@@ -120,9 +144,6 @@ type
     /// <summary>
     ///   The MD5 hash algorithm.
     /// </summary>
-    /// <remarks>
-    ///   Do not use! Better use a SHA hash algorithm.
-    /// </remarks>
     haMd5,
 
     /// <summary>
@@ -146,81 +167,37 @@ type
   );
 
   /// <summary>
-  ///   Possible encryption algorithms.
+  ///   Generic progress event.
   /// </summary>
-  TCryptAlgorithm = (
-
-    /// <summary>
-    ///   The AES-128 encryption algorithm.
-    /// </summary>
-    caAes128,
-
-    /// <summary>
-    ///   The AES-192 encryption algorithm.
-    /// </summary>
-    caAes192,
-
-    /// <summary>
-    ///   The AES-256 encryption algorithm.
-    /// </summary>
-    caAes256
-  );
-
-  { Events }
-  TFileHashEvent = procedure(Sender: TObject; const AProgress, AProgressMax: Int64;
+  /// <param name="Sender">
+  ///   The sender.
+  /// </param>
+  /// <param name="AProgress">
+  ///   The current progress.
+  /// </param>
+  /// <param name="AProgressMax">
+  ///   The maximum progress.
+  /// </param>
+  /// <param name="ACancel">
+  ///   Set to <c>True</c> to cancel the pending operation.
+  /// </param>
+  TProgressEvent = procedure(Sender: TObject; const AProgress, AProgressMax: Int64;
     var ACancel: Boolean) of object;
 
   /// <summary>
-  ///   The base class for encryption and hashing operations.
+  ///  <c>THash</c> provides methods to calculate and verify hash values from
+  ///  strings and files.
   /// </summary>
-  TCryptBase = class(TObject)
+  /// <remarks>
+  ///   Uses the older WinCrypt API since Windows XP.
+  /// </remarks>
+  THash = class(TCryptoBase)
+  private
+    FOnProgress: TProgressEvent;
+    FOnStart,
+    FOnFinish: TNotifyEvent;
+    FHashAlgorithm: THashAlgorithm;
   protected
-    /// <summary>
-    ///   Derives a symmetric key from a password string.
-    /// </summary>
-    /// <param name="ACryptProvider">
-    ///   The handle to a cryptographic provider.
-    /// </param>
-    /// <param name="APassword">
-    ///   The password used for key derivation.
-    /// </param>
-    /// <param name="AHashAlgorithm">
-    ///   The used hash algorithm.
-    /// </param>
-    /// <param name="APasswordEncryptionAlgorithm">
-    ///   The used encryption algorithm to encrypt the password.
-    /// </param>
-    /// <returns>
-    ///   A symmetric key handle which MUST be freed after usage using
-    //   <c>CryptDestroyKey()</c>.
-    /// </returns>
-    function DeriveKey(ACryptProvider: TCryptProv; const APassword: string;
-      AHashAlgorithm: THashAlgorithm;
-      APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey; overload;
-
-    /// <summary>
-    ///   Derives a symmetric key from a binary password.
-    /// </summary>
-    /// <param name="ACryptProvider">
-    ///   The handle to a cryptographic provider.
-    /// </param>
-    /// <param name="APassword">
-    ///   The password used for key derivation.
-    /// </param>
-    /// <param name="AHashAlgorithm">
-    ///   The used hash algorithm.
-    /// </param>
-    /// <param name="APasswordEncryptionAlgorithm">
-    ///   The used encryption algorithm to encrypt the password.
-    /// </param>
-    /// <returns>
-    ///   A symmetric key handle which MUST be freed after usage using
-    ///   <c>CryptDestroyKey()</c>.
-    /// </returns>
-    function DeriveKey(ACryptProvider: TCryptProv; const APassword: TBytes;
-      AHashAlgorithm: THashAlgorithm;
-      APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey; overload;
-
     /// <summary>
     ///   Creates a binary representation from a hash in buffer.
     /// </summary>
@@ -242,29 +219,6 @@ type
     ///   A string hash value.
     /// </returns>
     function HashToString(AHashHandle: TCryptHash): string;
-  public
-    /// <summary>
-    ///   Creates a hex string representation from a binary hash.
-    /// </summary>
-    /// <param name="AHash">
-    ///   The binary hash value.
-    /// </param>
-    /// <returns>
-    ///   The hex string hash value.
-    /// </returns>
-    function ToHex(const AHash: TBytes): string;
-  end;
-
-  /// <summary>
-  ///  <c>THash</c> provides methods to calculate and verify hash values from
-  ///  strings and files.
-  /// </summary>
-  THash = class(TCryptBase)
-  private
-    FOnProgress: TFileHashEvent;
-    FOnStart,
-    FOnFinish: TNotifyEvent;
-    FHashAlgorithm: THashAlgorithm;
   public
     /// <summary>
     ///   Constructor for creating a <c>THash</c> instance.
@@ -319,6 +273,17 @@ type
     function Compute(const AFileName: TFileName): string; overload;
 
     /// <summary>
+    ///   Creates a hex string representation from a binary hash.
+    /// </summary>
+    /// <param name="AHash">
+    ///   The binary hash value.
+    /// </param>
+    /// <returns>
+    ///   The hex string hash value.
+    /// </returns>
+    function ToHex(const AHash: TBytes): string;
+
+    /// <summary>
     ///   Verifies the hash from a string.
     /// </summary>
     /// <param name="AHash">
@@ -359,7 +324,7 @@ type
     /// <summary>
     ///   Event that is called during hash calculation.
     /// </summary>
-    property OnProgress: TFileHashEvent read FOnProgress write FOnProgress;
+    property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
 
     /// <summary>
     ///   Event that is called when hash calculation has started.
@@ -371,7 +336,7 @@ implementation
 
 type
   THashAlgorithmHelper = record helper for THashAlgorithm
-    function GetHashAlgorithm(): ALG_ID;
+    function GetHashAlgorithm(): TAlgId;
   end;
 
   TBase64FlagHelper = record helper for TBase64Flag
@@ -380,7 +345,7 @@ type
 
 { THashAlgorithmHelper }
 
-function THashAlgorithmHelper.GetHashAlgorithm(): ALG_ID;
+function THashAlgorithmHelper.GetHashAlgorithm(): TAlgId;
 begin
   case Self of
     haMd5:    Result := CALG_MD5;
@@ -417,6 +382,23 @@ begin
 end;
 
 
+{ TCryptoBase }
+
+procedure TCryptoBase.Check(AStatus: BOOL);
+var
+  LastError: DWORD;
+
+begin
+  if not AStatus then
+  begin
+    LastError := GetLastError();
+
+    if (LastError <> ERROR_SUCCESS) then
+      raise EWinCryptError.Create(SysErrorMessage(LastError)) at ReturnAddress;
+  end;  //of begin
+end;
+
+
 { TBase64 }
 
 constructor TBase64.Create(AFlag: TBase64Flag = bfDefault);
@@ -444,16 +426,14 @@ begin
     Exit;
 
   // Retrieve and set required buffer size
-  if not CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
-    nil, BufferSize, Skipped, Flags) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
+  Check(CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
+    nil, BufferSize, Skipped, Flags));
 
   SetLength(Result, BufferSize);
 
   // Decode string
-  if not CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
-    @Result[0], BufferSize, Skipped, Flags) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
+  Check(CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
+    @Result[0], BufferSize, Skipped, Flags));;
 end;
 
 function TBase64.Encode(const AString: string): string;
@@ -470,16 +450,14 @@ begin
     Exit;
 
   // Retrieve and set required buffer size
-  if not CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
-    CRYPT_STRING_NOCRLF, nil, BufferSize) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
+  Check(CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
+    CRYPT_STRING_NOCRLF, nil, BufferSize));
 
   SetLength(Result, BufferSize);
 
   // Encode string
-  if not CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
-    CRYPT_STRING_NOCRLF, PChar(Result), BufferSize) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
+  Check(CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
+    CRYPT_STRING_NOCRLF, PChar(Result), BufferSize));
 
   // Remove null-terminator
   Result := PChar(Result);
@@ -488,91 +466,6 @@ end;
 function TBase64.EncodeBinary(const AString: string): TBytes;
 begin
   Result := BytesOf(EncodeBinary(BytesOf(AString)));
-end;
-
-
-{ TCryptBase }
-
-function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
-  const APassword: TBytes; AHashAlgorithm: THashAlgorithm;
-  APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
-const
-  cEncryptionAlgorithms: array[TCryptAlgorithm] of ALG_ID = (
-    CALG_AES_128,
-    CALG_AES_192,
-    CALG_AES_256
-  );
-
-var
-  PasswordHash: TCryptHash;
-
-begin
-  Result := 0;
-
-  // Init password hash object
-  if not CryptCreateHash(ACryptProvider, AHashAlgorithm.GetHashAlgorithm(), 0, 0,
-    PasswordHash) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  try
-    // Create hash of the password
-    if not CryptHashData(PasswordHash, @APassword[0], Length(APassword), 0) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-    // Derive symmetric key from password
-    if not CryptDeriveKey(ACryptProvider, cEncryptionAlgorithms[APasswordEncryptionAlgorithm],
-      PasswordHash, 0, Result) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  finally
-    CryptDestroyHash(PasswordHash);
-  end;  //of try
-end;
-
-function TCryptBase.DeriveKey(ACryptProvider: TCryptProv;
-  const APassword: string; AHashAlgorithm: THashAlgorithm;
-  APasswordEncryptionAlgorithm: TCryptAlgorithm): TCryptKey;
-begin
-  Result := DeriveKey(ACryptProvider, BytesOf(APassword), AHashAlgorithm,
-    APasswordEncryptionAlgorithm);
-end;
-
-function TCryptBase.HashToBytes(AHashHandle: TCryptHash): TBytes;
-var
-  HashLength, HashSize: DWORD;
-
-begin
-  HashSize := SizeOf(DWORD);
-
-  // Retrieve the length (in Byte) of the hash
-  if not CryptGetHashParam(AHashHandle, HP_HASHSIZE, @HashLength, HashSize, 0) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-
-  // Resize the buffer to the blocksize of the used hash algorithm
-  SetLength(Result, HashLength);
-
-  // Load the hash value into buffer
-  if not CryptGetHashParam(AHashHandle, HP_HASHVAL, @Result[0], HashLength, 0) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
-end;
-
-function TCryptBase.HashToString(AHashHandle: TCryptHash): string;
-begin
-  Result := ToHex(HashToBytes(AHashHandle));
-end;
-
-function TCryptBase.ToHex(const AHash: TBytes): string;
-var
-  i, Bytes: Integer;
-
-begin
-  Bytes := SizeOf(Char);
-
-  // Build a string from buffer
-  for i := Low(AHash) to High(AHash) do
-    Result := Result + IntToHex(AHash[i], Bytes);
-
-  Result := LowerCase(Result);
 end;
 
 
@@ -596,23 +489,54 @@ begin
   if (ALength = 0) then
     Exit;
 
-  if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-    CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
+  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
+    CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET));
 
   Base64 := TBase64.Create;
 
   try
     SetLength(Salt, ALength);
-
-    if not CryptGenRandom(CryptProvider, ALength, @Salt[0]) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
+    Check(CryptGenRandom(CryptProvider, ALength, @Salt[0]));
     Result := Base64.EncodeBinary(Salt);
 
   finally
     Base64.Free;
   end;  //of try
+end;
+
+function THash.HashToBytes(AHashHandle: TCryptHash): TBytes;
+var
+  HashLength, HashSize: DWORD;
+
+begin
+  // Retrieve the length (in Byte) of the hash
+  HashSize := SizeOf(DWORD);
+  Check(CryptGetHashParam(AHashHandle, HP_HASHSIZE, @HashLength, HashSize, 0));
+
+  // Resize the buffer to the blocksize of the used hash algorithm
+  SetLength(Result, HashLength);
+
+  // Load the hash value into buffer
+  Check(CryptGetHashParam(AHashHandle, HP_HASHVAL, @Result[0], HashLength, 0));
+end;
+
+function THash.HashToString(AHashHandle: TCryptHash): string;
+begin
+  Result := ToHex(HashToBytes(AHashHandle));
+end;
+
+function THash.ToHex(const AHash: TBytes): string;
+var
+  i, Bytes: Integer;
+
+begin
+  Bytes := SizeOf(Char);
+
+  // Build a string from buffer
+  for i := Low(AHash) to High(AHash) do
+    Result := Result + IntToHex(AHash[i], Bytes);
+
+  Result := LowerCase(Result);
 end;
 
 function THash.Compute(const AData: TBytes): TBytes;
@@ -621,20 +545,16 @@ var
   HashHandle: TCryptHash;
 
 begin
-  if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-    CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
+  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
+    CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET));
 
   // Init hash object
-  if not CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0, 0,
-    HashHandle) then
-    raise Exception.Create(SysErrorMessage(GetLastError()));
+  Check(CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0, 0,
+    HashHandle));
 
   try
     // Create the hash of the string
-    if not CryptHashData(HashHandle, @AData[0], Length(AData), 0) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
-
+    Check(CryptHashData(HashHandle, @AData[0], Length(AData), 0));
     Result := HashToBytes(HashHandle);
 
   finally
@@ -663,14 +583,12 @@ begin
   FileToHash := TFileStream.Create(AFileName, fmOpenRead);
 
   try
-    if not CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-      CRYPT_VERIFYCONTEXT) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
+    Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
+      CRYPT_VERIFYCONTEXT));
 
     // Init hash object
-    if not CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0,
-      0, HashHandle) then
-      raise Exception.Create(SysErrorMessage(GetLastError()));
+    Check(CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0,
+      0, HashHandle));
 
     // Notify start of file hashing
     if Assigned(FOnStart) then
@@ -692,8 +610,7 @@ begin
       end;  //of begin
 
       // Create hash of read bytes in buffer
-      if not CryptHashData(HashHandle, @Buffer[0], BytesRead, 0) then
-        raise Exception.Create(SysErrorMessage(GetLastError()));
+      Check(CryptHashData(HashHandle, @Buffer[0], BytesRead, 0));
 
       // Read next KB of file into buffer
       BytesRead := FileToHash.Read(Buffer, Length(Buffer));
