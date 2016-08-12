@@ -27,7 +27,7 @@ Compression=lzma
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64
 UninstallDisplayIcon={app}\{#MyAppExeName}
-VersionInfoVersion=2.5
+VersionInfoVersion={#FileVersion}
 SignTool=MySignTool sign /v /sha1 A9A273A222A5DD3ED9EC2F46232AAD8E087EA4ED /tr http://timestamp.globalsign.com/scripts/timstamp.dll /as /fd SHA256 /td SHA256 $f
 
 [Languages]
