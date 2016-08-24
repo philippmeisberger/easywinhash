@@ -8,10 +8,12 @@
 
 unit PMCW.CryptoAPI;
 
+{$IFDEF FPC}{$mode delphiunicode}{$ENDIF}
+
 interface
 
 uses
-  Winapi.Windows, Classes, SysUtils, Winapi.WinCrypt;
+  Windows, Classes, SysUtils, Winapi.WinCrypt;
 
 type
   /// <summary>
@@ -165,6 +167,10 @@ type
     /// </summary>
     haSha512
   );
+
+  THashAlgorithmHelper = record helper for THashAlgorithm
+    function GetHashAlgorithm(): TAlgId;
+  end;
 
   /// <summary>
   ///   Generic progress event.
@@ -335,10 +341,6 @@ type
 implementation
 
 type
-  THashAlgorithmHelper = record helper for THashAlgorithm
-    function GetHashAlgorithm(): TAlgId;
-  end;
-
   TBase64FlagHelper = record helper for TBase64Flag
     function GetFlag(): DWORD;
   end;
@@ -394,7 +396,7 @@ begin
     LastError := GetLastError();
 
     if (LastError <> ERROR_SUCCESS) then
-      raise EWinCryptError.Create(SysErrorMessage(LastError)) at ReturnAddress;
+      raise EWinCryptError.Create(SysErrorMessage(LastError)) {$IFNDEF FPC}at ReturnAddress{$ENDIF};
   end;  //of begin
 end;
 

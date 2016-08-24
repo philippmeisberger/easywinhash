@@ -13,9 +13,9 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Buttons, Vcl.ClipBrd,
-  System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, PMCW.CryptoAPI, PMCWOSUtils,
-  PMCWLanguageFile, FileHashThread, PMCWUpdater, PMCWAbout, System.ImageList,
-  Vcl.ImgList;
+  System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, PMCW.CryptoAPI, PMCW.Utils,
+  PMCW.LanguageFile, FileHashThread, PMCW.Dialogs.Updater, PMCW.Dialogs.About,
+  Vcl.ImgList, System.ImageList;
 
 type
   ENothingEnteredException = class(EAbort)
@@ -71,9 +71,9 @@ type
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
     { IUpdateListener }
-    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+    procedure OnUpdate(const ANewBuild: Cardinal);
     { IChangeLanguageListener }
-    procedure SetLanguage(Sender: TObject);
+    procedure SetLanguage(ANewLanguage: TLocale);
   end;
 
 var
@@ -244,9 +244,9 @@ begin
   MessageBeep(MB_ICONINFORMATION);
 end;
 
-procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+procedure TMain.OnUpdate(const ANewBuild: Cardinal);
 var
-  Updater: TUpdate;
+  Updater: TUpdateDialog;
 
 begin
   mmUpdate.Caption := FLang.GetString(LID_UPDATE_DOWNLOAD);
@@ -256,7 +256,7 @@ begin
     FLang.GetString(LID_UPDATE_CONFIRM_DOWNLOAD), mtConfirmation) = IDYES) then
   begin
     // init TUpdate instance
-    Updater := TUpdate.Create(Self, FLang);
+    Updater := TUpdateDialog.Create(Self, FLang);
 
     try
       // Set updater options
@@ -302,7 +302,7 @@ begin
   end;  //of if
 end;
 
-procedure TMain.SetLanguage(Sender: TObject);
+procedure TMain.SetLanguage(ANewLanguage: TLocale);
 begin
   with FLang do
   begin
@@ -456,10 +456,10 @@ end;
 
 procedure TMain.mmInstallCertificateClick(Sender: TObject);
 var
-  Updater: TUpdate;
+  Updater: TUpdateDialog;
 
 begin
-  Updater := TUpdate.Create(Self, FLang);
+  Updater := TUpdateDialog.Create(Self, FLang);
 
   try
     // Certificate already installed?
