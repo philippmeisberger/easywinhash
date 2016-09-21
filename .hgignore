@@ -1,6 +1,5 @@
 syntax: glob
-src\__history\**
-tests\__history\**
+__history
 **.exe
 **.zip
 **.dcu
