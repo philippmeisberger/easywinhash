@@ -579,18 +579,8 @@ begin
 end;
 
 function THash.GenerateSalt(ALength: Cardinal): string;
-var
-  Base64: TBase64;
-
 begin
-  Base64 := TBase64.Create;
-
-  try
-    Result := Base64.EncodeBinary(GenerateRandom(ALength));
-
-  finally
-    Base64.Free;
-  end;  //of try
+  Result := ToHex(GenerateRandom(ALength));
 end;
 
 function THash.ToHex(const AHash: TBytes): string;
