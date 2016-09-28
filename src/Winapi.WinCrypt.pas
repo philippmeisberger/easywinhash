@@ -572,32 +572,32 @@ function CryptVerifySignature(hHash: HCRYPTHASH; pbSignature: PByte; dwSigLen: D
 
 implementation
 
-function CryptAcquireContext; stdcall; external advapi32 name 'CryptAcquireContextW';
-function CryptBinaryToString; stdcall; external crypt32 name 'CryptBinaryToStringW';
-function CryptCreateHash; stdcall; external advapi32 name 'CryptCreateHash';
-function CryptDecrypt; stdcall; external advapi32 name 'CryptDecrypt';
-function CryptDeriveKey; stdcall; external advapi32 name 'CryptDeriveKey';
-function CryptDestroyHash; stdcall; external advapi32 name 'CryptDestroyHash';
-function CryptDestroyKey; stdcall; external advapi32 name 'CryptDestroyKey';
-function CryptDuplicateHash; stdcall; external advapi32 name 'CryptDestroyKey';
-function CryptDuplicateKey; stdcall; external advapi32 name 'CryptDuplicateKey';
-function CryptEncrypt; stdcall; external advapi32 name 'CryptEncrypt';
-function CryptGenKey; stdcall; external advapi32 name 'CryptGenKey';
-function CryptGenRandom; stdcall; external advapi32 name 'CryptGenRandom';
-function CryptGetHashParam; stdcall; external advapi32 name 'CryptGetHashParam';
-function CryptGetKeyParam; stdcall; external advapi32 name 'CryptGetKeyParam';
-function CryptGetProvParam; stdcall; external advapi32 name 'CryptGetProvParam';
-function CryptGetUserKey; stdcall; external advapi32 name 'CryptGetUserKey';
-function CryptHashData; stdcall; external advapi32 name 'CryptHashData';
-function CryptReleaseContext; stdcall; external advapi32 name 'CryptReleaseContext';
-function CryptSetHashParam; stdcall; external advapi32 name 'CryptSetHashParam';
-function CryptSetKeyParam; stdcall; external advapi32 name 'CryptSetKeyParam';
-function CryptSignHash; stdcall; external crypt32 name 'CryptSignHashW';
-function CryptStringToBinary; stdcall; external crypt32 name 'CryptStringToBinaryW';
-function CryptProtectData; stdcall; external crypt32 name 'CryptProtectData';
-function CryptProtectMemory; stdcall; external crypt32 name 'CryptProtectMemory';
-function CryptUnprotectData; stdcall; external crypt32 name 'CryptUnprotectData';
-function CryptUnProtectMemory; stdcall; external crypt32 name 'CryptUnProtectMemory';
-function CryptVerifySignature; stdcall; external advapi32 name 'CryptVerifySignatureW';
+function CryptAcquireContext; external advapi32 name 'CryptAcquireContextW';
+function CryptBinaryToString; external crypt32 name 'CryptBinaryToStringW';
+function CryptCreateHash; external advapi32 name 'CryptCreateHash';
+function CryptDecrypt; external advapi32 name 'CryptDecrypt';
+function CryptDeriveKey; external advapi32 name 'CryptDeriveKey';
+function CryptDestroyHash; external advapi32 name 'CryptDestroyHash';
+function CryptDestroyKey; external advapi32 name 'CryptDestroyKey';
+function CryptDuplicateHash; external advapi32 name 'CryptDestroyKey';
+function CryptDuplicateKey; external advapi32 name 'CryptDuplicateKey';
+function CryptEncrypt; external advapi32 name 'CryptEncrypt';
+function CryptGenKey; external advapi32 name 'CryptGenKey';
+function CryptGenRandom; external advapi32 name 'CryptGenRandom';
+function CryptGetHashParam; external advapi32 name 'CryptGetHashParam';
+function CryptGetKeyParam; external advapi32 name 'CryptGetKeyParam';
+function CryptGetProvParam; external advapi32 name 'CryptGetProvParam';
+function CryptGetUserKey; external advapi32 name 'CryptGetUserKey';
+function CryptHashData; external advapi32 name 'CryptHashData';
+function CryptReleaseContext; external advapi32 name 'CryptReleaseContext';
+function CryptSetHashParam; external advapi32 name 'CryptSetHashParam';
+function CryptSetKeyParam; external advapi32 name 'CryptSetKeyParam';
+function CryptSignHash; external crypt32 name 'CryptSignHashW';
+function CryptStringToBinary; external crypt32 name 'CryptStringToBinaryW';
+function CryptProtectData; external crypt32 name 'CryptProtectData';
+function CryptProtectMemory; external crypt32 name 'CryptProtectMemory';
+function CryptUnprotectData; external crypt32 name 'CryptUnprotectData';
+function CryptUnProtectMemory; external crypt32 name 'CryptUnProtectMemory';
+function CryptVerifySignature; external advapi32 name 'CryptVerifySignatureW';
 
 end.

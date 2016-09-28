@@ -15,12 +15,23 @@ program EasyWinHashTests;
 {$ENDIF}
 
 uses
+{$IFDEF madExcept}
+  madExcept,
+  madLinkDisAsm,
+  madListHardware,
+  madListProcesses,
+  madListModules,
+{$ENDIF}
   DUnitTestRunner,
   CryptoAPITests in 'CryptoAPITests.pas';
 
 {$R *.RES}
 
 begin
+{$IFDEF WIN64}
+  // madExcept leak checking does not seems to work in 64 bit builds
+  ReportMemoryLeaksOnShutdown := True;
+{$ENDIF}
   DUnitTestRunner.RunRegisteredTests;
 end.
 

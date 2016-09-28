@@ -22,37 +22,78 @@ type
   EWinCryptError = class(EOSError);
 
   /// <summary>
-  ///   The base class for WinCrypt operations.
-  /// </summary>
-  TCryptoBase = class abstract(TObject)
-
-    /// <summary>
-    ///   Checks the <c>BOOL</c> return value of certain WinCrypt functions and
-    ///   raises a <c>EWinCryptError</c> exception with matching error message
-    ///   if an error occured.
-    /// </summary>
-    /// <param name="AStatus">
-    ///   The <c>BOOL</c> value to check.
-    /// </param>
-    /// <exception>
-    ///   <c>EWinCryptError</c> if <c>AStatus</c> is <c>False</c>.
-    /// </exception>
-    procedure Check(AStatus: BOOL);
-  end;
-
-  /// <summary>
   ///   General flags for the Base64 encoding/decoding.
   /// </summary>
   TBase64Flag = (
-    bfHeader, bfDefault, bfBinary, bfRequestHeader, bfHex, bfHexAscii,
-    bfBase64Any, bfAny, bfHexAny, bfX509CrlHeader, bfHexAddr, bfHexAsciiAddr,
-    bfHexRaw, bfStrict
+
+    /// <summary>
+    ///   Base64, with certificate beginning and ending headers.
+    /// </summary>
+    bfHeader,
+
+    /// <summary>
+    ///   Base64, without headers.
+    /// </summary>
+    bfDefault,
+
+    /// <summary>
+    ///   Pure binary copy.
+    /// </summary>
+    bfBinary,
+
+    /// <summary>
+    ///   Base64, with request beginning and ending headers.
+    /// </summary>
+    bfRequestHeader,
+
+    /// <summary>
+    ///   Hexadecimal only.
+    /// </summary>
+    bfHex,
+
+    /// <summary>
+    ///   Hexadecimal, with ASCII character display.
+    /// </summary>
+    bfHexAscii,
+
+    /// <summary>
+    ///   Base64, with X.509 CRL beginning and ending headers.
+    /// </summary>
+    bfX509CrlHeader,
+
+    /// <summary>
+    ///   Hexadecimal, with address display.
+    /// </summary>
+    bfHexAddr,
+
+    /// <summary>
+    ///   Hexadecimal, with ASCII character and address display.
+    /// </summary>
+    bfHexAsciiAddr,
+
+    /// <summary>
+    ///   A raw hexadecimal string.
+    /// </summary>
+    /// <remarks>
+    ///   Windows Server 2003 and Windows XP: This value is not supported.
+    /// </remarks>
+    bfHexRaw,
+
+    /// <summary>
+    ///   Enforce strict decoding of ASN.1 text formats.
+    /// </summary>
+    /// <remarks>
+    ///   Some ASN.1 binary BLOBS can have the first few bytes of the BLOB
+    ///   incorrectly interpreted as Base64 text. In this case, the rest of the
+    ///   text is ignored. Use this flag to enforce complete decoding of the BLOB.
+    /// </remarks>
+    bfStrict
   );
 
   /// <summary>
   ///   A <c>TBase64</c> is a Base64 encoder/decoder.
   /// </summary>
-  TBase64 = class(TCryptoBase)
+  TBase64 = class(TObject)
   private
     FFlag: TBase64Flag;
   public
@@ -139,6 +180,71 @@ type
   end;
 
   /// <summary>
+  ///   Generic progress event.
+  /// </summary>
+  /// <param name="Sender">
+  ///   The sender.
+  /// </param>
+  /// <param name="AProgress">
+  ///   The current progress.
+  /// </param>
+  /// <param name="AProgressMax">
+  ///   The maximum progress.
+  /// </param>
+  /// <param name="ACancel">
+  ///   Set to <c>True</c> to cancel the pending operation.
+  /// </param>
+  TProgressEvent = procedure(Sender: TObject; const AProgress, AProgressMax: Int64;
+    var ACancel: Boolean) of object;
+
+  /// <summary>
+  ///   The base class for WinCrypt operations.
+  /// </summary>
+  TCryptoBase = class abstract(TObject)
+  private
+    FOnStart,
+    FOnFinish: TNotifyEvent;
+  protected
+    FOnProgress: TProgressEvent;
+
+    /// <summary>
+    ///   Issues the <see cref="OnStart"/> event.
+    /// </summary>
+    procedure NotifyOnStart();
+
+    /// <summary>
+    ///   Issues the <see cref="OnFinish"/> event.
+    /// </summary>
+    procedure NotifyOnFinish();
+  public
+    /// <summary>
+    ///   Generates random data of specified length.
+    /// </summary>
+    /// <param name="ALength">
+    ///   The length in bytes.
+    /// </param>
+    /// <returns>
+    ///   Random bytes.
+    /// </returns>
+    function GenerateRandom(ALength: Cardinal): TBytes;
+
+    /// <summary>
+    ///   Event that is called when hash calculation has finished.
+    /// </summary>
+    property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
+
+    /// <summary>
+    ///   Event that is called during hash calculation.
+    /// </summary>
+    property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
+
+    /// <summary>
+    ///   Event that is called when hash calculation has started.
+    /// </summary>
+    property OnStart: TNotifyEvent read FOnStart write FOnStart;
+  end;
+
+  /// <summary>
   ///   Possible hash algorithms.
   /// </summary>
   THashAlgorithm = (
@@ -173,24 +279,6 @@ type
   end;
 
   /// <summary>
-  ///   Generic progress event.
-  /// </summary>
-  /// <param name="Sender">
-  ///   The sender.
-  /// </param>
-  /// <param name="AProgress">
-  ///   The current progress.
-  /// </param>
-  /// <param name="AProgressMax">
-  ///   The maximum progress.
-  /// </param>
-  /// <param name="ACancel">
-  ///   Set to <c>True</c> to cancel the pending operation.
-  /// </param>
-  TProgressEvent = procedure(Sender: TObject; const AProgress, AProgressMax: Int64;
-    var ACancel: Boolean) of object;
-
-  /// <summary>
   ///  <c>THash</c> provides methods to calculate and verify hash values from
   ///  strings and files.
   /// </summary>
@@ -199,32 +287,18 @@ type
   /// </remarks>
   THash = class(TCryptoBase)
   private
-    FOnProgress: TProgressEvent;
-    FOnStart,
-    FOnFinish: TNotifyEvent;
     FHashAlgorithm: THashAlgorithm;
-  protected
-    /// <summary>
-    ///   Creates a binary representation from a hash in buffer.
-    /// </summary>
-    /// <param name="AHashHandle">
-    ///   The handle to a hash in buffer.
-    /// </param>
-    /// <returns>
-    ///   A binary hash value.
-    /// </returns>
-    function HashToBytes(AHashHandle: TCryptHash): TBytes;
 
     /// <summary>
-    ///   Creates a string representation from a hash in buffer.
+    ///   Creates a hash from a stream.
     /// </summary>
-    /// <param name="AHashHandle">
-    ///   The handle to a hash in buffer.
+    /// <param name="AData">
+    ///   The bytes to be hashed.
     /// </param>
     /// <returns>
-    ///   A string hash value.
+    ///   The hash.
     /// </returns>
-    function HashToString(AHashHandle: TCryptHash): string;
+    function Compute(const AData: TStream): TBytes; overload;
   public
     /// <summary>
     ///   Constructor for creating a <c>THash</c> instance.
@@ -243,7 +317,7 @@ type
     /// <returns>
     ///   A Base64 encoded salt.
     /// </returns>
-    function GenerateSalt(ALength: DWORD): string;
+    function GenerateSalt(ALength: Cardinal): string;
 
     /// <summary>
     ///   Creates a hash from a byte array.
@@ -321,24 +395,34 @@ type
     ///   Gets or sets the used hash algorithm.
     /// </summary>
     property Algorithm: THashAlgorithm read FHashAlgorithm write FHashAlgorithm;
-
-    /// <summary>
-    ///   Event that is called when hash calculation has finished.
-    /// </summary>
-    property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
-
-    /// <summary>
-    ///   Event that is called during hash calculation.
-    /// </summary>
-    property OnProgress: TProgressEvent read FOnProgress write FOnProgress;
-
-    /// <summary>
-    ///   Event that is called when hash calculation has started.
-    /// </summary>
-    property OnStart: TNotifyEvent read FOnStart write FOnStart;
   end;
 
 implementation
+
+/// <summary>
+///   Checks the <c>BOOL</c> return value of certain WinCrypt functions and
+///   raises a <c>EWinCryptError</c> exception with matching error message
+///   if an error occured.
+/// </summary>
+/// <param name="AStatus">
+///   The <c>BOOL</c> value to check.
+/// </param>
+/// <exception>
+///   <c>EWinCryptError</c> if <c>AStatus</c> is <c>False</c>.
+/// </exception>
+procedure Check(AStatus: BOOL);
+var
+  LastError: DWORD;
+
+begin
+  if not AStatus then
+  begin
+    LastError := GetLastError();
+
+    if (LastError <> ERROR_SUCCESS) then
+      raise EWinCryptError.Create(SysErrorMessage(LastError)) {$IFNDEF FPC}at ReturnAddress{$ENDIF};
+  end;  //of begin
+end;
 
 type
   TBase64FlagHelper = record helper for TBase64Flag
@@ -371,9 +455,6 @@ begin
     bfRequestHeader: Result := CRYPT_STRING_BASE64REQUESTHEADER;
     bfHex:           Result := CRYPT_STRING_HEX;
     bfHexAscii:      Result := CRYPT_STRING_HEXASCII;
-    bfBase64Any:     Result := CRYPT_STRING_BASE64_ANY;
-    bfAny:           Result := CRYPT_STRING_ANY;
-    bfHexAny:        Result := CRYPT_STRING_HEX_ANY;
     bfX509CrlHeader: Result := CRYPT_STRING_BASE64X509CRLHEADER;
     bfHexAddr:       Result := CRYPT_STRING_HEXADDR;
     bfHexAsciiAddr:  Result := CRYPT_STRING_HEXASCIIADDR;
@@ -386,18 +467,36 @@ end;
 
 { TCryptoBase }
 
-procedure TCryptoBase.Check(AStatus: BOOL);
+function TCryptoBase.GenerateRandom(ALength: Cardinal): TBytes;
 var
-  LastError: DWORD;
+  CryptProvider: TCryptProv;
 
 begin
-  if not AStatus then
-  begin
-    LastError := GetLastError();
+  if (ALength = 0) then
+    Exit;
 
-    if (LastError <> ERROR_SUCCESS) then
-      raise EWinCryptError.Create(SysErrorMessage(LastError)) {$IFNDEF FPC}at ReturnAddress{$ENDIF};
-  end;  //of begin
+  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
+    CRYPT_VERIFYCONTEXT));
+
+  try
+    SetLength(Result, ALength);
+    Check(CryptGenRandom(CryptProvider, ALength, @Result[0]));
+
+  finally
+    CryptReleaseContext(CryptProvider, 0);
+  end;  //of try
+end;
+
+procedure TCryptoBase.NotifyOnFinish();
+begin
+  if Assigned(FOnFinish) then
+    FOnFinish(Self);
+end;
+
+procedure TCryptoBase.NotifyOnStart();
+begin
+  if Assigned(FOnStart) then
+    FOnStart(Self);
 end;
 
 
@@ -479,89 +578,108 @@ begin
   FHashAlgorithm := AHashAlgorithm;
 end;
 
-function THash.GenerateSalt(ALength: DWORD): string;
+function THash.GenerateSalt(ALength: Cardinal): string;
 var
-  CryptProvider: TCryptProv;
-  Salt: TBytes;
   Base64: TBase64;
 
 begin
-  Result := '';
-
-  if (ALength = 0) then
-    Exit;
-
-  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-    CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET));
-
   Base64 := TBase64.Create;
 
   try
-    SetLength(Salt, ALength);
-    Check(CryptGenRandom(CryptProvider, ALength, @Salt[0]));
-    Result := Base64.EncodeBinary(Salt);
+    Result := Base64.EncodeBinary(GenerateRandom(ALength));
 
   finally
     Base64.Free;
   end;  //of try
 end;
 
-function THash.HashToBytes(AHashHandle: TCryptHash): TBytes;
-var
-  HashLength, HashSize: DWORD;
-
-begin
-  // Retrieve the length (in Byte) of the hash
-  HashSize := SizeOf(DWORD);
-  Check(CryptGetHashParam(AHashHandle, HP_HASHSIZE, @HashLength, HashSize, 0));
-
-  // Resize the buffer to the blocksize of the used hash algorithm
-  SetLength(Result, HashLength);
-
-  // Load the hash value into buffer
-  Check(CryptGetHashParam(AHashHandle, HP_HASHVAL, @Result[0], HashLength, 0));
-end;
-
-function THash.HashToString(AHashHandle: TCryptHash): string;
-begin
-  Result := ToHex(HashToBytes(AHashHandle));
-end;
-
 function THash.ToHex(const AHash: TBytes): string;
 var
-  i, Bytes: Integer;
+  i: Integer;
 
 begin
-  Bytes := SizeOf(Char);
-
   // Build a string from buffer
   for i := Low(AHash) to High(AHash) do
-    Result := Result + IntToHex(AHash[i], Bytes);
+    Result := Result + IntToHex(AHash[i], 2);
 
   Result := LowerCase(Result);
 end;
 
-function THash.Compute(const AData: TBytes): TBytes;
+function THash.Compute(const AData: TStream): TBytes;
 var
   CryptProvider: TCryptProv;
   HashHandle: TCryptHash;
+  Buffer: array[0..1023] of Byte;
+  BytesRead: Integer;
+  Cancel: Boolean;
+  Progress: Int64;
+  HashDataLength, HashSize: DWORD;
 
 begin
-  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-    CRYPT_VERIFYCONTEXT or CRYPT_MACHINE_KEYSET));
-
-  // Init hash object
-  Check(CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0, 0,
-    HashHandle));
+  NotifyOnStart();
 
   try
-    // Create the hash of the string
-    Check(CryptHashData(HashHandle, @AData[0], Length(AData), 0));
-    Result := HashToBytes(HashHandle);
+    Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
+      CRYPT_VERIFYCONTEXT));
+
+    // Init hash
+    Check(CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0,
+      0, HashHandle));
+
+    try
+      // Read first KB into buffer
+      BytesRead := AData.Read(Buffer, Length(Buffer));
+      Progress := 0;
+      Cancel := False;
+
+      // EOF?
+      while ((BytesRead <> 0) and not Cancel) do
+      begin
+        // Progress in bytes
+        if Assigned(FOnProgress) then
+        begin
+          Progress := Progress + BytesRead;
+          FOnProgress(Self, Progress, AData.Size, Cancel);
+        end;  //of begin
+
+        // Create hash of read bytes in buffer
+        Check(CryptHashData(HashHandle, @Buffer[0], BytesRead, 0));
+
+        // Read next KB into buffer
+        BytesRead := AData.Read(Buffer, Length(Buffer));
+      end;  //of while
+
+      if not Cancel then
+      begin
+        // Get hash value from handle
+        HashSize := SizeOf(DWORD);
+        Check(CryptGetHashParam(HashHandle, HP_HASHSIZE, @HashDataLength, HashSize, 0));
+        SetLength(Result, HashDataLength);
+        Check(CryptGetHashParam(HashHandle, HP_HASHVAL, @Result[0], HashDataLength, 0));
+      end;  //of begin
+
+    finally
+      CryptDestroyHash(HashHandle);
+      CryptReleaseContext(CryptProvider, 0);
+    end;  //of try
 
   finally
-    CryptDestroyHash(HashHandle);
-    CryptReleaseContext(CryptProvider, 0);
+    NotifyOnFinish();
+  end;  //of try
+end;
+
+function THash.Compute(const AData: TBytes): TBytes;
+var
+  Data: TBytesStream;
+
+begin
+  Data := TBytesStream.Create(AData);
+
+  try
+    Result := Compute(Data);
+
+  finally
+    Data.Free;
   end;  //of try
 end;
 
@@ -572,65 +690,16 @@ end;
 
 function THash.Compute(const AFileName: TFileName): string;
 var
-  CryptProvider: TCryptProv;
-  HashHandle: TCryptHash;
-  Buffer: array[0..1023] of Byte;
   FileToHash: TFileStream;
-  BytesRead: Integer;
-  Cancel: Boolean;
-  Progress: Int64;
 
 begin
-  // Open file
-  FileToHash := TFileStream.Create(AFileName, fmOpenRead);
+  FileToHash := TFileStream.Create(AFileName, fmOpenRead or fmShareDenyWrite);
 
   try
-    Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-      CRYPT_VERIFYCONTEXT));
-
-    // Init hash object
-    Check(CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0,
-      0, HashHandle));
-
-    // Notify start of file hashing
-    if Assigned(FOnStart) then
-      FOnStart(Self);
-
-    // Read first KB of file into buffer
-    BytesRead := FileToHash.Read(Buffer, Length(Buffer));
-    Progress := 0;
-    Cancel := False;
-
-    // EOF?
-    while ((BytesRead <> 0) and not Cancel) do
-    begin
-      // Progress in bytes
-      if Assigned(FOnProgress) then
-      begin
-        Progress := Progress + BytesRead;
-        FOnProgress(Self, Progress, FileToHash.Size, Cancel);
-      end;  //of begin
-
-      // Create hash of read bytes in buffer
-      Check(CryptHashData(HashHandle, @Buffer[0], BytesRead, 0));
-
-      // Read next KB of file into buffer
-      BytesRead := FileToHash.Read(Buffer, Length(Buffer));
-    end;  //of while
-
-    if not Cancel then
-      Result := HashToString(HashHandle)
-    else
-      Result := '';
+    Result := ToHex(Compute(FileToHash));
 
   finally
     FileToHash.Free;
-    CryptDestroyHash(HashHandle);
-    CryptReleaseContext(CryptProvider, 0);
-
-    // Notify end of file hashing
-    if Assigned(FOnFinish) then
-      FOnFinish(Self);
   end;  //of try
 end;
 
