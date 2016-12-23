@@ -3,7 +3,7 @@ unit CryptoAPITests;
 interface
 
 uses
-  TestFramework, SysUtils, PMCW.CryptoAPI;
+  TestFramework, SysUtils, Classes, PMCW.CryptoAPI;
 
 const
   ExpectedStringValue = 'EasyWinHash';
@@ -57,12 +57,12 @@ end;
 
 procedure TBase64Test.TestDecode;
 begin
-  CheckEquals(ExpectedStringValue, FBase64.Decode(Base64Value), 'Base64 decoding does not work!');
+  CheckEquals(ExpectedStringValue, FBase64.Decode(Base64Value), 'Base64 decoding does not work');
 end;
 
 procedure TBase64Test.TestEncode;
 begin
-  CheckEquals(Base64Value, FBase64.Encode(ExpectedStringValue), 'Base64 encoding does not work!');
+  CheckEquals(Base64Value, FBase64.Encode(ExpectedStringValue), 'Base64 encoding does not work');
 end;
 
 
@@ -80,25 +80,23 @@ end;
 
 procedure THashTest.CheckHash(AAlgorithm: THashAlgorithm; const AExpected: string);
 var
-  Calculated: string;
+  Calculated: TBytes;
 
 begin
   FHash.Algorithm := AAlgorithm;
-  Calculated := FHash.Compute(ExpectedStringValue);
-  CheckEquals(AExpected, Calculated, 'Hash value differs from expected!');
-  CheckTrue(FHash.Verify(Calculated, ExpectedStringValue), 'Hash verification failed!');
+  Calculated := FHash.Compute(BytesOf(ExpectedStringValue));
+  CheckEquals(AExpected, Calculated.ToHex(), 'Hash value differs from expected');
 end;
 
 procedure THashTest.CheckHash(AAlgorithm: THashAlgorithm;
   const AFileName: TFileName; const AExpected: string);
 var
-  Calculated: string;
+  Calculated: TBytes;
 
 begin
   FHash.Algorithm := AAlgorithm;
-  Calculated := FHash.Compute(AFileName);
-  CheckEquals(AExpected, Calculated, 'Hash value of file differs from expected!');
-  CheckTrue(FHash.Verify(Calculated, AFileName), 'File hash verification failed!');
+  Calculated := FHash.ComputeFile(AFileName);
+  CheckEquals(AExpected, Calculated.ToHex(), 'Hash value of file differs from expected');
 end;
 
 procedure THashTest.TestMd5;

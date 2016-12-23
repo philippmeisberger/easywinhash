@@ -258,6 +258,7 @@ type
     ///   The SHA-160 better known as SHA-1 hash algorithm.
     /// </summary>
     haSha,
+
     /// <summary>
     ///   The SHA-256 hash algorithm.
     /// </summary>
@@ -275,12 +276,35 @@ type
   );
 
   THashAlgorithmHelper = record helper for THashAlgorithm
+    /// <summary>
+    ///   Gets the used algorithm identifier.
+    /// </summary>
+    /// <returns>
+    ///   The ID.
+    /// </returns>
     function GetHashAlgorithm(): TAlgId;
   end;
 
+  TBytesHelper = record helper for TBytes
+    /// <summary>
+    ///   Creates a binary representation of a hex string value.
+    /// </summary>
+    /// <param name="AHexString">
+    ///   The hexadecimal string value.
+    /// </param>
+    procedure FromHex(const AHexString: string);
+
+    /// <summary>
+    ///   Creates a hexadecimal representation from a binary hash value.
+    /// </summary>
+    /// <returns>
+    ///   The hexadecimal string value.
+    /// </returns>
+    function ToHex(): string;
+  end;
+
   /// <summary>
-  ///  <c>THash</c> provides methods to calculate and verify hash values from
-  ///  strings and files.
+  ///  <c>THash</c> provides methods to compute hash values.
   /// </summary>
   /// <remarks>
   ///   Uses the older WinCrypt API since Windows XP.
@@ -288,17 +312,6 @@ type
   THash = class(TCryptoBase)
   private
     FHashAlgorithm: THashAlgorithm;
-
-    /// <summary>
-    ///   Creates a hash from a stream.
-    /// </summary>
-    /// <param name="AData">
-    ///   The bytes to be hashed.
-    /// </param>
-    /// <returns>
-    ///   The hash.
-    /// </returns>
-    function Compute(const AData: TStream): TBytes; overload;
   public
     /// <summary>
     ///   Constructor for creating a <c>THash</c> instance.
@@ -309,18 +322,18 @@ type
     constructor Create(AHashAlgorithm: THashAlgorithm);
 
     /// <summary>
-    ///   Generates a random salt of specified length.
+    ///   Computes a hash of a stream.
     /// </summary>
-    /// <param name="ALength">
-    ///   The length of the salt in bytes.
+    /// <param name="AStream">
+    ///   The stream.
     /// </param>
     /// <returns>
-    ///   A Base64 encoded salt.
+    ///   The hash.
     /// </returns>
-    function GenerateSalt(ALength: Cardinal): string;
+    function Compute(const AStream: TStream): TBytes; overload;
 
     /// <summary>
-    ///   Creates a hash from a byte array.
+    ///   Computes a hash of a byte array.
     /// </summary>
     /// <param name="AData">
     ///   The bytes to be hashed.
@@ -331,65 +344,15 @@ type
     function Compute(const AData: TBytes): TBytes; overload;
 
     /// <summary>
-    ///   Creates a hash from a string.
+    ///   Computes a hash of a file.
     /// </summary>
-    /// <param name="AString">
-    ///   The string to be hashed.
+    /// <param name="AFileName">
+    ///   The absolute path to a file.
     /// </param>
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Compute(const AString: string): string; overload;
-
-    /// <summary>
-    ///   Creates a hash from a file.
-    /// </summary>
-    /// <param name="AFileName">
-    ///   The absolute path to a file.
-    /// </param>
-    /// <returns>
-    ///   The hash of the file.
-    /// </returns>
-    function Compute(const AFileName: TFileName): string; overload;
-
-    /// <summary>
-    ///   Creates a hex string representation from a binary hash.
-    /// </summary>
-    /// <param name="AHash">
-    ///   The binary hash value.
-    /// </param>
-    /// <returns>
-    ///   The hex string hash value.
-    /// </returns>
-    function ToHex(const AHash: TBytes): string;
-
-    /// <summary>
-    ///   Verifies the hash from a string.
-    /// </summary>
-    /// <param name="AHash">
-    ///   The hash to be verified.
-    /// </param>
-    /// <param name="AString">
-    ///   The string to be verified.
-    /// </param>
-    /// <returns>
-    ///   <c>True</c> if the hash matches to the string or <c>False</c> otherwise.
-    /// </returns>
-    function Verify(const AHash, AString: string): Boolean; overload;
-
-    /// <summary>
-    ///   Verifies the hash from a file.
-    /// </summary>
-    /// <param name="AHash">
-    ///   The hash to be verified.
-    /// </param>
-    /// <param name="AFileName">
-    ///   The absolute path to a file.
-    /// </param>
-    /// <returns>
-    ///   <c>True</c> if the hash matches to the file or <c>False</c> otherwise.
-    /// </returns>
-    function Verify(const AHash: string; AFileName: TFileName): Boolean; overload;
+    function ComputeFile(const AFileName: TFileName): TBytes;
 
     /// <summary>
     ///   Gets or sets the used hash algorithm.
@@ -428,21 +391,6 @@ type
   TBase64FlagHelper = record helper for TBase64Flag
     function GetFlag(): DWORD;
   end;
-
-{ THashAlgorithmHelper }
-
-function THashAlgorithmHelper.GetHashAlgorithm(): TAlgId;
-begin
-  case Self of
-    haMd5:    Result := CALG_MD5;
-    haSha:    Result := CALG_SHA_160;
-    haSha256: Result := CALG_SHA_256;
-    haSha384: Result := CALG_SHA_384;
-    haSha512: Result := CALG_SHA_512;
-    else      Result := 0;
-  end;  //of case
-end;
-
 
 { TBase64FlagHelper }
 
@@ -570,6 +518,57 @@ begin
 end;
 
 
+{ THashAlgorithmHelper }
+
+function THashAlgorithmHelper.GetHashAlgorithm(): TAlgId;
+begin
+  case Self of
+    haMd5:    Result := CALG_MD5;
+    haSha:    Result := CALG_SHA_160;
+    haSha256: Result := CALG_SHA_256;
+    haSha384: Result := CALG_SHA_384;
+    haSha512: Result := CALG_SHA_512;
+    else      raise EWinCryptError.Create('Unsupported hash algorithm!');
+  end;  //of case
+end;
+
+
+{ TBytesHelper }
+
+procedure TBytesHelper.FromHex(const AHexString: string);
+var
+  BytesOfChar: Byte;
+  i, j: Integer;
+
+begin
+  BytesOfChar := SizeOf(Char);
+  SetLength(Self, Length(AHexString) div BytesOfChar);
+  j := 1;
+
+  for i := Low(Self) to High(Self) do
+  begin
+    Self[i] := StrToInt('$'+ Copy(AHexString, j, BytesOfChar));
+    Inc(j, BytesOfChar);
+  end;  //of for
+end;
+
+function TBytesHelper.ToHex(): string;
+var
+  BytesOfChar: Byte;
+  i: Integer;
+
+begin
+  Result := '';
+  BytesOfChar := SizeOf(Char);
+
+  // Build a string from buffer
+  for i := Low(Self) to High(Self) do
+    Result := Result + IntToHex(Self[i], BytesOfChar);
+
+  Result := LowerCase(Result);
+end;
+
+
 { THash }
 
 constructor THash.Create(AHashAlgorithm: THashAlgorithm);
@@ -578,24 +577,7 @@ begin
   FHashAlgorithm := AHashAlgorithm;
 end;
 
-function THash.GenerateSalt(ALength: Cardinal): string;
-begin
-  Result := ToHex(GenerateRandom(ALength));
-end;
-
-function THash.ToHex(const AHash: TBytes): string;
-var
-  i: Integer;
-
-begin
-  // Build a string from buffer
-  for i := Low(AHash) to High(AHash) do
-    Result := Result + IntToHex(AHash[i], 2);
-
-  Result := LowerCase(Result);
-end;
-
-function THash.Compute(const AData: TStream): TBytes;
+function THash.Compute(const AStream: TStream): TBytes;
 var
   CryptProvider: TCryptProv;
   HashHandle: TCryptHash;
@@ -618,7 +600,7 @@ begin
 
     try
       // Read first KB into buffer
-      BytesRead := AData.Read(Buffer, Length(Buffer));
+      BytesRead := AStream.Read(Buffer, Length(Buffer));
       Progress := 0;
       Cancel := False;
 
@@ -629,14 +611,14 @@ begin
         if Assigned(FOnProgress) then
         begin
           Progress := Progress + BytesRead;
-          FOnProgress(Self, Progress, AData.Size, Cancel);
+          FOnProgress(Self, Progress, AStream.Size, Cancel);
         end;  //of begin
 
         // Create hash of read bytes in buffer
         Check(CryptHashData(HashHandle, @Buffer[0], BytesRead, 0));
 
         // Read next KB into buffer
-        BytesRead := AData.Read(Buffer, Length(Buffer));
+        BytesRead := AStream.Read(Buffer, Length(Buffer));
       end;  //of while
 
       if not Cancel then
@@ -673,12 +655,7 @@ begin
   end;  //of try
 end;
 
-function THash.Compute(const AString: string): string;
-begin
-  Result := ToHex(Compute(BytesOf(AString)));
-end;
-
-function THash.Compute(const AFileName: TFileName): string;
+function THash.ComputeFile(const AFileName: TFileName): TBytes;
 var
   FileToHash: TFileStream;
 
@@ -686,21 +663,11 @@ begin
   FileToHash := TFileStream.Create(AFileName, fmOpenRead or fmShareDenyWrite);
 
   try
-    Result := ToHex(Compute(FileToHash));
+    Result := Compute(FileToHash);
 
   finally
     FileToHash.Free;
   end;  //of try
-end;
-
-function THash.Verify(const AHash, AString: string): Boolean;
-begin
-  Result := AnsiSameStr(AHash, Compute(AString));
-end;
-
-function THash.Verify(const AHash: string; AFileName: TFileName): Boolean;
-begin
-  Result := AnsiSameStr(AHash, Compute(AFileName));
 end;
 
 end.
