@@ -352,7 +352,7 @@ type
     /// <returns>
     ///   The hash.
     /// </returns>
-    function ComputeFile(const AFileName: TFileName): TBytes;
+    function ComputeFromFile(const AFileName: TFileName): TBytes;
 
     /// <summary>
     ///   Gets or sets the used hash algorithm.
@@ -655,7 +655,7 @@ begin
   end;  //of try
 end;
 
-function THash.ComputeFile(const AFileName: TFileName): TBytes;
+function THash.ComputeFromFile(const AFileName: TFileName): TBytes;
 var
   FileToHash: TFileStream;
 
