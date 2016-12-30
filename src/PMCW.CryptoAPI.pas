@@ -24,7 +24,7 @@ type
   /// <summary>
   ///   General flags for the Base64 encoding/decoding.
   /// </summary>
-  TBase64Flag = (
+  TBase64Option = (
 
     /// <summary>
     ///   Base64, with certificate beginning and ending headers.
@@ -91,20 +91,20 @@ type
   );
 
   /// <summary>
-  ///   A <c>TBase64</c> is a Base64 encoder/decoder.
+  ///   <c>TBase64</c> provides methods for Base64 encoding and decoding.
   /// </summary>
   TBase64 = class(TObject)
   private
-    FFlag: TBase64Flag;
+    FOption: TBase64Option;
   public
     /// <summary>
     ///   Constructor for creating a <c>TBase64</c> instance.
     /// </summary>
     /// <param name="AFlag">
-    ///   A <see cref="TBase64Flag"/> special encoding flag that influences the
-    ///   output.
+    ///   Optional: A <see cref="TBase64Flag"/> special encoding flag that
+    ///   influences the output.
     /// </param>
-    constructor Create(AFlag: TBase64Flag = bfDefault);
+    constructor Create(AOption: TBase64Option = bfDefault);
 
     /// <summary>
     ///   Decodes a Base64 string value to a string.
@@ -142,7 +142,7 @@ type
     /// <summary>
     ///   Encodes a string value to a Base64 string.
     /// </summary>
-    /// <param name="ABase64">
+    /// <param name="AString">
     ///   A Base64 string value.
     /// </param>
     /// <returns>
@@ -162,10 +162,10 @@ type
     function EncodeBinary(const AData: TBytes): string; overload;
 
     /// <summary>
-    ///   Encodes a string value to a Base64 binary value.
+    ///   Encodes a string to a Base64 binary value.
     /// </summary>
     /// <param name="AString">
-    ///   A string value.
+    ///   The string.
     /// </param>
     /// <returns>
     ///   The encoded Base64 binary value.
@@ -176,7 +176,7 @@ type
     ///   A <see cref="TBase64Flag"/> special encoding flag that influences the
     ///   output.
     /// </summary>
-    property Flag: TBase64Flag read FFlag write FFlag;
+    property Option: TBase64Option read FOption write FOption;
   end;
 
   /// <summary>
@@ -376,6 +376,7 @@ implementation
 procedure Check(AStatus: BOOL);
 var
   LastError: DWORD;
+  E: EWinCryptError;
 
 begin
   if not AStatus then
@@ -383,18 +384,22 @@ begin
     LastError := GetLastError();
 
     if (LastError <> ERROR_SUCCESS) then
-      raise EWinCryptError.Create(SysErrorMessage(LastError)) {$IFNDEF FPC}at ReturnAddress{$ENDIF};
+    begin
+      E := EWinCryptError.Create(SysErrorMessage(LastError));
+      E.ErrorCode := LastError;
+      raise E {$IFNDEF FPC}at ReturnAddress{$ENDIF};
+    end;  //of begin
   end;  //of begin
 end;
 
 type
-  TBase64FlagHelper = record helper for TBase64Flag
+  TBase64OptionHelper = record helper for TBase64Option
     function GetFlag(): DWORD;
   end;
 
-{ TBase64FlagHelper }
+{ TBase64OptionHelper }
 
-function TBase64FlagHelper.GetFlag(): DWORD;
+function TBase64OptionHelper.GetFlag(): DWORD;
 begin
   case Self of
     bfHeader:        Result := CRYPT_STRING_BASE64HEADER;
@@ -450,10 +455,10 @@ end;
 
 { TBase64 }
 
-constructor TBase64.Create(AFlag: TBase64Flag = bfDefault);
+constructor TBase64.Create(AOption: TBase64Option = bfDefault);
 begin
   inherited Create;
-  FFlag := AFlag;
+  FOption := AOption;
 end;
 
 function TBase64.Decode(const ABase64: string): string;
@@ -475,13 +480,13 @@ begin
     Exit;
 
   // Retrieve and set required buffer size
-  Check(CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
+  Check(CryptStringToBinary(PChar(ABase64), Length(ABase64), FOption.GetFlag(),
     nil, BufferSize, Skipped, Flags));
 
   SetLength(Result, BufferSize);
 
   // Decode string
-  Check(CryptStringToBinary(PChar(ABase64), Length(ABase64), FFlag.GetFlag(),
+  Check(CryptStringToBinary(PChar(ABase64), Length(ABase64), FOption.GetFlag(),
     @Result[0], BufferSize, Skipped, Flags));;
 end;
 
@@ -499,13 +504,13 @@ begin
     Exit;
 
   // Retrieve and set required buffer size
-  Check(CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
+  Check(CryptBinaryToString(@AData[0], Length(AData), FOption.GetFlag() +
     CRYPT_STRING_NOCRLF, nil, BufferSize));
 
   SetLength(Result, BufferSize);
 
   // Encode string
-  Check(CryptBinaryToString(@AData[0], Length(AData), FFlag.GetFlag() +
+  Check(CryptBinaryToString(@AData[0], Length(AData), FOption.GetFlag() +
     CRYPT_STRING_NOCRLF, PChar(Result), BufferSize));
 
   // Remove null-terminator
