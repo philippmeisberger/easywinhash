@@ -64,12 +64,14 @@ end;
 
 procedure TBase64Test.TestDecode;
 begin
-  CheckEquals(ExpectedStringValue, FBase64.Decode(Base64Value), 'Base64 decoding does not work');
+  CheckEquals(ExpectedStringValue, FBase64.Decode(Base64Value), 'Base64 string decoding does not work');
+  CheckEquals(ExpectedStringValue, StringOf(FBase64.Decode(BytesOf(Base64Value))), 'Base64 binary decoding does not work');
 end;
 
 procedure TBase64Test.TestEncode;
 begin
-  CheckEquals(Base64Value, FBase64.Encode(ExpectedStringValue), 'Base64 encoding does not work');
+  CheckEquals(Base64Value, FBase64.Encode(ExpectedStringValue), 'Base64 string encoding does not work');
+  CheckEquals(Base64Value, StringOf(FBase64.Encode(BytesOf(ExpectedStringValue))), 'Base64 binary encoding does not work');
 end;
 
 

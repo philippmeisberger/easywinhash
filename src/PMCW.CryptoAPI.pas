@@ -100,77 +100,91 @@ type
     /// <summary>
     ///   Constructor for creating a <c>TBase64</c> instance.
     /// </summary>
-    /// <param name="AFlag">
+    /// <param name="AOption">
     ///   Optional: A <see cref="TBase64Flag"/> special encoding flag that
     ///   influences the output.
     /// </param>
     constructor Create(AOption: TBase64Option = bfDefault);
 
     /// <summary>
-    ///   Decodes a Base64 string value to a string.
-    /// </summary>
-    /// <param name="ABase64">
-    ///   A Base64 string value.
-    /// </param>
-    /// <returns>
-    ///   The decoded Base64 string value.
-    /// </returns>
-    function Decode(const ABase64: string): string;
-
-    /// <summary>
-    ///   Decodes a Base64 binary value to a string.
-    /// </summary>
-    /// <param name="ABase64">
-    ///   A Base64 binary value.
-    /// </param>
-    /// <returns>
-    ///   The decoded Base64 string value.
-    /// </returns>
-    function DecodeBinary(const ABase64: TBytes): string; overload;
-
-    /// <summary>
-    ///   Decodes a Base64 string to a binary string.
-    /// </summary>
-    /// <param name="ABase64">
-    ///   A Base64 string value.
-    /// </param>
-    /// <returns>
-    ///   The decoded Base64 binary value.
-    /// </returns>
-    function DecodeBinary(const ABase64: string): TBytes; overload;
-
-    /// <summary>
-    ///   Encodes a string value to a Base64 string.
-    /// </summary>
-    /// <param name="AString">
-    ///   A Base64 string value.
-    /// </param>
-    /// <returns>
-    ///   The encoded Base64 string value.
-    /// </returns>
-    function Encode(const AString: string): string;
-
-    /// <summary>
-    ///   Encodes a binary value to a Base64 string.
+    ///   Decodes a Base64 encoded array of bytes.
     /// </summary>
     /// <param name="AData">
-    ///   A binary value.
+    ///   The array of bytes.
     /// </param>
     /// <returns>
-    ///   The encoded Base64 string value.
+    ///   An decoded array of bytes.
     /// </returns>
-    function EncodeBinary(const AData: TBytes): string; overload;
+    function Decode(const AData: TBytes): TBytes; overload;
 
     /// <summary>
-    ///   Encodes a string to a Base64 binary value.
+    ///   Decodes a Base64 string.
+    /// </summary>
+    /// <param name="ABase64">
+    ///   The string.
+    /// </param>
+    /// <returns>
+    ///   The decoded string.
+    /// </returns>
+    function Decode(const ABase64: string): string; overload;
+
+    /// <summary>
+    ///   Decodes a Base64 string to an array of bytes.
+    /// </summary>
+    /// <param name="ABase64">
+    ///   The Base64 string.
+    /// </param>
+    /// <returns>
+    ///   The decoded array of bytes.
+    /// </returns>
+    function DecodeStringToBytes(const ABase64: string): TBytes;
+
+    /// <summary>
+    ///   Encodes an array of bytes.
+    /// </summary>
+    /// <param name="AData">
+    ///   The array of bytes.
+    /// </param>
+    /// <returns>
+    ///   The Base64 encoded array of bytes.
+    /// </returns>
+    function Encode(const AData: TBytes): TBytes; overload;
+
+    /// <summary>
+    ///   Encodes a string.
     /// </summary>
     /// <param name="AString">
     ///   The string.
     /// </param>
     /// <returns>
-    ///   The encoded Base64 binary value.
+    ///   The Base64 encoded string.
     /// </returns>
-    function EncodeBinary(const AString: string): TBytes; overload;
+    function Encode(const AString: string): string; overload;
+
+    /// <summary>
+    ///   Encodes an array of bytes.
+    /// </summary>
+    /// <param name="AData">
+    ///   The array of bytes.
+    /// </param>
+    /// <returns>
+    ///   The Base64 encoded string.
+    /// </returns>
+    function EncodeBytesToString(const AData: TBytes): string; overload;
+
+    /// <summary>
+    ///   Encodes an array of bytes.
+    /// </summary>
+    /// <param name="AData">
+    ///   The pointer to an array of bytes.
+    /// </param>
+    /// <param name="ASize">
+    ///   Number of bytes in <c>AData</c>.
+    /// </param>
+    /// <returns>
+    ///   The Base64 encoded string.
+    /// </returns>
+    function EncodeBytesToString(const AData: PByte; ASize: Integer): string; overload;
 
     /// <summary>
     ///   A <see cref="TBase64Flag"/> special encoding flag that influences the
@@ -475,17 +489,17 @@ begin
   FOption := AOption;
 end;
 
+function TBase64.Decode(const AData: TBytes): TBytes;
+begin
+  Result := DecodeStringToBytes(StringOf(AData));
+end;
+
 function TBase64.Decode(const ABase64: string): string;
 begin
-  Result := StringOf(DecodeBinary(ABase64));
+  Result := StringOf(DecodeStringToBytes(ABase64));
 end;
 
-function TBase64.DecodeBinary(const ABase64: TBytes): string;
-begin
-  Result := StringOf(DecodeBinary(StringOf(ABase64)));
-end;
-
-function TBase64.DecodeBinary(const ABase64: string): TBytes;
+function TBase64.DecodeStringToBytes(const ABase64: string): TBytes;
 var
   BufferSize, Skipped, Flags: DWORD;
 
@@ -504,36 +518,40 @@ begin
     @Result[0], BufferSize, Skipped, Flags));
 end;
 
-function TBase64.Encode(const AString: string): string;
+function TBase64.Encode(const AData: TBytes): TBytes;
 begin
-  Result := EncodeBinary(BytesOf(AString));
+  Result := BytesOf(EncodeBytesToString(AData));
 end;
 
-function TBase64.EncodeBinary(const AData: TBytes): string;
+function TBase64.Encode(const AString: string): string;
+begin
+  Result := EncodeBytesToString(BytesOf(AString));
+end;
+
+function TBase64.EncodeBytesToString(const AData: PByte; ASize: Integer): string;
 var
-  BufferSize: DWORD;
+  BufferSize, Flags: DWORD;
 
 begin
-  if (Length(AData) = 0) then
-    Exit;
+  Flags := CRYPT_STRING_NOCRLF or FOption.GetFlag();
 
   // Retrieve and set required buffer size
-  Check(CryptBinaryToString(@AData[0], Length(AData), FOption.GetFlag() +
-    CRYPT_STRING_NOCRLF, nil, BufferSize));
-
+  Check(CryptBinaryToString(AData, ASize, Flags, nil, BufferSize));
   SetLength(Result, BufferSize);
 
   // Encode string
-  Check(CryptBinaryToString(@AData[0], Length(AData), FOption.GetFlag() +
-    CRYPT_STRING_NOCRLF, PChar(Result), BufferSize));
+  Check(CryptBinaryToString(AData, ASize, Flags, PChar(Result), BufferSize));
 
   // Remove null-terminator
   Result := PChar(Result);
 end;
 
-function TBase64.EncodeBinary(const AString: string): TBytes;
+function TBase64.EncodeBytesToString(const AData: TBytes): string;
 begin
-  Result := BytesOf(EncodeBinary(BytesOf(AString)));
+  if (Length(AData) > 0) then
+    Result := EncodeBytesToString(Pointer(AData), Length(AData))
+  else
+    Result := '';
 end;
 
 
