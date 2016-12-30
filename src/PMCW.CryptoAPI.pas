@@ -287,18 +287,32 @@ type
 
   TBytesHelper = record helper for TBytes
     /// <summary>
+    ///   Checks if the specified bytes are equal to the current bytes.
+    /// </summary>
+    /// <param name="ABytes">
+    ///   The bytes to check.
+    /// </param>
+    /// <returns>
+    ///   <c>True</c> if equal or <c>False</c> otherwise.
+    /// </returns>
+    function Equals(const ABytes: TBytes): Boolean;
+
+    /// <summary>
     ///   Creates a binary representation of a hex string value.
     /// </summary>
     /// <param name="AHexString">
     ///   The hexadecimal string value.
     /// </param>
-    procedure FromHex(const AHexString: string);
+    /// <returns>
+    ///   The binary value.
+    /// </returns>
+    function FromHex(const AHexString: string): TBytes;
 
     /// <summary>
-    ///   Creates a hexadecimal representation from a binary hash value.
+    ///   Creates a hexadecimal representation from a binary buffer.
     /// </summary>
     /// <returns>
-    ///   The hexadecimal string value.
+    ///   The hexadecimal string.
     /// </returns>
     function ToHex(): string;
   end;
@@ -476,7 +490,7 @@ var
   BufferSize, Skipped, Flags: DWORD;
 
 begin
-  if (Length(ABase64) = 0) then
+  if (ABase64 = '') then
     Exit;
 
   // Retrieve and set required buffer size
@@ -487,7 +501,7 @@ begin
 
   // Decode string
   Check(CryptStringToBinary(PChar(ABase64), Length(ABase64), FOption.GetFlag(),
-    @Result[0], BufferSize, Skipped, Flags));;
+    @Result[0], BufferSize, Skipped, Flags));
 end;
 
 function TBase64.Encode(const AString: string): string;
@@ -540,36 +554,24 @@ end;
 
 { TBytesHelper }
 
-procedure TBytesHelper.FromHex(const AHexString: string);
-var
-  BytesOfChar: Byte;
-  i, j: Integer;
-
+function TBytesHelper.Equals(const ABytes: TBytes): Boolean;
 begin
-  BytesOfChar := SizeOf(Char);
-  SetLength(Self, Length(AHexString) div BytesOfChar);
-  j := 1;
+  if (Length(ABytes) = Length(Self)) then
+    Result := CompareMem(Pointer(Self), Pointer(ABytes), Length(Self))
+  else
+    Result := False;
+end;
 
-  for i := Low(Self) to High(Self) do
-  begin
-    Self[i] := StrToInt('$'+ Copy(AHexString, j, BytesOfChar));
-    Inc(j, BytesOfChar);
-  end;  //of for
+function TBytesHelper.FromHex(const AHexString: string): TBytes;
+begin
+  SetLength(Result, Length(AHexString) div SizeOf(Char));
+  HexToBin(PChar(UpperCase(AHexString)), Pointer(Result), Length(Result));
 end;
 
 function TBytesHelper.ToHex(): string;
-var
-  BytesOfChar: Byte;
-  i: Integer;
-
 begin
-  Result := '';
-  BytesOfChar := SizeOf(Char);
-
-  // Build a string from buffer
-  for i := Low(Self) to High(Self) do
-    Result := Result + IntToHex(Self[i], BytesOfChar);
-
+  SetLength(Result, Length(Self) * SizeOf(Char));
+  BinToHex(Pointer(Self), PChar(Result), Length(Self));
   Result := LowerCase(Result);
 end;
 
