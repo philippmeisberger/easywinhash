@@ -194,6 +194,43 @@ type
   end;
 
   /// <summary>
+  ///   Binary data.
+  /// </summary>
+  TCryptoBytes = TBytes;
+
+  TCryptoBytesHelper = record helper for TCryptoBytes
+    /// <summary>
+    ///   Checks if the specified bytes are equal to the current bytes.
+    /// </summary>
+    /// <param name="ABytes">
+    ///   The bytes to check.
+    /// </param>
+    /// <returns>
+    ///   <c>True</c> if equal or <c>False</c> otherwise.
+    /// </returns>
+    function Equals(const ABytes: TCryptoBytes): Boolean;
+
+    /// <summary>
+    ///   Creates a binary representation of a hex string value.
+    /// </summary>
+    /// <param name="AHexString">
+    ///   The hexadecimal string value.
+    /// </param>
+    /// <returns>
+    ///   The binary value.
+    /// </returns>
+    function FromHex(const AHexString: string): TCryptoBytes;
+
+    /// <summary>
+    ///   Creates a hexadecimal representation from a binary buffer.
+    /// </summary>
+    /// <returns>
+    ///   The hexadecimal string.
+    /// </returns>
+    function ToHex(): string;
+  end;
+
+  /// <summary>
   ///   Generic progress event.
   /// </summary>
   /// <param name="Sender">
@@ -240,7 +277,7 @@ type
     /// <returns>
     ///   Random bytes.
     /// </returns>
-    function GenerateRandom(ALength: Cardinal): TBytes;
+    function GenerateRandom(ALength: Cardinal): TCryptoBytes;
 
     /// <summary>
     ///   Event that is called when hash calculation has finished.
@@ -299,38 +336,6 @@ type
     function GetHashAlgorithm(): TAlgId;
   end;
 
-  TBytesHelper = record helper for TBytes
-    /// <summary>
-    ///   Checks if the specified bytes are equal to the current bytes.
-    /// </summary>
-    /// <param name="ABytes">
-    ///   The bytes to check.
-    /// </param>
-    /// <returns>
-    ///   <c>True</c> if equal or <c>False</c> otherwise.
-    /// </returns>
-    function Equals(const ABytes: TBytes): Boolean;
-
-    /// <summary>
-    ///   Creates a binary representation of a hex string value.
-    /// </summary>
-    /// <param name="AHexString">
-    ///   The hexadecimal string value.
-    /// </param>
-    /// <returns>
-    ///   The binary value.
-    /// </returns>
-    function FromHex(const AHexString: string): TBytes;
-
-    /// <summary>
-    ///   Creates a hexadecimal representation from a binary buffer.
-    /// </summary>
-    /// <returns>
-    ///   The hexadecimal string.
-    /// </returns>
-    function ToHex(): string;
-  end;
-
   /// <summary>
   ///  <c>THash</c> provides methods to compute hash values.
   /// </summary>
@@ -358,7 +363,7 @@ type
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Compute(const AStream: TStream): TBytes; overload;
+    function Compute(const AStream: TStream): TCryptoBytes; overload;
 
     /// <summary>
     ///   Computes a hash of a byte array.
@@ -369,7 +374,7 @@ type
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Compute(const AData: TBytes): TBytes; overload;
+    function Compute(const AData: TCryptoBytes): TCryptoBytes; overload;
 
     /// <summary>
     ///   Computes a hash of a file.
@@ -380,7 +385,7 @@ type
     /// <returns>
     ///   The hash.
     /// </returns>
-    function ComputeFromFile(const AFileName: TFileName): TBytes;
+    function ComputeFromFile(const AFileName: TFileName): TCryptoBytes;
 
     /// <summary>
     ///   Gets or sets the used hash algorithm.
@@ -448,7 +453,7 @@ end;
 
 { TCryptoBase }
 
-function TCryptoBase.GenerateRandom(ALength: Cardinal): TBytes;
+function TCryptoBase.GenerateRandom(ALength: Cardinal): TCryptoBytes;
 var
   CryptProvider: TCryptProv;
 
@@ -570,9 +575,9 @@ begin
 end;
 
 
-{ TBytesHelper }
+{ TCryptoBytesHelper }
 
-function TBytesHelper.Equals(const ABytes: TBytes): Boolean;
+function TCryptoBytesHelper.Equals(const ABytes: TCryptoBytes): Boolean;
 begin
   if (Length(ABytes) = Length(Self)) then
     Result := CompareMem(Pointer(Self), Pointer(ABytes), Length(Self))
@@ -580,13 +585,13 @@ begin
     Result := False;
 end;
 
-function TBytesHelper.FromHex(const AHexString: string): TBytes;
+function TCryptoBytesHelper.FromHex(const AHexString: string): TCryptoBytes;
 begin
   SetLength(Result, Length(AHexString) div SizeOf(Char));
   HexToBin(PChar(UpperCase(AHexString)), Pointer(Result), Length(Result));
 end;
 
-function TBytesHelper.ToHex(): string;
+function TCryptoBytesHelper.ToHex(): string;
 begin
   SetLength(Result, Length(Self) * SizeOf(Char));
   BinToHex(Pointer(Self), PChar(Result), Length(Self));
@@ -602,7 +607,7 @@ begin
   FHashAlgorithm := AHashAlgorithm;
 end;
 
-function THash.Compute(const AStream: TStream): TBytes;
+function THash.Compute(const AStream: TStream): TCryptoBytes;
 var
   CryptProvider: TCryptProv;
   HashHandle: TCryptHash;
@@ -665,7 +670,7 @@ begin
   end;  //of try
 end;
 
-function THash.Compute(const AData: TBytes): TBytes;
+function THash.Compute(const AData: TCryptoBytes): TCryptoBytes;
 var
   Data: TBytesStream;
 
@@ -680,7 +685,7 @@ begin
   end;  //of try
 end;
 
-function THash.ComputeFromFile(const AFileName: TFileName): TBytes;
+function THash.ComputeFromFile(const AFileName: TFileName): TCryptoBytes;
 var
   FileToHash: TFileStream;
 
