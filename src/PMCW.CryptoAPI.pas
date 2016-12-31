@@ -173,18 +173,18 @@ type
     function EncodeBytesToString(const AData: TBytes): string; overload;
 
     /// <summary>
-    ///   Encodes an array of bytes.
+    ///   Encodes binary data.
     /// </summary>
     /// <param name="AData">
-    ///   The pointer to an array of bytes.
+    ///   Pointer to a buffer.
     /// </param>
     /// <param name="ASize">
-    ///   Number of bytes in <c>AData</c>.
+    ///   Size of buffer in bytes.
     /// </param>
     /// <returns>
     ///   The Base64 encoded string.
     /// </returns>
-    function EncodeBytesToString(const AData: PByte; ASize: Integer): string; overload;
+    function EncodeBytesToString(const AData: Pointer; ASize: Integer): string; overload;
 
     /// <summary>
     ///   A <see cref="TBase64Flag"/> special encoding flag that influences the
@@ -366,18 +366,18 @@ type
     function Compute(const AStream: TStream): TCryptoBytes; overload;
 
     /// <summary>
-    ///   Computes the hash of a byte array.
+    ///   Computes the hash of a buffer.
     /// </summary>
     /// <param name="AData">
-    ///   The pointer to an array of bytes.
+    ///   Pointer to a buffer.
     /// </param>
     /// <param name="ALength">
-    ///   Size of <c>AData</c> in bytes.
+    ///   Size of buffer in bytes.
     /// </param>
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Compute(const AData: PByte; ASize: Cardinal): TCryptoBytes; overload;
+    function Compute(const AData: Pointer; ASize: Cardinal): TCryptoBytes; overload;
 
     /// <summary>
     ///   Computes the hash of a byte array.
@@ -550,7 +550,7 @@ begin
   Result := EncodeBytesToString(BytesOf(AString));
 end;
 
-function TBase64.EncodeBytesToString(const AData: PByte; ASize: Integer): string;
+function TBase64.EncodeBytesToString(const AData: Pointer; ASize: Integer): string;
 var
   BufferSize, Flags: DWORD;
 
@@ -687,7 +687,7 @@ begin
   end;  //of try
 end;
 
-function THash.Compute(const AData: PByte; ASize: Cardinal): TCryptoBytes;
+function THash.Compute(const AData: Pointer; ASize: Cardinal): TCryptoBytes;
 var
   Stream: TMemoryStream;
 
