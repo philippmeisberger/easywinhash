@@ -355,7 +355,7 @@ type
     constructor Create(AHashAlgorithm: THashAlgorithm);
 
     /// <summary>
-    ///   Computes a hash of a stream.
+    ///   Computes the hash of a stream.
     /// </summary>
     /// <param name="AStream">
     ///   The stream.
@@ -366,15 +366,32 @@ type
     function Compute(const AStream: TStream): TCryptoBytes; overload;
 
     /// <summary>
-    ///   Computes a hash of a byte array.
+    ///   Computes the hash of a byte array.
     /// </summary>
     /// <param name="AData">
-    ///   The bytes to be hashed.
+    ///   The pointer to an array of bytes.
+    /// </param>
+    /// <param name="ALength">
+    ///   Size of <c>AData</c> in bytes.
     /// </param>
     /// <returns>
     ///   The hash.
     /// </returns>
-    function Compute(const AData: TCryptoBytes): TCryptoBytes; overload;
+    function Compute(const AData: PByte; ASize: Cardinal): TCryptoBytes; overload;
+
+    /// <summary>
+    ///   Computes the hash of a byte array.
+    /// </summary>
+    /// <param name="AData">
+    ///   The bytes to be hashed.
+    /// </param>
+    /// <param name="ALength">
+    ///   Optional: Number of bytes in <c>AData</c>.
+    /// </param>
+    /// <returns>
+    ///   The hash.
+    /// </returns>
+    function Compute(const AData: TCryptoBytes; ALength: Cardinal = 0): TCryptoBytes; overload;
 
     /// <summary>
     ///   Computes a hash of a file.
@@ -670,19 +687,34 @@ begin
   end;  //of try
 end;
 
-function THash.Compute(const AData: TCryptoBytes): TCryptoBytes;
+function THash.Compute(const AData: PByte; ASize: Cardinal): TCryptoBytes;
 var
-  Data: TBytesStream;
+  Stream: TMemoryStream;
 
 begin
-  Data := TBytesStream.Create(AData);
+  Stream := TMemoryStream.Create;
 
   try
-    Result := Compute(Data);
+    Stream.WriteBuffer(AData^, ASize);
+    Stream.Position := 0;
+    Result := Compute(Stream);
 
   finally
-    Data.Free;
+    Stream.Free;
   end;  //of try
+end;
+
+function THash.Compute(const AData: TCryptoBytes; ALength: Cardinal = 0): TCryptoBytes;
+var
+  Size: Cardinal;
+
+begin
+  if (ALength = 0) then
+    Size := Length(AData)
+  else
+    Size := ALength;
+
+  Result := Compute(@AData[0], Size)
 end;
 
 function THash.ComputeFromFile(const AFileName: TFileName): TCryptoBytes;

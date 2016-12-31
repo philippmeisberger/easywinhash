@@ -117,7 +117,7 @@ end;
 procedure THashTest.CheckHash(AAlgorithm: THashAlgorithm;
   const AExpected: string; const AFileName: TFileName = '');
 var
-  Expected, Calculated: TBytes;
+  Expected, Calculated: TCryptoBytes;
 
 begin
   FHash.Algorithm := AAlgorithm;
