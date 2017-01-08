@@ -1,4 +1,4 @@
-unit CryptoAPITests;
+unit PMCW.CryptoAPI.Tests;
 
 interface
 

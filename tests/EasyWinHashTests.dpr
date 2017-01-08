@@ -23,7 +23,7 @@ uses
   madListModules,
 {$ENDIF}
   DUnitTestRunner,
-  CryptoAPITests in 'CryptoAPITests.pas';
+  PMCW.CryptoAPI.Tests in 'PMCW.CryptoAPI.Tests.pas';
 
 {$R *.RES}
 
