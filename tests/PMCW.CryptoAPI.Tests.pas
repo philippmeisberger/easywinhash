@@ -30,10 +30,13 @@ type
     FOnFinished: Boolean;
     FProgress,
     FProgressMax: Int64;
+    FOnProgressCalled: Integer;
     procedure OnStart(Sender: TObject);
     procedure OnFinish(Sender: TObject);
     procedure OnProgress(Sender: TObject; const AProgress, AProgressMax: Int64;
       var ACancel: Boolean);
+    procedure TestCancel_OnProgress(Sender: TObject; const AProgress,
+      AProgressMax: Int64; var ACancel: Boolean);
   protected
     procedure CheckHash(AAlgorithm: THashAlgorithm; const AExpected: string;
       const AFileName: TFileName = '');
@@ -46,6 +49,7 @@ type
     procedure TestSha256;
     procedure TestSha384;
     procedure TestSha512;
+    procedure TestCancel;
   end;
 
 implementation
@@ -143,6 +147,26 @@ begin
   FOnFinished := False;
   FProgress := 0;
   FProgressMax := 0;
+end;
+
+procedure THashTest.TestCancel;
+begin
+  FHash.OnProgress := TestCancel_OnProgress;
+  CheckEquals('', FHash.Compute(BytesOf(ExpectedStringValue)).ToHex(), 'Since calculation has been canceled nothing should be returned');
+  CheckTrue(FOnFinished, 'OnFinish did not occur');
+
+  // Reset
+  FOnStart := False;
+  FOnFinished := False;
+  FOnProgressCalled := 0;
+end;
+
+procedure THashTest.TestCancel_OnProgress(Sender: TObject; const AProgress,
+  AProgressMax: Int64; var ACancel: Boolean);
+begin
+  Inc(FOnProgressCalled);
+  CheckEquals(1, FOnProgressCalled, 'Since calculation has been canceled OnProgress should not be called');
+  ACancel := True;
 end;
 
 procedure THashTest.TestMd5;
