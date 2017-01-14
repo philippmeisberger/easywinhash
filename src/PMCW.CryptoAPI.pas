@@ -129,6 +129,17 @@ type
     function Decode(const ABase64: string): string; overload;
 
     /// <summary>
+    ///   Decodes a Base64 encoded stream.
+    /// </summary>
+    /// <param name="AInputStream">
+    ///   The Base64 encoded stream.
+    /// </param>
+    /// <param name="AOutputStream">
+    ///   The decoded stream.
+    /// </param>
+    procedure Decode(const AInputStream, AOutputStream: TStream); overload;
+
+    /// <summary>
     ///   Decodes a Base64 string to an array of bytes.
     /// </summary>
     /// <param name="ABase64">
@@ -149,6 +160,17 @@ type
     ///   The Base64 encoded array of bytes.
     /// </returns>
     function Encode(const AData: TBytes): TBytes; overload;
+
+    /// <summary>
+    ///   Encodes stream.
+    /// </summary>
+    /// <param name="AInputStream">
+    ///   The stream.
+    /// </param>
+    /// <param name="AOutputStream">
+    ///   The Base64 encoded stream.
+    /// </param>
+    procedure Encode(const AInputStream, AOutputStream: TStream); overload;
 
     /// <summary>
     ///   Encodes a string.
@@ -516,6 +538,24 @@ begin
   Result := DecodeStringToBytes(StringOf(AData));
 end;
 
+procedure TBase64.Decode(const AInputStream, AOutputStream: TStream);
+var
+  InputStream: TStringStream;
+  Buffer: TBytes;
+
+begin
+  InputStream := TStringStream.Create;
+
+  try
+    InputStream.LoadFromStream(AInputStream);
+    Buffer := DecodeStringToBytes(InputStream.ReadString(InputStream.Size));
+    AOutputStream.WriteBuffer(Buffer, Length(Buffer));
+
+  finally
+    InputStream.Free;
+  end;  //of try
+end;
+
 function TBase64.Decode(const ABase64: string): string;
 begin
   Result := StringOf(DecodeStringToBytes(ABase64));
@@ -543,6 +583,26 @@ end;
 function TBase64.Encode(const AData: TBytes): TBytes;
 begin
   Result := BytesOf(EncodeBytesToString(AData));
+end;
+
+procedure TBase64.Encode(const AInputStream, AOutputStream: TStream);
+var
+  InputStream: TMemoryStream;
+  OutputStream: TStringStream;
+
+begin
+  InputStream := TMemoryStream.Create;
+  OutputStream := TStringStream.Create;
+
+  try
+    InputStream.LoadFromStream(AInputStream);
+    OutputStream.WriteString(EncodeBytesToString(InputStream.Memory, InputStream.Size));
+    OutputStream.SaveToStream(AOutputStream);
+
+  finally
+    OutputStream.Free;
+    InputStream.Free;
+  end;  //of try
 end;
 
 function TBase64.Encode(const AString: string): string;

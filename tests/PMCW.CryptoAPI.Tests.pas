@@ -21,6 +21,7 @@ type
   published
     procedure TestDecode;
     procedure TestEncode;
+    procedure TestStream;
   end;
 
   THashTest = class(TTestCase)
@@ -76,6 +77,40 @@ procedure TBase64Test.TestEncode;
 begin
   CheckEquals(Base64Value, FBase64.Encode(ExpectedStringValue), 'Base64 string encoding does not work');
   CheckEquals(Base64Value, StringOf(FBase64.Encode(BytesOf(ExpectedStringValue))), 'Base64 binary encoding does not work');
+end;
+
+procedure TBase64Test.TestStream;
+const
+  DecodedFileName = 'test.png';
+
+var
+  InputStream, OutputStream: TFileStream;
+  EncodedStream: TMemoryStream;
+  Hash: THash;
+
+begin
+  InputStream := TFileStream.Create(TestFile, fmOpenRead);
+  OutputStream := TFileStream.Create(DecodedFileName, fmCreate or fmOpenWrite);
+  EncodedStream := TMemoryStream.Create;
+  Hash := THash.Create(haSha256);
+
+  try
+    FBase64.Encode(InputStream, EncodedStream);
+    CheckNotEquals(0, EncodedStream.Position, 'Nothing has been encoded');
+    EncodedStream.Position := 0;
+    FBase64.Decode(EncodedStream, OutputStream);
+    CheckNotEquals(0, OutputStream.Position, 'Nothing has been decoded');
+    OutputStream.Position := 0;
+    InputStream.Position := 0;
+    CheckEquals(Hash.Compute(InputStream).ToHex(), Hash.Compute(OutputStream).ToHex(), 'Hash of file before encoding and after decoding must be equal');
+
+  finally
+    Hash.Free;
+    EncodedStream.Free;
+    OutputStream.Free;
+    InputStream.Free;
+    DeleteFile(DecodedFileName);
+  end;
 end;
 
 
