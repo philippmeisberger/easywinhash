@@ -13,9 +13,9 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Buttons, Vcl.ClipBrd,
-  System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, PMCW.CryptoAPI, PMCW.Utils,
-  PMCW.LanguageFile, FileHashThread, PMCW.Dialogs.Updater, PMCW.Dialogs.About,
-  Vcl.ImgList, System.ImageList;
+  System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, Vcl.ImgList, FileHashThread,
+  System.ImageList, PMCW.CryptoAPI, PMCW.Utils, PMCW.LanguageFile,
+  PMCW.Dialogs.Updater, PMCW.Dialogs.About, PMCW.FileSystem;
 
 type
   ENothingEnteredException = class(EAbort)
@@ -99,7 +99,7 @@ end;
 procedure TMain.FormCreate(Sender: TObject);
 var
   i, AlgorithmIndex: Integer;
-  VersionInfo: TFileProductVersion;
+  FileVersion: TFileVersion;
 
 begin
   // Setup language
@@ -120,11 +120,8 @@ begin
   Caption := Application.Title + PLATFORM_ARCH;
 
   // Get version information
-  if TUpdateCheck.GetFileVersion(Application.ExeName, VersionInfo) then
-  begin
-    lVersion.Caption := Format('v%d.%d', [VersionInfo[VERSION_MAJOR],
-      VersionInfo[VERSION_MINOR]]);
-  end;  //of begin
+  if FileVersion.FromFile(Application.ExeName) then
+    lVersion.Caption := FileVersion.ToString('v%d.%d');
 
   // Parse arguments
   i := 1;

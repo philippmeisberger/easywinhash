@@ -169,9 +169,9 @@ begin
 
   try
     if (FHashValue <> '') then
-      FMatches := AnsiSameStr(FHash.ComputeFile(FFileName).ToHex(), FHashValue)
+      FMatches := AnsiSameStr(FHash.ComputeFromFile(FFileName).ToHex(), FHashValue)
     else
-      FHashValue := FHash.ComputeFile(FFileName).ToHex();
+      FHashValue := FHash.ComputeFromFile(FFileName).ToHex();
 
     if Terminated then
       Synchronize(DoNotifyOnCancel)
