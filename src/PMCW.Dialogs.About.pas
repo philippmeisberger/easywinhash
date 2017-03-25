@@ -1,6 +1,6 @@
 { *********************************************************************** }
 {                                                                         }
-{ PM Code Works About Form v2.0.1                                         }
+{ PM Code Works About Form v2.1                                           }
 {                                                                         }
 { Copyright (c) 2011-2017 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
@@ -14,12 +14,10 @@ interface
 
 uses
 {$IFDEF MSWINDOWS}
-  Windows,
-{$ELSE}
-  Resource,
+  Winapi.Windows,
 {$ENDIF}
-  SysUtils, Classes, Graphics, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls,
-  Dialogs, PMCW.FileSystem;
+  SysUtils, Classes, Controls, Forms, StdCtrls, ExtCtrls, ComCtrls, Dialogs,
+  PMCW.FileSystem;
 
 const
   /// <summary>
@@ -38,12 +36,11 @@ type
   ///   like version, copyright and changelog.
   /// </summary>
   /// <remarks>
-  ///   The copyright and changelog must be stored in resources named per
-  ///   default <c>DESCRIPTION</c> and <c>CHANGELOG</c>. The properties
-  ///   <see cref="DescriptionResourceName"/> and <see cref="ChangelogResourceName"/>
-  ///   allow to change the resource name. The main application icon is
-  ///   retrieved automatically on Windows and shown on the left side. On Linux
-  ///   this icon must be manually set through <see cref="ImageFile"/> property.
+  ///   The copyright and changelog information must be set by using
+  ///   <see cref="Changelog"/> and <see cref="Description"/> properties. The
+  ///   version information are retrieved automatically. The main application
+  ///   icon is retrieved automatically only on Windows. On Linux this icon must
+  ///   be manually set through <see cref="ImageFile"/> property.
   /// </remarks>
   TAboutDialog = class(TCommonDialog)
   private
@@ -53,22 +50,21 @@ type
     FChangelogTab: TTabSheet;
     FImage: TImage;
     FVersionLabel: TLabel;
-    FOkButton1,
-    FOkButton2: TButton;
+    FCloseButton1,
+    FCloseButton2: TButton;
     FCopying,
     FChangelog: TMemo;
-    FDescriptionResourceName,
-    FChangelogResourceName: string;
   {$IFDEF LINUX}
     FImageFile: string;
   {$ENDIF}
-    procedure LoadResourceIntoMemo(const AResourceName: string; var AMemo: TMemo);
-    procedure SetTitle(const ATitle: string);
+    function GetChangelog(): TStrings;
+    function GetDescription(): TStrings;
     function GetTitle(): string;
-    function GetChangelogCaption: TCaption;
-    function GetDescriptionCaption: TCaption;
+    function GetChangelogCaption(): TCaption;
+    function GetDescriptionCaption(): TCaption;
     procedure SetChangelogCaption(const AChangelogCaption: TCaption);
     procedure SetDescriptionCaption(const ADescriptionCaption: TCaption);
+    procedure SetTitle(const ATitle: string);
   public
     /// <summary>
     ///   Constructor for creating a <c>TAboutDialog</c> instance.
@@ -90,25 +86,24 @@ type
     function Execute({$IFNDEF FPC}AParentHwnd: HWND{$ENDIF}): Boolean; override;
 
     /// <summary>
+    ///   Gets or sets the changelog.
+    /// </summary>
+    property Changelog: TStrings read GetChangelog;
+
+    /// <summary>
     ///   Gets or set the caption of the changelog tab.
     /// </summary>
     property ChangelogCaption: TCaption read GetChangelogCaption write SetChangelogCaption;
 
     /// <summary>
-    ///   Gets or sets the name of the changelog resource.
+    ///   Gets or sets the copyright/description.
     /// </summary>
-    property ChangelogResourceName: string read FChangelogResourceName write FChangelogResourceName;
+    property Description: TStrings read GetDescription;
 
     /// <summary>
     ///   Gets or set the caption of the description tab.
     /// </summary>
     property DescriptionCaption: TCaption read GetDescriptionCaption write SetDescriptionCaption;
-
-    /// <summary>
-    ///   Gets or sets the name of the copyright/description resource.
-    /// </summary>
-    property DescriptionResourceName: string read FDescriptionResourceName write FDescriptionResourceName;
-
   {$IFDEF LINUX}
     /// <summary>
     ///   Gets or sets the absolute path to the application icon that will be
@@ -119,7 +114,6 @@ type
     /// </remarks>
     property ImageFile: string read FImageFile write FImageFile;
   {$ENDIF}
-
     /// <summary>
     ///   Gets or sets the dialog title.
     /// </summary>
@@ -136,19 +130,16 @@ const
 
 begin
   inherited Create(AOwner);
-  FChangelogResourceName := RESOURCE_CHANGELOG;
-  FDescriptionResourceName := RESOURCE_DESCRIPTION;
   FForm := TForm.Create(Self);
 
   with FForm do
   begin
     Font.Size := 8;
     BorderStyle := bsDialog;
-    Caption := #220'ber '+ Application.Title;
+    Caption := 'About '+ Application.Title;
     ClientHeight := 260;
     ClientWidth := 460;
     Position := poScreenCenter;
-    PixelsPerInch := 96;
   end;  //of with
 
   FPageControl := TPageControl.Create(FForm);
@@ -167,7 +158,7 @@ begin
   begin
     Parent := FPageControl;
     PageControl := FPageControl;
-    Caption := 'Infos';
+    Caption := 'Information';
   {$IFDEF FPC}
     Width := FForm.Width - 6;
     Height := FForm.Height - 25;
@@ -193,14 +184,14 @@ begin
     AutoSize := False;
     Top := FImage.Top + FImage.Height + 5;
     Width := (2 * FImage.Left) + FImage.Width;
-    Height := 2 * Height;
+    Height := 3 * Height;
     Alignment := taCenter;
     WordWrap := True;
   end;  //of with
 
-  FOkButton1 := TButton.Create(FForm);
+  FCloseButton1 := TButton.Create(FForm);
 
-  with FOkButton1 do
+  with FCloseButton1 do
   begin
     Parent := FDescriptionTab;
     Width := 75;
@@ -225,7 +216,7 @@ begin
     Left := FImage.Left + FImage.Width + Margin;
     Top := FImage.Top;
     Width := FDescriptionTab.Width - Left - Margin;
-    Height := FOkButton1.Top - Margin - 5;
+    Height := FCloseButton1.Top - Margin - 5;
   {$IFNDEF FPC}
     Anchors := [akLeft, akTop, akRight, akBottom];
   {$ENDIF}
@@ -243,20 +234,20 @@ begin
     Caption := 'Changelog';
   end;  //of with
 
-  FOkButton2 := TButton.Create(FForm);
+  FCloseButton2 := TButton.Create(FForm);
 
-  with FOkButton2 do
+  with FCloseButton2 do
   begin
     Parent := FChangelogTab;
-    Left := FOkButton1.Left;
-    Top := FOkButton1.Top;
-    Width := FOkButton1.Width;
-    Height := FOkButton1.Height;
-    Anchors := FOkButton1.Anchors;
-    Cancel := FOkButton1.Cancel;
-    Caption := FOkButton1.Caption;
-    Default := FOkButton1.Default;
-    ModalResult := FOkButton1.ModalResult;
+    Left := FCloseButton1.Left;
+    Top := FCloseButton1.Top;
+    Width := FCloseButton1.Width;
+    Height := FCloseButton1.Height;
+    Anchors := FCloseButton1.Anchors;
+    Cancel := FCloseButton1.Cancel;
+    Caption := FCloseButton1.Caption;
+    Default := FCloseButton1.Default;
+    ModalResult := FCloseButton1.ModalResult;
     TabOrder := 0;
   end;  //of with
 
@@ -279,6 +270,9 @@ begin
 end;
 
 function TAboutDialog.Execute({$IFNDEF FPC}AParentHwnd: HWND{$ENDIF}): Boolean;
+const
+  Architecture = {$IFDEF CPUX64}'64-bit'{$ELSE}'32-bit'{$ENDIF};
+
 var
   FileVersion: TFileVersion;
 
@@ -287,11 +281,17 @@ begin
   if FileVersion.FromFile(Application.ExeName) then
   begin
     if (FileVersion.Service <> 0) then
-      FVersionLabel.Caption := FileVersion.ToString('v%d.%d.%d'+ sLineBreak +'(Build: %d)')
+    begin
+      FVersionLabel.Caption := FileVersion.ToString('v%d.%d.%d'+ sLineBreak
+        +'(Build: %d)'+ sLineBreak + Architecture);
+    end  //of begin
     else
-      FVersionLabel.Caption := Format('v%d.%d'+ sLineBreak +'(Build: %d)',
-        [FileVersion.Major, FileVersion.Minor, FileVersion.Build]);
-  end;
+    begin
+      FVersionLabel.Caption := Format('v%d.%d'+ sLineBreak +'(Build: %d)'
+        + sLineBreak + Architecture, [FileVersion.Major, FileVersion.Minor,
+        FileVersion.Build]);
+    end;  //of if
+  end;  //of begin
 
   // Load application icon into TImage
 {$IFDEF MSWINDOWS}
@@ -300,17 +300,23 @@ begin
 {$ELSE}
   FImage.Picture.Icon.LoadFromFile(FImageFile);
 {$ENDIF}
-
-  // Load resources
-  LoadResourceIntoMemo(FDescriptionResourceName, FCopying);
-  LoadResourceIntoMemo(FChangelogResourceName, FChangelog);
   FForm.ShowModal();
   Result := True;
+end;
+
+function TAboutDialog.GetChangelog(): TStrings;
+begin
+  Result := FChangelog.Lines;
 end;
 
 function TAboutDialog.GetChangelogCaption(): TCaption;
 begin
   Result := FChangelogTab.Caption;
+end;
+
+function TAboutDialog.GetDescription(): TStrings;
+begin
+  Result := FCopying.Lines;
 end;
 
 function TAboutDialog.GetDescriptionCaption(): TCaption;
@@ -321,22 +327,6 @@ end;
 function TAboutDialog.GetTitle(): string;
 begin
   Result := FForm.Caption;
-end;
-
-procedure TAboutDialog.LoadResourceIntoMemo(const AResourceName: string;
-  var AMemo: TMemo);
-var
-  ResourceStream: TResourceStream;
-
-begin
-  ResourceStream := TResourceStream.Create(HInstance, AResourceName, PChar(RT_RCDATA));
-
-  try
-    AMemo.Lines.LoadFromStream(ResourceStream);
-
-  finally
-    ResourceStream.Free;
-  end;  //of try
 end;
 
 procedure TAboutDialog.SetChangelogCaption(const AChangelogCaption: TCaption);

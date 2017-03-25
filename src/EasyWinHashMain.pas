@@ -2,7 +2,7 @@
 {                                                                         }
 { EasyWinHash Main Unit                                                   }
 {                                                                         }
-{ Copyright (c) 2016 Philipp Meisberger (PM Code Works)                   }
+{ Copyright (c) 2016-2017 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -11,23 +11,16 @@ unit EasyWinHashMain;
 interface
 
 uses
-  Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  ComCtrls, StdCtrls, ExtCtrls, Menus, ShellAPI, Vcl.Buttons, Vcl.ClipBrd,
-  System.Win.TaskbarCore, Vcl.Taskbar, System.UiTypes, Vcl.ImgList, FileHashThread,
-  System.ImageList, PMCW.CryptoAPI, PMCW.Utils, PMCW.LanguageFile,
-  PMCW.Dialogs.Updater, PMCW.Dialogs.About, PMCW.FileSystem;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ExtCtrls,
+  Vcl.Menus, Winapi.ShellAPI, Vcl.Buttons, Vcl.ClipBrd, System.Win.TaskbarCore,
+  Vcl.Taskbar, System.UiTypes, Vcl.ImgList, System.ImageList, FileHashThread,
+  PMCW.CryptoAPI, PMCW.CA, PMCW.LanguageFile, PMCW.Dialogs, PMCW.Dialogs.Updater,
+  PMCW.Dialogs.About, PMCW.FileSystem;
 
 type
-  ENothingEnteredException = class(EAbort)
-  private
-    FEditHandle: THandle;
-  public
-    constructor Create(const AMessage: string; AEditHandle: THandle); reintroduce;
-    property EditHandle: THandle read FEditHandle;
-  end;
-
   { TMain }
-  TMain = class(TForm, IChangeLanguageListener, IUpdateListener)
+  TMain = class(TForm, IChangeLanguageListener)
     cbxAlgorithm: TComboBox;
     bCalculate: TButton;
     pbProgress: TProgressBar;
@@ -70,10 +63,9 @@ type
     procedure OnHashingError(Sender: TThread; const AErrorMessage: string);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
-    { IUpdateListener }
-    procedure OnUpdate(const ANewBuild: Cardinal);
+    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
     { IChangeLanguageListener }
-    procedure SetLanguage(ANewLanguage: TLocale);
+    procedure LanguageChanged();
   end;
 
 var
@@ -84,16 +76,6 @@ implementation
 {$I LanguageIDs.inc}
 {$R *.dfm}
 
-{ ENothingEnteredException }
-
-constructor ENothingEnteredException.Create(const AMessage: string;
-  AEditHandle: THandle);
-begin
-  inherited Create(AMessage);
-  FEditHandle := AEditHandle;
-end;
-
-
 { TMain }
 
 procedure TMain.FormCreate(Sender: TObject);
@@ -102,22 +84,28 @@ var
   FileVersion: TFileVersion;
 
 begin
-  // Setup language
-  FLang := TLanguageFile.Create(Self);
-  FLang.Interval := 100;
-  FLang.BuildLanguageMenu(MainMenu, mmLang);
+  // Setup languages
+  FLang := TLanguageFile.Create(100);
+
+  with FLang do
+  begin
+    AddListener(Self);
+    BuildLanguageMenu(mmLang);
+  end;  //of with
 
   // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create(Self, 'EasyWinHash', FLang);
+  FUpdateCheck := TUpdateCheck.Create('EasyWinHash', FLang);
 
-  // Check for update on startup
-  FUpdateCheck.CheckForUpdate(False);
+  with FUpdateCheck do
+  begin
+    OnUpdate := Self.OnUpdate;
+  {$IFNDEF DEBUG}
+    CheckForUpdate();
+  {$ENDIF}
+  end;  //of with
 
   // Enable drag & drop support
   DragAcceptFiles(Handle, True);
-
-  // Set title
-  Caption := Application.Title + PLATFORM_ARCH;
 
   // Get version information
   if FileVersion.FromFile(Application.ExeName) then
@@ -241,7 +229,7 @@ begin
   MessageBeep(MB_ICONINFORMATION);
 end;
 
-procedure TMain.OnUpdate(const ANewBuild: Cardinal);
+procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
 var
   Updater: TUpdateDialog;
 
@@ -249,14 +237,12 @@ begin
   mmUpdate.Caption := FLang.GetString(LID_UPDATE_DOWNLOAD);
 
   // Ask user to permit download
-  if (FLang.ShowMessage(FLang.Format(LID_UPDATE_AVAILABLE, [ANewBuild]),
-    FLang.GetString(LID_UPDATE_CONFIRM_DOWNLOAD), mtConfirmation) = IDYES) then
+  if (TaskMessageDlg(FLang.Format(LID_UPDATE_AVAILABLE, [ANewBuild]),
+    FLang[LID_UPDATE_CONFIRM_DOWNLOAD], mtConfirmation, mbYesNo, 0) = idYes) then
   begin
-    // init TUpdate instance
     Updater := TUpdateDialog.Create(Self, FLang);
 
     try
-      // Set updater options
       with Updater do
       begin
       {$IFDEF PORTABLE}
@@ -278,7 +264,9 @@ begin
         // Caption "Search for update"
         mmUpdate.Caption := FLang.GetString(LID_UPDATE_SEARCH);
         mmUpdate.Enabled := False;
+      {$IFNDEF PORTABLE}
         Updater.LaunchSetup();
+      {$ENDIF}
       end;  //of begin
 
     finally
@@ -290,16 +278,16 @@ end;
 procedure TMain.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
   if AMatches then
-    FLang.ShowMessage(FLang.GetString(LID_HASH_MATCHES), mtInformation)
+    MessageDlg(FLang.GetString(LID_HASH_MATCHES), mtInformation, [mbOK], 0)
   else
   begin
     Taskbar.ProgressState := TTaskBarProgressState.Error;
     pbProgress.State := pbsError;
-    FLang.ShowMessage(FLang.GetString(LID_HASH_DOES_NOT_MATCH), mtWarning);
+    MessageDlg(FLang.GetString(LID_HASH_DOES_NOT_MATCH), mtWarning, [mbOK], 0);
   end;  //of if
 end;
 
-procedure TMain.SetLanguage(ANewLanguage: TLocale);
+procedure TMain.LanguageChanged();
 begin
   with FLang do
   begin
@@ -348,8 +336,12 @@ begin
       Exit;
     end;  //of begin
 
+    // No file selected?
     if (eFile.Text = '') then
-      raise ENothingEnteredException.Create(FLang.GetString(LID_NO_FILE_SELECTED), eFile.Handle);
+    begin
+      eFile.ShowBalloonTip(FLang.GetString(LID_WARNING), FLang.GetString(LID_NO_FILE_SELECTED), biWarning);
+      Exit;
+    end;  //of begin
 
     FThread := TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex));
 
@@ -368,9 +360,6 @@ begin
     bVerify.Enabled := False;
 
   except
-    on E: ENothingEnteredException do
-      FLang.EditBalloonTip(E.EditHandle, FLang.GetString(LID_WARNING), E.Message, biWarning);
-
     on E: Exception do
       FLang.ShowException(FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), E.Message);
   end;  //of try
@@ -413,11 +402,19 @@ begin
       Exit;
     end;  //of begin
 
+    // No hash entered?
     if (eHash.Text = '') then
-      raise ENothingEnteredException.Create(FLang.GetString(LID_NO_HASH_ENTERED), eHash.Handle);
+    begin
+      eHash.ShowBalloonTip(FLang.GetString(LID_WARNING), FLang.GetString(LID_NO_HASH_ENTERED), biWarning);
+      Exit;
+    end;  //of begin
 
+    // No file selected?
     if (eFile.Text = '') then
-      raise ENothingEnteredException.Create(FLang.GetString(LID_NO_FILE_SELECTED), eFile.Handle);
+    begin
+      eFile.ShowBalloonTip(FLang.GetString(LID_WARNING), FLang.GetString(LID_NO_FILE_SELECTED), biWarning);
+      Exit;
+    end;  //of begin
 
     FThread := TFileHashThread.Create(eFile.Text, THashAlgorithm(cbxAlgorithm.ItemIndex),
       eHash.Text);
@@ -438,9 +435,6 @@ begin
     bCalculate.Enabled := False;
 
   except
-    on E: ENothingEnteredException do
-      FLang.EditBalloonTip(E.EditHandle, FLang.GetString(LID_WARNING), E.Message, biWarning);
-
     on E: Exception do
       FLang.ShowException(FLang.GetString([LID_HASH_VERIFY, LID_IMPOSSIBLE]), E.Message);
   end;  //of try
@@ -448,26 +442,25 @@ end;
 
 procedure TMain.mmUpdateClick(Sender: TObject);
 begin
-  FUpdateCheck.CheckForUpdate(True);
+  FUpdateCheck.NotifyNoUpdate := True;
+  FUpdateCheck.CheckForUpdate();
 end;
 
 procedure TMain.mmInstallCertificateClick(Sender: TObject);
-var
-  Updater: TUpdateDialog;
-
 begin
-  Updater := TUpdateDialog.Create(Self, FLang);
-
   try
     // Certificate already installed?
-    if not Updater.CertificateExists() then
-      Updater.InstallCertificate()
+    if CertificateExists() then
+    begin
+      MessageDlg(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED),
+        mtInformation, [mbOK], 0);
+    end  //of begin
     else
-      FLang.ShowMessage(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED),
-        mtInformation);
+      InstallCertificate();
 
-  finally
-    Updater.Free;
+  except
+    on E: EOSError do
+      MessageDlg(E.Message, mtError, [mbOK], 0);
   end;  //of try
 end;
 
@@ -479,15 +472,22 @@ end;
 procedure TMain.mmAboutClick(Sender: TObject);
 var
   AboutDialog: TAboutDialog;
+  Description, Changelog: TResourceStream;
 
 begin
   AboutDialog := TAboutDialog.Create(Self);
+  Description := TResourceStream.Create(HInstance, RESOURCE_DESCRIPTION, RT_RCDATA);
+  Changelog := TResourceStream.Create(HInstance, RESOURCE_CHANGELOG, RT_RCDATA);
 
   try
     AboutDialog.Title := StripHotkey(mmAbout.Caption);
+    AboutDialog.Description.LoadFromStream(Description);
+    AboutDialog.Changelog.LoadFromStream(Changelog);
     AboutDialog.Execute();
 
   finally
+    Changelog.Free;
+    Description.Free;
     AboutDialog.Free;
   end;  //of begin
 end;

@@ -8,6 +8,8 @@
 
 unit PMCW.FileSystem;
 
+{$IFDEF FPC}{$mode delphi}{$ENDIF}
+
 interface
 
 uses
@@ -95,6 +97,19 @@ type
 function ExecuteProgram(const AProgram: string; const AArguments: string = '';
   AShow: Integer = SW_SHOWNORMAL; ARunAsAdmin: Boolean = False;
   AWait: Boolean = False): Boolean;
+
+/// <summary>
+///   Expands an environment variable.
+/// </summary>
+/// <param name="AVariable">
+///   The variable that has to be expanded. If the function succeeds the
+///   original content will be overwritten.
+/// </param>
+/// <returns>
+///   <c>True</c> if the variable was successfully expanded or <c>False</c>
+///   otherwise.
+/// </returns>
+function ExpandEnvironmentVar(var AVariable: string): Boolean;
 
 /// <summary>
 ///   Retrieves the path of default folders identified by a CSIDL.
@@ -255,6 +270,29 @@ begin
       Result := (ProcessExitCode = 0)
     else
       Result := False;
+  end;  //of begin
+end;
+
+function ExpandEnvironmentVar(var AVariable: string): Boolean;
+var
+  BufferSize: Integer;
+  Buffer: string;
+
+begin
+  Result := False;
+
+  // Get required buffer size
+  BufferSize := ExpandEnvironmentStrings(PChar(AVariable), nil, 0);
+
+  if (BufferSize > 0) then
+  begin
+    SetLength(Buffer, BufferSize);
+
+    if (ExpandEnvironmentStrings(PChar(AVariable), PChar(Buffer), BufferSize) <> 0) then
+    begin
+      AVariable := PChar(Buffer);
+      Result := True;
+    end;  //of begin
   end;  //of begin
 end;
 

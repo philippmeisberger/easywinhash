@@ -3,7 +3,7 @@
         <ProjectGuid>{8D20D275-12C4-45D5-A862-16023C8D4583}</ProjectGuid>
         <MainSource>EasyWinHash.dpr</MainSource>
         <Base>True</Base>
-        <Config Condition="'$(Config)'==''">Release</Config>
+        <Config Condition="'$(Config)'==''">Debug</Config>
         <TargetedPlatforms>3</TargetedPlatforms>
         <AppType>Application</AppType>
         <FrameworkType>VCL</FrameworkType>
@@ -63,6 +63,7 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
+        <VerInfo_Release>1</VerInfo_Release>
         <Icon_MainIcon>EasyWinHash.ico</Icon_MainIcon>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <Manifest_File>PMCW.Default.manifest</Manifest_File>
@@ -77,9 +78,9 @@
         <VerInfo_Locale>1031</VerInfo_Locale>
         <DCC_Namespace>Vcl;Vcl.Imaging;Vcl.Touch;Vcl.Samples;Vcl.Shell;System;Xml;Data;Datasnap;Web;Soap;Winapi;System.Win;$(DCC_Namespace)</DCC_Namespace>
         <DCC_ImageBase>00400000</DCC_ImageBase>
-        <VerInfo_Build>175</VerInfo_Build>
+        <VerInfo_Build>180</VerInfo_Build>
         <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
-        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=EasyWinHash;FileVersion=1.0.0.175;InternalName=;LegalCopyright=Philipp Meisberger 2017;LegalTrademarks=PM Code Works;OriginalFilename=EasyWinHash.exe;ProductName=EasyWinHash;ProductVersion=1.0;Comments=Delphi XE8</VerInfo_Keys>
+        <VerInfo_Keys>CompanyName=PM Code Works;FileDescription=EasyWinHash;FileVersion=1.0.1.180;InternalName=;LegalCopyright=Philipp Meisberger 2017;LegalTrademarks=PM Code Works;OriginalFilename=EasyWinHash.exe;ProductName=EasyWinHash;ProductVersion=1.0;Comments=Delphi XE8</VerInfo_Keys>
         <DCC_DebugInformation>1</DCC_DebugInformation>
         <DCC_SymbolReferenceInfo>1</DCC_SymbolReferenceInfo>
         <DCC_K>false</DCC_K>
@@ -106,6 +107,9 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
+        <VerInfo_AutoIncVersion>false</VerInfo_AutoIncVersion>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_3)'!=''">
         <DCC_DebugInformation>0</DCC_DebugInformation>

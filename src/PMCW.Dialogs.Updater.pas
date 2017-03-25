@@ -12,234 +12,58 @@ unit PMCW.Dialogs.Updater;
 
 interface
 
-{$IFDEF MSWINDOWS}
 uses
-  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Dialogs, Vcl.Forms,
+{$IFDEF MSWINDOWS}
+  Winapi.Windows, System.Classes, Vcl.Dialogs, Vcl.Forms,
 {$WARN UNIT_PLATFORM OFF}
   Vcl.FileCtrl,
 {$WARN UNIT_PLATFORM ON}
-  Vcl.StdCtrls, Vcl.ComCtrls, System.UITypes, System.Win.TaskbarCore, Vcl.Consts,
-  System.Win.Registry, Vcl.Taskbar, System.Net.HttpClient, System.NetConsts,
-  System.Net.URLClient, PMCW.LanguageFile, PMCW.FileSystem, PMCW.CA;
+  Vcl.StdCtrls, Vcl.ComCtrls, System.UITypes, Vcl.Consts, System.Win.Registry,
+  System.Net.HttpClient, System.NetConsts, System.Net.URLClient, PMCW.FileSystem,
+  PMCW.LanguageFile, PMCW.CA,
+{$ELSE}
+  Process, StrUtils,
 {$ENDIF}
+  SysUtils;
 
 const
   /// <summary>
   ///   URL to the website.
   /// </summary>
-  URL_BASE           = 'http://www.pm-codeworks.de/';
+  URL_BASE                     = 'http://www.pm-codeworks.de/';
 
   /// <summary>
   ///   URL to the download (base) directory on website.
   /// </summary>
-  URL_DIR            = URL_BASE + 'media/';
-
-  /// <summary>
-  ///   URL to the PHP web downloader script.
-  /// </summary>
-  URL_DOWNLOAD       = URL_DIR + 'downloader.php?file=';
+  URL_DIR                      = URL_BASE +'media/';
 
   /// <summary>
   ///   URL to the report bug formular on the website.
   /// </summary>
-  URL_CONTACT        = URL_BASE +'kontakt.html';
+  URL_CONTACT                  = URL_BASE +'kontakt.html';
 
 {$IFDEF MSWINDOWS}
-  /// <summary>
-  ///   The version of the updater.
-  /// </summary>
-  UPDATER_VERSION    = '3.1';
-
-  /// <summary>
-  ///   The used user-agent string during the HTTP(S) connection.
-  /// </summary>
-  UPDATER_USER_AGENT = 'Updater/'+ UPDATER_VERSION +' (PM Code Works Update Utility)';
-
-type
-  /// <summary>
-  ///   Receive update notfication when a newer version is available on website.
-  ///   Must be implemented by classes that use the <see cref="TUpdateCheck"/>.
-  /// </summary>
-  IUpdateListener = interface
-  ['{D1CDAE74-717A-4C5E-9152-15FBA4A15552}']
-    /// <summary>
-    ///   Is called when a new version is available on website.
-    /// </summary>
-    /// <param name="ANewBuild">
-    ///    The new build number which is available.
-    /// </param>
-    procedure OnUpdate(const ANewBuild: Cardinal);
-  end;
-
-  /// <summary>
-  ///   Occurs when an update is available.
-  /// </summary>
-  /// <param name="Sender">
-  ///   The sender.
-  /// </param>
-  /// <param name="ANewBuild">
-  ///   The newest build number.
-  /// </param>
-  TOnUpdateAvailableEvent = procedure(Sender: TThread; const ANewBuild: Cardinal) of object;
-
-  /// <summary>
-  ///   Occurs when checking for update has failed.
-  /// </summary>
-  /// <param name="Sender">
-  ///   The sender.
-  /// </param>
-  /// <param name="AResponseCode">
-  ///   The response code (usually a HTTP error code).
-  /// </param>
-  /// <param name="AResponseText">
-  ///   The message of the response code.
-  /// </param>
-  TOnUpdateCheckErrorEvent = procedure(Sender: TThread; AResponseCode: Integer;
-    const AResponseText: string) of object;
-
-  /// <summary>
-  ///   A <c>TUpdateCheckThread</c> downloads the version.txt from the website
-  ///   and notifies about update status.
-  /// </summary>
-  TUpdateCheckThread = class(TThread)
-  private
-    FHttp: THttpClient;
-    FResponseCode: Integer;
-    FResponseText: string;
-    FOnUpdate: TOnUpdateAvailableEvent;
-    FOnError: TOnUpdateCheckErrorEvent;
-    FOnNoUpdate: TNotifyEvent;
-    FCurrentBuild,
-    FNewBuild: Cardinal;
-    FRemoteDirName: string;
-    procedure DoNotifyOnError;
-    procedure DoNotifyOnNoUpdate;
-    procedure DoNotifyOnUpdate;
-  protected
-    procedure Execute; override;
-  public
-    /// <summary>
-    ///   Constructor for creating a <c>TUpdateCheckThread</c> instance.
-    /// </summary>
-    /// <param name="ACurrentBuild">
-    ///   The build number of the current program.
-    /// </param>
-    /// <param name="ARemoteDirName">
-    ///   The directory on website which contains the version.txt file.
-    /// </param>
-    constructor Create(ACurrentBuild: Cardinal; const ARemoteDirName: string); reintroduce;
-
-    /// <summary>
-    ///   Destructor for destroying a <c>TUpdateCheckThread</c> instance.
-    /// </summary>
-    destructor Destroy; override;
-
-    /// <summary>
-    ///   Occurs when search for update fails.
-    /// </summary>
-    property OnError: TOnUpdateCheckErrorEvent read FOnError write FOnError;
-
-    /// <summary>
-    ///   Occurs when no update is available.
-    /// </summary>
-    property OnNoUpdate: TNotifyEvent read FOnNoUpdate write FOnNoUpdate;
-
-    /// <summary>
-    ///   Occurs when an update is available.
-    /// </summary>
-    property OnUpdate: TOnUpdateAvailableEvent read FOnUpdate write FOnUpdate;
-  end;
-
-  /// <summary>
-  ///   The <c>TUpdateCheck</c> is a light-weight async update notificator to
-  ///   inform a user that a new version of the current PMCW project is available.
-  ///   It uses HTTP to download a version.txt from the website that contains
-  ///   the latest build number and checks if it matches the current build.
-  ///   If the webside build number is higher all classes that implement
-  ///   <see cref="IUpdateListener"/> and are registered with
-  ///   <see cref="TUpdateCheck.AddListener"/> receive the <c>OnUpdate</c> event.
-  ///   If the build numbers match a message is shown saying that no update is
-  ///   available. It supports different UI translations.
-  /// </summary>
-  TUpdateCheck = class(TObject)
-  private
-    FLanguageFile: TLanguageFile;
-    FListeners: TInterfaceList;
-    FNotifyNoUpdate: Boolean;
-    FRemoteDirName: string;
-    FNewBuild: Cardinal;
-    procedure OnCheckError(Sender: TThread; AResponseCode: Integer;
-      const AResponseText: string);
-    procedure OnNoUpdateAvailable(Sender: TObject);
-    procedure OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
-  public
-    /// <summary>
-    ///    Constructor for creating a <c>TUpdateCheck</c> instance.
-    /// </summary>
-    /// <param name="ARemoteDirName">
-    ///   The directory on website which contains the version.txt file.
-    /// </param>
-    /// <param name="ALanguageFile">
-    ///   The specific user interface translation file to use.
-    /// </param>
-    constructor Create(const ARemoteDirName: string;
-      ALanguageFile: TLanguageFile); reintroduce; overload;
-
-    /// <summary>
-    ///    Constructor for creating a <c>TUpdateCheck</c> instance.
-    /// </summary>
-    /// <param name="AOwner">
-    ///   A listener which implements the <see cref="IUpdateListener"/> interface.
-    /// </param>
-    /// <param name="ARemoteDirName">
-    ///   The directory on website which contains the version.txt file.
-    /// </param>
-    /// <param name="ALanguageFile">
-    ///   The specific user interface translation file to use.
-    /// </param>
-    constructor Create(AOwner: IUpdateListener; const ARemoteDirName: string;
-      ALanguageFile: TLanguageFile); reintroduce; overload;
-
-    /// <summary>
-    ///   Destructor for destroying an <c>TUpdateCheck</c> instance.
-    /// </summary>
-    destructor Destroy; override;
-
-    /// <summary>
-    ///   Adds a listener to the notification list.
-    /// </summary>
-    /// <param name="AListener">
-    ///   A listener which implements the <see cref="IUpdateListener"/> interface.
-    /// </param>
-    procedure AddListener(AListener: IUpdateListener);
-
-    /// <summary>
-    ///   Searches for update on an HTTP server.
-    /// </summary>
-    /// <param name="ANotifyNoUpdate">
-    ///   Set to <c>True</c> to show a message if no update is available.
-    ///   Otherwise no message is shown. Comes in handy when update should be
-    ///   searched on startup of application: User would get always the message
-    ///   that no update is avaiable. This could be annoying!
-    /// </param>
-    procedure CheckForUpdate(ANotifyNoUpdate: Boolean = False);
-
-    /// <summary>
-    ///   Removes a listener from the notification list.
-    /// </summary>
-    /// <param name="AListener">
-    ///   A listener which implements the <see cref="IUpdateListener"/> interface.
-    /// </param>
-    procedure RemoveListener(AListener: IUpdateListener);
-  end;
-
-const
   /// <summary>
   ///   Error saying that something went wrong with server certificate validation.
   /// </summary>
   ERROR_CERTIFICATE_VALIDATION = -2;
 
 type
+  /// <summary>
+  ///   Occurs when something went wrong during the HTTP connection.
+  /// </summary>
+  /// <param name="Sender">
+  ///   The sender.
+  /// </param>
+  /// <param name="AResponseCode">
+  ///   The HTTP response code.
+  /// </param>
+  /// <param name="AResponseText">
+  ///   The HTTP response text.
+  /// </param>
+  THttpErrorEvent = procedure(Sender: TObject; const AResponseCode: Integer;
+    const AResponseText: string) of object;
+
   /// <summary>
   ///   Occurs when download is in progress.
   /// </summary>
@@ -252,97 +76,48 @@ type
   /// <param name="AReadCount">
   ///   The already downloaded KB of the update.
   /// </param>
-  TDownloadingEvent = procedure(Sender: TThread; AContentLength, AReadCount: Int64) of object;
+  TDownloadingEvent = procedure(Sender: TObject; AContentLength, AReadCount: Int64) of object;
 
   /// <summary>
-  ///   Occurs when an error occurs while downloading.
+  ///   Generic HTTP thread.
   /// </summary>
-  /// <param name="Sender">
-  ///   The sender.
-  /// </param>
-  /// <param name="AResponseCode">
-  ///   The HTTP response code.
-  /// </param>
-  /// <param name="AResponseText">
-  ///   The HTTP response text.
-  /// </param>
-  TRequestErrorEvent = procedure(Sender: TThread; const AResponseCode: Integer;
-    const AResponseText: string) of object;
-
-  /// <summary>
-  ///   Occurs when the download has finished.
-  /// </summary>
-  /// <param name="Sender">
-  ///   The sender.
-  /// </param>
-  /// <param name="AFileName">
-  ///   The downloaded file.
-  /// </param>
-  TDownloadFinishedEvent = procedure(Sender: TThread; const AFileName: string) of object;
-
-  /// <summary>
-  ///   A <c>TDownloadThread</c> downloads a file from an URL using TLS (default).
-  ///   In case of error a precise description will be returned in the
-  ///   <see cref="OnError"/> event. The progress of the download can be seen
-  ///   in the <see cref="OnDownloading"/> event. Of course the download can be
-  ///   canceled: Just use the <c>Terminate</c> method.
-  /// </summary>
-  TDownloadThread = class(TThread)
+  THttpThread = class abstract(TThread)
   private
-    FHttp: THttpClient;
-    FOnDownloading: TDownloadingEvent;
-    FOnError: TRequestErrorEvent;
-    FOnFinish: TDownloadFinishedEvent;
-    FOnCancel: TNotifyEvent;
-    FContentLength,
-    FReadCount: Int64;
-    FFileName,
     FUrl,
     FResponseText: string;
-    FResponseCode: Integer;
+    FOnError: THttpErrorEvent;
     FTLSEnabled: Boolean;
-    procedure DoNotifyOnCancel;
-    procedure DoNotifyOnDownloading;
-    procedure DoNotifyOnError;
-    procedure DoNotifyOnFinish;
+    FContentLength,
+    FReadCount: Int64;
+    FOnDownloading: TDownloadingEvent;
+    FOnCancel: TNotifyEvent;
+    procedure NotifyOnCancel();
+    procedure NotifyOnDownloading();
+    procedure NotifyOnError();
     procedure Downloading(const Sender: TObject; AContentLength, AReadCount: Int64;
       var AAbort: Boolean);
-    procedure OnValidateServerCertificate(const Sender: TObject;
+    procedure ValidateServerCertificate(const Sender: TObject;
       const ARequest: TURLRequest; const ACertificate: TCertificate; var AAccepted: Boolean);
     procedure SetTlsEnabled(const ATlsEnabled: Boolean);
   protected
-    procedure Execute; override;
+    FHttpClient: THTTPClient;
+    FResponseCode: Integer;
+    procedure CheckResponse(const AResponse: IHTTPResponse);
+    procedure DoExecute(); virtual; abstract;
+    procedure Execute(); override; final;
   public
     /// <summary>
-    ///   Constructor for creating a <c>TDownloadThread</c> instance.
+    ///   Constructor for creating a <c>THttpThread</c> instance.
     /// </summary>
     /// <param name="AUrl">
-    ///   The complete URL to the file that should be downloaded.
+    ///   An URL.
     /// </param>
-    /// <param name="AFileName">
-    ///   The filename under which the downloaded file should be stored.
-    /// </param>
-    /// <param name="AAllowOverwrite">
-    ///   If set to <c>True</c> and the file was already downloaded then this
-    ///   will be overwritten. Otherwise the existing file is kept and a new
-    ///   file with a number suffix is created.
-    /// </param>
-    constructor Create(const AUrl, AFileName: string; AAllowOverwrite: Boolean = False);
+    constructor Create(const AUrl: string);
 
     /// <summary>
-    ///   Destructor for destroying a <c>TDownloadThread</c> instance.
+    ///   Destructor for destroying a <c>THttpThread</c> instance.
     /// </summary>
     destructor Destroy; override;
-
-    /// <summary>
-    ///   Creates an unique filename to be sure downloading to a non-existing
-    ///   file. If the file already exists a number suffix is appended to this
-    ///   filename.
-    /// </summary>
-    /// <returns>
-    ///   The unique filename
-    /// </returns>
-    function GetUniqueFileName(const AFileName: string): string;
 
     /// <summary>
     ///   Occurs when download has been canceled by user.
@@ -355,14 +130,9 @@ type
     property OnDownloading: TDownloadingEvent read FOnDownloading write FOnDownloading;
 
     /// <summary>
-    ///   Occurs when an error occurs while downloading.
+    ///   Occurs when something went wrong during the HTTP connection.
     /// </summary>
-    property OnError: TRequestErrorEvent read FOnError write FOnError;
-
-    /// <summary>
-    ///   Occurs when the download has finished.
-    /// </summary>
-    property OnFinish: TDownloadFinishedEvent read FOnFinish write FOnFinish;
+    property OnError: THttpErrorEvent read FOnError write FOnError;
 
     /// <summary>
     ///   Gets or sets the usage of TLS.
@@ -371,9 +141,133 @@ type
   end;
 
   /// <summary>
-  ///   <c>TUpdateDialog</c> is a dialog which downloads a file from the website and
-  ///   shows the progress in a <c>TProgressBar</c> and on the taskbar. The
-  ///   download is encrypted using TLS per default.
+  ///   A <c>TUpdateCheckThread</c> downloads the version.txt from the website
+  ///   and notifies about update status.
+  /// </summary>
+  TUpdateCheckThread = class(THttpThread)
+  private
+    FRemoteBuild: Integer;
+  protected
+    procedure DoExecute(); override;
+  public
+    /// <summary>
+    ///   Constructor for creating a <c>TUpdateCheckThread</c> instance.
+    /// </summary>
+    /// <param name="ARemoteDirName">
+    ///   The directory on website which contains the version.txt file.
+    /// </param>
+    constructor Create(const ARemoteDirName: string);
+
+    /// <summary>
+    ///   Holds the remote build number after thread has finished.
+    /// </summary>
+    property RemoteBuild: Integer read FRemoteBuild;
+  end;
+
+  /// <summary>
+  ///   Occurs when an update is available.
+  /// </summary>
+  /// <param name="Sender">
+  ///   The sender.
+  /// </param>
+  /// <param name="ANewBuild">
+  ///   The newest build number.
+  /// </param>
+  TUpdateAvailableEvent = procedure(Sender: TObject; const ANewBuild: Cardinal) of object;
+
+  /// <summary>
+  ///   The <c>TUpdateCheck</c> is a light-weight async update notificator to
+  ///   inform a user that a new version of the current PMCW project is available.
+  ///   It uses HTTP to download a version.txt from the website that contains
+  ///   the latest build number and checks if it matches the current build.
+  ///   If the webside build number is higher than current build the
+  ///   <see cref="OnUpdate"/> event occurs. If the build numbers match a
+  ///   message is shown saying that no update is available. It supports
+  ///   different UI translations.
+  /// </summary>
+  TUpdateCheck = class(TObject)
+  private
+    FLanguageFile: TLanguageFile;
+    FNotifyNoUpdate: Boolean;
+    FRemoteDirName: string;
+    FOnUpdate: TUpdateAvailableEvent;
+    FCurrentBuild,
+    FRemoteBuild: Cardinal;
+    FThread: TUpdateCheckThread;
+    procedure CheckFinished(Sender: TObject);
+    procedure HttpError(Sender: TObject; const AResponseCode: Integer;
+      const AResponseText: string);
+    procedure NotifyOnUpdate();
+  public
+    /// <summary>
+    ///    Constructor for creating a <c>TUpdateCheck</c> instance.
+    /// </summary>
+    /// <param name="ARemoteDirName">
+    ///   The directory on website which contains the version.txt file.
+    /// </param>
+    /// <param name="ALanguageFile">
+    ///   The specific user interface translation file to use.
+    /// </param>
+    constructor Create(const ARemoteDirName: string; ALanguageFile: TLanguageFile);
+
+    /// <summary>
+    ///   Searches for update on an HTTP server.
+    /// </summary>
+    procedure CheckForUpdate();
+
+    /// <summary>
+    ///   Set to <c>True</c> to show a message if no update is available.
+    ///   Otherwise no message is shown. Comes in handy when update should be
+    ///   searched on startup of application: User would get always the message
+    ///   that no update is avaiable. This could be annoying.
+    /// </summary>
+    property NotifyNoUpdate: Boolean read FNotifyNoUpdate write FNotifyNoUpdate;
+
+    /// <summary>
+    ///   Occurs when an update is available.
+    /// </summary>
+    property OnUpdate: TUpdateAvailableEvent read FOnUpdate write FOnUpdate;
+  end;
+
+  /// <summary>
+  ///   A <c>TDownloadThread</c> downloads a file from an URL using TLS (default).
+  ///   In case of error a precise description will be returned in the
+  ///   <see cref="OnError"/> event. The progress of the download can be seen
+  ///   in the <see cref="OnDownloading"/> event. Of course the download can be
+  ///   canceled: Just use the <c>Terminate</c> method.
+  /// </summary>
+  TDownloadThread = class(THttpThread)
+  private
+    FOnFinish: TNotifyEvent;
+    FFileName: string;
+    procedure NotifyOnFinish();
+  protected
+    procedure DoExecute(); override;
+  public
+    /// <summary>
+    ///   Constructor for creating a <c>TDownloadThread</c> instance.
+    /// </summary>
+    /// <param name="AUrl">
+    ///   The complete URL to the file that should be downloaded.
+    /// </param>
+    /// <param name="AFileName">
+    ///   The filename under which the downloaded file should be stored.
+    /// </param>
+    constructor Create(const AUrl, AFileName: string);
+
+    /// <summary>
+    ///   Occurs when the download has finished.
+    /// </summary>
+    property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
+  end;
+
+  /// <summary>
+  ///   <c>TUpdateDialog</c> is a dialog which downloads a file specified by
+  ///   <see cref="FileNameRemote"/> from the website and shows the progress in
+  ///   a <c>TProgressBar</c>. The download is encrypted using TLS per default
+  ///   if certificate is installed. The file is downloaded to directory specified
+  ///   by <see cref="DownloadDirectory"/> and stored under name specified by
+  ///   <see cref="FileNameLocal"/> which is per default <see cref="FileNameRemote"/>.
   /// </summary>
   TUpdateDialog = class(TCommonDialog)
   private
@@ -381,27 +275,25 @@ type
     FProgressBar: TProgressBar;
     FButtonFinished: TButton;
     FLabelStatistic: TLabel;
-    FThread: TThread;
+    FThread: TDownloadThread;
     FDownloadDirectory,
-    FTitle,
     FRemoteFileName,
     FLocalFileName,
     FFileName: string;
     FLanguageFile: TLanguageFile;
-    FListeners: TInterfaceList;
-    FTaskBar: TTaskbar;
     procedure FinishedClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-    procedure FormShow(Sender: TObject);
-    procedure OnDownloadCancel(Sender: TObject);
-    procedure OnDownloadError(Sender: TThread; const AResponseCode: Integer;
+    procedure DownloadCanceled(Sender: TObject);
+    procedure Downloading(Sender: TObject; AContentLength, AReadCount: Int64);
+    procedure DownloadFinished(Sender: TObject);
+    procedure DownloadTerminated(Sender: TObject);
+    procedure HttpError(Sender: TObject; const AResponseCode: Integer;
       const AResponseText: string);
-    procedure OnDownloadFinished(Sender: TThread; const AFileName: string);
-    procedure OnDownloading(Sender: TThread; AContentLength, AReadCount: Int64);
-    procedure Reset();
+    function GetTitle(): string;
+    procedure SetTitle(const ATitle: string);
   public
     /// <summary>
-    ///   Constructor for creating a <c>TUpdate</c> instance.
+    ///   Constructor for creating a <c>TUpdateDialog</c> instance.
     /// </summary>
     /// <param name="AOwner">
     ///   The owner.
@@ -409,7 +301,7 @@ type
     constructor Create(AOwner: TComponent); overload; override;
 
     /// <summary>
-    ///   Constructor for creating a <c>TUpdate</c> instance.
+    ///   Constructor for creating a <c>TUpdateDialog</c> instance.
     /// </summary>
     /// <param name="AOwner">
     ///   The owner.
@@ -420,28 +312,12 @@ type
     constructor Create(AOwner: TComponent; ALanguageFile: TLanguageFile); reintroduce; overload;
 
     /// <summary>
-    ///   Destructor for destroying a <c>TUpdate</c> instance.
+    ///   Destructor for destroying a <c>TUpdateDialog</c> instance.
     /// </summary>
     destructor Destroy; override;
 
     /// <summary>
-    ///   Adds a listener to the notification list.
-    /// </summary>
-    /// <param name="AListener">
-    ///   A listener which implements the <see cref="IUpdateListener"/> interface.
-    /// </param>
-    procedure AddListener(AListener: IUpdateListener);
-
-    /// <summary>
-    ///   Checks if the certificate exists in Windows certificate store.
-    /// </summary>
-    /// <returns>
-    ///   <c>True</c> if certificate exists or <c>False</c> otherwise.
-    /// </returns>
-    function CertificateExists(): Boolean;
-
-    /// <summary>
-    ///   Executes the update progress.
+    ///   Executes the update process.
     /// </summary>
     /// <returns>
     ///   <c>True</c> if downloading was sucessful or <c>False</c> otherwise.
@@ -449,33 +325,9 @@ type
     function Execute(ParentHwnd: HWND): Boolean; override;
 
     /// <summary>
-    ///   Installs the certificate for SSL updates and code signing verification.
-    /// </summary>
-    /// <returns>
-    ///   <c>True</c> if installing was sucessful or <c>False</c> otherwise.
-    /// </returns>
-    function InstallCertificate(): Boolean;
-
-    /// <summary>
     ///   Launches the downloaded setup.
     /// </summary>
     procedure LaunchSetup();
-
-    /// <summary>
-    ///   Removes a listener from the notification list.
-    /// </summary>
-    /// <param name="AListener">
-    ///   A listener which implements the <see cref="IUpdateListener"/> interface.
-    /// </param>
-    procedure RemoveListener(AListener: IUpdateListener);
-
-    /// <summary>
-    ///   Shows a dialog where user has the choice to install the certificate.
-    /// </summary>
-    /// <returns>
-    ///   <c>True</c> if installation was sucessful or <c>False</c> otherwise.
-    /// </returns>
-    function ShowInstallCertificateDialog(): Boolean;
 
     /// <summary>
     ///   Download the file into this directory.
@@ -500,106 +352,204 @@ type
     /// <summary>
     ///   Gets or sets the title to use in the dialog caption.
     /// </summary>
-    property Title: string read FTitle write FTitle;
+    property Title: string read GetTitle write SetTitle;
   end;
 {$ENDIF}
 
+/// <summary>
+///   Opens a given URL in the default web browser.
+/// </summary>
+/// <param name="AUrl">
+///    The URL that should be opened.
+/// </param>
+/// <returns>
+///   <c>True</c> if the URL was successfully opened or <c>False</c> otherwise.
+/// </returns>
+function OpenUrl(const AUrl: string): Boolean;
+
 implementation
 
-{$IFDEF MSWINDOWS}
-{ TUpdateCheckThread }
+function OpenUrl(const AUrl: string): Boolean;
+{$IFNDEF MSWINDOWS}
+var
+  Process : TProcess;
+{$ENDIF}
+begin
+  Result := False;
+{$IFNDEF MSWINDOWS}
+  if (not AnsiStartsText('http://', AUrl) or not AnsiStartsText('https://', AUrl)) then
+    Exit;
 
-constructor TUpdateCheckThread.Create(ACurrentBuild: Cardinal;
-  const ARemoteDirName: string);
+  if FileExists('/usr/bin/xdg-open') then
+    try
+      Process := TProcess.Create(nil);
+
+      try
+        Process.Executable := '/usr/bin/xdg-open';
+        Process.Parameters.Append(AUrl);
+        Process.Execute();
+        Result := True;
+
+      finally
+        Process.Free;
+      end;  //of try
+
+    except
+      Result := False;
+    end  //of try
+  else
+    Result := False;
+{$ELSE}
+  if (AUrl.StartsWith('http://') or AUrl.StartsWith('https://')) then
+    Result := ExecuteProgram(AUrl);
+{$ENDIF}
+end;
+
+{$IFDEF MSWINDOWS}
+{ THttpThread }
+
+constructor THttpThread.Create(const AUrl: string);
 begin
   inherited Create(True);
   FreeOnTerminate := True;
-  FCurrentBuild := ACurrentBuild;
-  FRemoteDirName := ARemoteDirName;
+  FUrl := AUrl;
+  FTLSEnabled := AUrl.StartsWith('https://');
 
-  // Init HTTP component dynamically
-  FHttp := THttpClient.Create;
+  // Initialize HTTP connection
+  FHttpClient := THttpClient.Create;
 
-  // Setup some HTTP options
-  with FHttp do
+  with FHttpClient do
   begin
+    UserAgent := 'Updater/3.1 (PM Code Works Update Utility)';
     CustomHeaders['Connection'] := 'close';
-    Accept := 'text/plain';
-    UserAgent := UPDATER_USER_AGENT;
+    OnValidateServerCertificate := ValidateServerCertificate;
+    OnReceiveData := Downloading;
   end;  //of begin
 end;
 
-destructor TUpdateCheckThread.Destroy;
+destructor THttpThread.Destroy;
 begin
-  FreeAndNil(FHttp);
+  FreeAndNil(FHttpClient);
   inherited Destroy;
 end;
 
-procedure TUpdateCheckThread.Execute;
-var
-  VersionText: string;
-  Response: IHTTPResponse;
-  Build: Integer;
+procedure THttpThread.CheckResponse(const AResponse: IHTTPResponse);
+begin
+  FResponseCode := AResponse.StatusCode;
 
+  if (FResponseCode <> 200) then
+    raise ENetHTTPException.Create(PChar(AResponse.StatusText));
+end;
+
+procedure THttpThread.Downloading(const Sender: TObject; AContentLength,
+  AReadCount: Int64; var AAbort: Boolean);
+begin
+  // Convert Bytes to KB
+  FContentLength := AContentLength div 1024;
+  FReadCount := AReadCount div 1024;
+
+  // Notify progress
+  Synchronize(NotifyOnDownloading);
+
+  // Abort download if user canceled
+  AAbort := Terminated;
+
+  if Terminated then
+    Synchronize(NotifyOnCancel);
+end;
+
+procedure THttpThread.Execute();
 begin
   try
-    // Download version file for application
-    Response := FHttp.Get(URL_DIR + FRemoteDirName +'/version.txt');
-    FResponseCode := Response.StatusCode;
-
-    // Error occured?
-    if (FResponseCode <> 200) then
-      raise ENetHTTPException.Create(PChar(Response.StatusText));
-
-    // Retrieve build number
-    VersionText := Response.ContentAsString();
-    Build := -1;
-
-    // Invalid response?
-    // Note: Also occurs when connection to update server fails
-    if not (TryStrToInt(VersionText, Build) and (Build >= 0)) then
-      raise EConvertError.Create('Error while parsing response!');
-
-    FNewBuild := Build;
-
-    // Update available?
-    if (FNewBuild > FCurrentBuild) then
-      Synchronize(DoNotifyOnUpdate)
-    else
-      Synchronize(DoNotifyOnNoUpdate);
+    DoExecute();
 
   except
-    on E: EConvertError do
+    on E: ENetHTTPCertificateException do
     begin
-      FResponseCode := 406;
+      FResponseCode := ERROR_CERTIFICATE_VALIDATION;
       FResponseText := E.Message;
-      Synchronize(DoNotifyOnError);
+      Synchronize(NotifyOnError);
     end;
 
     on E: Exception do
     begin
       FResponseText := E.Message;
-      Synchronize(DoNotifyOnError);
+      Synchronize(NotifyOnError);
     end;
   end;  //of try
 end;
 
-procedure TUpdateCheckThread.DoNotifyOnError;
+procedure THttpThread.NotifyOnCancel();
+begin
+  if Assigned(FOnCancel) then
+    FOnCancel(Self);
+end;
+
+procedure THttpThread.NotifyOnDownloading();
+begin
+  if Assigned(FOnDownloading) then
+    FOnDownloading(Self, FContentLength, FReadCount);
+end;
+
+procedure THttpThread.NotifyOnError();
 begin
   if Assigned(FOnError) then
     FOnError(Self, FResponseCode, FResponseText);
 end;
 
-procedure TUpdateCheckThread.DoNotifyOnNoUpdate;
+procedure THttpThread.SetTlsEnabled(const ATlsEnabled: Boolean);
 begin
-  if Assigned(FOnNoUpdate) then
-    FOnNoUpdate(Self);
+  // Use secure https instead of plain http
+  if (ATlsEnabled and FUrl.StartsWith('http://')) then
+    FUrl := FUrl.Replace('http://', 'https://')
+  else
+    // Use plain http instead of secure https
+    if (not ATlsEnabled and FUrl.StartsWith('https://')) then
+      FUrl := FUrl.Replace('https://', 'http://');
+
+  FTLSEnabled := ATlsEnabled;
 end;
 
-procedure TUpdateCheckThread.DoNotifyOnUpdate;
+procedure THttpThread.ValidateServerCertificate(const Sender: TObject;
+  const ARequest: TURLRequest; const ACertificate: TCertificate;
+  var AAccepted: Boolean);
 begin
-  if Assigned(FOnUpdate) then
-    FOnUpdate(Self, FNewBuild);
+  // Anything went wrong: Do not accept server SSL certificate!
+  AAccepted := False;
+end;
+
+
+{ TUpdateCheckThread }
+
+constructor TUpdateCheckThread.Create(const ARemoteDirName: string);
+begin
+  inherited Create(URL_DIR + ARemoteDirName +'/version.txt');
+  FHttpClient.Accept := 'text/plain';
+  FRemoteBuild := -1;
+end;
+
+procedure TUpdateCheckThread.DoExecute();
+var
+  Response: IHTTPResponse;
+
+begin
+  try
+    // Download version file for application
+    Response := FHttpClient.Get(FUrl);
+    CheckResponse(Response);
+
+    // Invalid response?
+    // Note: Also occurs when connection to update server fails
+    if (not TryStrToInt(Response.ContentAsString(), FRemoteBuild) and (FRemoteBuild >= 0)) then
+      raise EConvertError.Create('Error while parsing response!');
+
+  except
+    on E: EConvertError do
+    begin
+      FResponseCode := 406;
+      raise;
+    end;
+  end;  //of try
 end;
 
 
@@ -611,217 +561,131 @@ begin
   inherited Create;
   FLanguageFile := ALanguageFile;
   FRemoteDirName := ARemoteDirName;
-  FListeners := TInterfaceList.Create;
+  FNotifyNoUpdate := False;
 end;
 
-constructor TUpdateCheck.Create(AOwner: IUpdateListener; const ARemoteDirName: string;
-  ALanguageFile: TLanguageFile);
-begin
-  Create(ARemoteDirName, ALanguageFile);
-
-  // Add owner to list to receive events
-  if Assigned(AOwner) then
-    FListeners.Add(AOwner);
-end;
-
-destructor TUpdateCheck.Destroy;
-begin
-  FreeAndNil(FListeners);
-  inherited Destroy;
-end;
-
-procedure TUpdateCheck.OnCheckError(Sender: TThread; AResponseCode: Integer;
+procedure TUpdateCheck.HttpError(Sender: TObject; const AResponseCode: Integer;
   const AResponseText: string);
 begin
   if FNotifyNoUpdate then
   begin
-    if (AResponseCode > 0) then
+    if (AResponseCode = ERROR_CERTIFICATE_VALIDATION) then
     begin
-      FLanguageFile.ShowException(FLanguageFile.GetString([LID_UPDATE_NO_CONNECTION,
-        LID_UPDATE_CHECK_CONNECTION]), AResponseText + Format(' (%d)', [AResponseCode]));
+      FLanguageFile.ShowException(AResponseText, Format('Certificate validation '
+        +'failed! Please visit the <a href="%sneuigkeiten.html">website</a> for '
+        +'more information.', [URL_BASE]));
     end  //of begin
     else
-      FLanguageFile.ShowMessage(LID_UPDATE_NO_CONNECTION, LID_UPDATE_CHECK_CONNECTION, mtError);
+      if (AResponseCode > 0) then
+      begin
+        FLanguageFile.ShowException(FLanguageFile.GetString([LID_UPDATE_NO_CONNECTION,
+          LID_UPDATE_CHECK_CONNECTION]), AResponseText + Format(' (%d)', [AResponseCode]));
+      end  //of begin
+      else
+      begin
+        TaskMessageDlg(FLanguageFile.Strings[LID_UPDATE_NO_CONNECTION],
+          FLanguageFile.Strings[LID_UPDATE_CHECK_CONNECTION], mtError, [mbOK], 0);
+      end;  //of if
   end;  //of begin
 end;
 
-procedure TUpdateCheck.OnNoUpdateAvailable(Sender: TObject);
+procedure TUpdateCheck.NotifyOnUpdate();
 begin
-  if FNotifyNoUpdate then
-    FLanguageFile.ShowMessage(FLanguageFile.GetString(LID_UPDATE_NOT_AVAILABLE));
+  // Update available?
+  if (FRemoteBuild > FCurrentBuild) then
+  begin
+    if Assigned(FOnUpdate) then
+      FOnUpdate(Self, FRemoteBuild);
+  end  //of begin
+  else
+    if FNotifyNoUpdate then
+    begin
+      MessageDlg(FLanguageFile.GetString(LID_UPDATE_NOT_AVAILABLE), mtInformation,
+        [mbOk], 0);
+    end;  //of begin
 end;
 
-procedure TUpdateCheck.OnUpdateAvailable(Sender: TThread; const ANewBuild: Cardinal);
-var
-  i: Integer;
-  Listener: IUpdateListener;
-
+procedure TUpdateCheck.CheckFinished(Sender: TObject);
 begin
-  FNewBuild := ANewBuild;
+  // No error during update check?
+  if ((Sender as TUpdateCheckThread).RemoteBuild > 0) then
+  begin
+    FRemoteBuild := (Sender as TUpdateCheckThread).RemoteBuild;
+    NotifyOnUpdate();
+  end;  //of begin
 
-  // Notify all listeners
-  for i := 0 to FListeners.Count - 1 do
-    if Supports(FListeners[i], IUpdateListener, Listener) then
-      Listener.OnUpdate(ANewBuild);
+  // Clear lock (NOTE: thread is ref-counted)
+  FThread := nil;
 end;
 
-procedure TUpdateCheck.AddListener(AListener: IUpdateListener);
-begin
-  FListeners.Add(AListener);
-end;
-
-procedure TUpdateCheck.CheckForUpdate(ANotifyNoUpdate: Boolean = False);
+procedure TUpdateCheck.CheckForUpdate();
 var
   FileVersion: TFileVersion;
 
 begin
-  FNotifyNoUpdate := ANotifyNoUpdate;
+  // Thread pending?
+  if Assigned(FThread) then
+    Exit;
 
   // Update already available?
-  if (FNewBuild > 0) then
+  if (FRemoteBuild > 0) then
   begin
-    OnUpdateAvailable(nil, FNewBuild);
-    Abort;
+    NotifyOnUpdate();
+    Exit;
   end;  //of begin
 
   // Get build number of application
-  if not FileVersion.FromFile(Application.ExeName) then
-    FileVersion.Build := 0;
+  if ((FCurrentBuild = 0) and FileVersion.FromFile(Application.ExeName)) then
+    FCurrentBuild := FileVersion.Build;
 
   // Search for update
-  with TUpdateCheckThread.Create(FileVersion.Build, FRemoteDirName) do
+  FThread := TUpdateCheckThread.Create(FRemoteDirName);
+
+  with FThread do
   begin
-    OnUpdate := OnUpdateAvailable;
-    OnNoUpdate := OnNoUpdateAvailable;
-    OnError := OnCheckError;
+    OnError := HttpError;
+    OnTerminate := CheckFinished;
+    // TODO: Encrypt?
+    //TLSEnabled := CertificateExists();
     Start();
   end;  //of with
-end;
-
-procedure TUpdateCheck.RemoveListener(AListener: IUpdateListener);
-begin
-  FListeners.Remove(AListener);
 end;
 
 
 { TDownloadThread }
 
-constructor TDownloadThread.Create(const AUrl, AFileName: string;
-  AAllowOverwrite: Boolean = False);
+constructor TDownloadThread.Create(const AUrl, AFileName: string);
 begin
-  inherited Create(True);
-  FreeOnTerminate := True;
-  FUrl := AUrl;
-  FTLSEnabled := AUrl.StartsWith('https://');
-
-  // Rename file if already exists?
-  if AAllowOverwrite then
-    FFileName := AFileName
-  else
-    FFileName := GetUniqueFileName(AFileName);
-
-  // Init HTTP component dynamically
-  FHttp := THttpClient.Create;
-
-  // Setup some HTTP options
-  with FHttp do
-  begin
-    OnReceiveData := Downloading;
-    OnValidateServerCertificate := Self.OnValidateServerCertificate;
-    Accept := 'application/*';
-    UserAgent := UPDATER_USER_AGENT;
-  end;  //of begin
+  inherited Create(AUrl);
+  FFileName := AFileName;
+  FHttpClient.Accept := 'application/*';
 end;
 
-destructor TDownloadThread.Destroy;
-begin
-  FreeAndNil(FHttp);
-  inherited Destroy;
-end;
-
-procedure TDownloadThread.DoNotifyOnCancel;
-begin
-  if Assigned(FOnCancel) then
-    FOnCancel(Self);
-end;
-
-procedure TDownloadThread.DoNotifyOnDownloading;
-begin
-  if Assigned(FOnDownloading) then
-    FOnDownloading(Self, FContentLength, FReadCount);
-end;
-
-procedure TDownloadThread.DoNotifyOnError;
-begin
-  if Assigned(FOnError) then
-    FOnError(Self, FResponseCode, FResponseText);
-end;
-
-procedure TDownloadThread.DoNotifyOnFinish;
+procedure TDownloadThread.NotifyOnFinish();
 begin
   if Assigned(FOnFinish) then
-    FOnFinish(Self, FFileName);
+    FOnFinish(Self);
 end;
 
-procedure TDownloadThread.Downloading(const Sender: TObject; AContentLength,
-  AReadCount: Int64; var AAbort: Boolean);
-begin
-  // Abort download if user canceled
-  AAbort := Terminated;
-
-  // Convert Bytes to KB
-  FContentLength := AContentLength div 1024;
-  FReadCount := AReadCount div 1024;
-
-  // Notify progress
-  Synchronize(DoNotifyOnDownloading);
-end;
-
-procedure TDownloadThread.OnValidateServerCertificate(const Sender: TObject;
-  const ARequest: TURLRequest; const ACertificate: TCertificate; var AAccepted: Boolean);
-begin
-  // Anything went wrong: Do not accept server SSL certificate!
-  AAccepted := False;
-end;
-
-procedure TDownloadThread.SetTlsEnabled(const ATlsEnabled: Boolean);
-begin
-  // Use secure https instead of plain http
-  if (ATlsEnabled and FUrl.StartsWith('http://')) then
-    FUrl := 'https://'+ Copy(FUrl, 8, Length(FUrl) - 7)
-  else
-    // Use plain http instead of secure https
-    if (not ATlsEnabled and FUrl.StartsWith('https://')) then
-      FUrl := 'http://'+ Copy(FUrl, 9, Length(FUrl) - 8);
-
-  FTLSEnabled := ATlsEnabled;
-end;
-
-procedure TDownloadThread.Execute;
+procedure TDownloadThread.DoExecute();
 var
   FileStream: TFileStream;
   Response: IHTTPResponse;
 
 begin
   try
-    // Init file stream
     FileStream := TFileStream.Create(FFileName, fmCreate or fmOpenWrite);
 
     // Try to download file
     try
-      Response := FHttp.Get(FUrl, FileStream);
-      FResponseCode := Response.StatusCode;
-
-      // Error occured?
-      if (FResponseCode <> 200) then
-        raise ENetHTTPException.Create(PChar(Response.StatusText));
+      Response := FHttpClient.Get(FUrl, FileStream);
+      CheckResponse(Response);
 
       // User canceled?
       if Terminated then
         Abort;
 
-      // Download successful!
-      Synchronize(DoNotifyOnFinish);
+      Synchronize(NotifyOnFinish);
 
     finally
       FileStream.Free;
@@ -829,37 +693,14 @@ begin
 
   except
     on E: EAbort do
-    begin
-      DeleteFile(PChar(FFileName));
-      Synchronize(DoNotifyOnCancel);
-    end;
+      DeleteFile(FFileName);
 
     on E: Exception do
     begin
-      // Certificate error?
-      if (E is ENetHTTPCertificateException) then
-        FResponseCode := ERROR_CERTIFICATE_VALIDATION;
-
-      FResponseText := E.Message;
-      DeleteFile(PChar(FFileName));
-      Synchronize(DoNotifyOnError);
+      DeleteFile(FFileName);
+      raise;
     end;
   end;  //of try
-end;
-
-function TDownloadThread.GetUniqueFileName(const AFileName: string): string;
-var
-  i: Integer;
-
-begin
-  Result := AFileName;
-  i := 1;
-
-  while FileExists(Result) do
-  begin
-    Result := Format(ChangeFileExt(AFileName, '') +' (%d)'+ ExtractFileExt(AFileName), [i]);
-    Inc(i);
-  end;  //of while
 end;
 
 
@@ -868,12 +709,6 @@ end;
 constructor TUpdateDialog.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
-  FListeners := TInterfaceList.Create;
-
-  // Add owner to list to receive events
-  if Assigned(AOwner) and Supports(AOwner, IUpdateListener) then
-    AddListener(AOwner as IUpdateListener);
-
   FForm := TForm.Create(Self);
 
   with FForm do
@@ -886,7 +721,6 @@ begin
     OldCreateOrder := False;
     Position := poScreenCenter;
     OnCloseQuery := FormCloseQuery;
-    OnShow := FormShow;
   end;  //of with
 
   FLabelStatistic := TLabel.Create(Self);
@@ -930,243 +764,179 @@ begin
     TabOrder := 1;
     OnClick := FinishedClick;
   end;  //of with
-
-  FTaskBar := TTaskbar.Create(FForm);
 end;
 
 constructor TUpdateDialog.Create(AOwner: TComponent; ALanguageFile: TLanguageFile);
 begin
   Create(AOwner);
   FLanguageFile := ALanguageFile;
+  FForm.Caption := FLanguageFile.GetString(LID_UPDATE);
 end;
 
 destructor TUpdateDialog.Destroy;
 begin
-  FTaskBar.ProgressState := TTaskBarProgressState.None;
-  FreeAndNil(FTaskBar);
   FreeAndNil(FButtonFinished);
   FreeAndNil(FProgressBar);
   FreeAndNil(FLabelStatistic);
-  FreeAndNil(FListeners);
   FreeAndNil(FForm);
   inherited Destroy;
 end;
 
-procedure TUpdateDialog.FormShow(Sender: TObject);
+function TUpdateDialog.GetTitle(): string;
 begin
-  if (FTitle <> '') then
-    FForm.Caption := FTitle
-  else
-    FForm.Caption := FLanguageFile.GetString(LID_UPDATE);
-
-  if Assigned(FThread) then
-    FButtonFinished.Caption := FLanguageFile.GetString(LID_CANCEL)
-  else
-    FButtonFinished.Caption := FLanguageFile.GetString(LID_FINISHED);
+  Result := FForm.Caption;
 end;
 
-procedure TUpdateDialog.OnDownloadCancel(Sender: TObject);
+procedure TUpdateDialog.DownloadCanceled(Sender: TObject);
 begin
-  FTaskBar.ProgressState := TTaskBarProgressState.Error;
   FProgressBar.State := TProgressBarState.pbsError;
-  Reset();
-  FLanguageFile.ShowMessage(FLanguageFile.GetString(LID_UPDATE_CANCELED));
+  FLabelStatistic.Caption := FLanguageFile.GetString(LID_CANCELED);
+  MessageDlg(FLanguageFile.GetString(LID_UPDATE_CANCELED), mtInformation, [mbOK], 0);
   FForm.ModalResult := mrCancel;
 end;
 
-procedure TUpdateDialog.OnDownloadError(Sender: TThread; const AResponseCode: Integer;
+procedure TUpdateDialog.HttpError(Sender: TObject; const AResponseCode: Integer;
   const AResponseText: string);
-var
-  MessageText: string;
-
 begin
-  FTaskBar.ProgressState := TTaskBarProgressState.Error;
   FProgressBar.State := TProgressBarState.pbsError;
-  Reset();
+  FLabelStatistic.Caption := FLanguageFile.GetString(LID_CANCELED);
 
   // Certificate validation error?
   if (AResponseCode = ERROR_CERTIFICATE_VALIDATION) then
-    MessageText := Format(AResponseText +'! Please visit the %s for more information.',
-    ['<a href="http://www.pm-codeworks.de/neuigkeiten.html">website</a>'])
+  begin
+    FLanguageFile.ShowException(AResponseText, Format('Certificate validation '
+      +'failed! Please visit the <a href="%sneuigkeiten.html">website</a> for '
+      +'more information.', [URL_BASE]));
+  end  //of begin
   else
-    // HTTP error?
-    MessageText := Format('HTTP/1.1 %d '+ AResponseText, [AResponseCode]);
+  begin
+    FLanguageFile.ShowException(FLanguageFile.GetString([LID_UPDATE_DOWNLOAD,
+      LID_IMPOSSIBLE]), Format('HTTP/1.1 %d '+ AResponseText, [AResponseCode]));
+  end;  //of if
 
-  FLanguageFile.ShowException(FLanguageFile.GetString([LID_UPDATE_DOWNLOAD,
-    LID_IMPOSSIBLE]), MessageText);
   FForm.ModalResult := mrAbort;
 end;
 
-procedure TUpdateDialog.OnDownloadFinished(Sender: TThread; const AFileName: string);
+procedure TUpdateDialog.DownloadFinished(Sender: TObject);
 begin
-  FTaskBar.ProgressState := TTaskBarProgressState.Normal;
-  FButtonFinished.Caption := FLanguageFile.GetString(LID_FINISHED);
-  FButtonFinished.SetFocus;
-  FThread := nil;
   FForm.ModalResult := mrOk;
 end;
 
-procedure TUpdateDialog.OnDownloading(Sender: TThread; AContentLength, AReadCount: Int64);
+procedure TUpdateDialog.Downloading(Sender: TObject; AContentLength, AReadCount: Int64);
 begin
   FProgressBar.Max := AContentLength;
   FProgressBar.Position := AReadCount;
-  FTaskBar.ProgressMaxValue := AContentLength;
-  FTaskBar.ProgressValue := AReadCount;
   FLabelStatistic.Caption := Format('%d/%d KB', [AReadCount, AContentLength]);
 end;
 
-procedure TUpdateDialog.Reset();
+procedure TUpdateDialog.DownloadTerminated(Sender: TObject);
 begin
-  FLabelStatistic.Caption := FLanguageFile.GetString(LID_CANCELED);
   FButtonFinished.Caption := FLanguageFile.GetString(LID_FINISHED);
+  FButtonFinished.SetFocus;
+
+  // Clear lock (NOTE: thread is ref-counted)
   FThread := nil;
 end;
 
-procedure TUpdateDialog.AddListener(AListener: IUpdateListener);
+procedure TUpdateDialog.SetTitle(const ATitle: string);
 begin
-  FListeners.Add(AListener);
-end;
-
-function TUpdateDialog.CertificateExists(): Boolean;
-const
-  KEY_CERTIFICATE_STORE = 'Software\Microsoft\SystemCertificates\ROOT\Certificates\';
-
-var
-  Reg: TRegistry;
-
-begin
-  Reg := TRegistry.Create(KEY_WOW64_64KEY or KEY_READ);
-
-  try
-    // Check user root certificate store
-    Reg.RootKey := HKEY_CURRENT_USER;
-    Result := (Reg.OpenKeyReadOnly(KEY_CERTIFICATE_STORE) and Reg.KeyExists(
-      CERTIFICATE_FINGERPRINT_SHA1));
-
-  finally
-    Reg.CloseKey;
-    Reg.Free;
-  end;  //of try
+  FForm.Caption := ATitle;
 end;
 
 function TUpdateDialog.Execute(ParentHwnd: HWND): Boolean;
 var
-  Url: string;
   UseTls, DirectorySelected: Boolean;
 
+  function GetUniqueFileName(const AFileName: string): string;
+  var
+    i: Integer;
+
+  begin
+    Result := AFileName;
+    i := 1;
+
+    while FileExists(Result) do
+    begin
+      Result := Format(ChangeFileExt(AFileName, '') +' (%d)'+ ExtractFileExt(AFileName), [i]);
+      Inc(i);
+    end;  //of while
+  end;
+
 begin
-  if ((FRemoteFileName = '') or (FLocalFileName = '')) then
-    raise EArgumentException.Create('Missing argument: "RemoteFileName" or "LocalFileName"!');
-
-  if not Assigned(FLanguageFile) then
-    raise EAssertionFailed.Create('LanguageFile property not assigned!');
-
-  FRemoteFileName := FRemoteFileName;
-  FLocalFileName := FLocalFileName;
+  Assert(FRemoteFileName <> '', 'RemoteFileName is not set!');
+  Assert(Assigned(FLanguageFile), 'LanguageFile property not assigned!');
   UseTls := True;
+
+  if (FLocalFileName = '') then
+    FLocalFileName := FRemoteFileName;
 
   // Certificate not installed?
   if not CertificateExists() then
-    UseTls := ShowInstallCertificateDialog();
+  begin
+    // Ask user to install the certificate
+    if (TaskMessageDlg(FLanguageFile.GetString(LID_UPDATE_SECURE),
+      FLanguageFile.GetString([LID_UPDATE_SECURE_DESCRIPTION1,
+      LID_UPDATE_SECURE_DESCRIPTION2, NEW_LINE, LID_CERTIFICATE_INSTALL_CONFIRM]),
+      mtConfirmation, mbYesNo, 0, mbYes) = idYes) then
+    begin
+      try
+        InstallCertificate();
 
-  DirectorySelected := True;
+      except
+        on E: EOSError do
+        begin
+          MessageDlg(E.Message, mtError, [mbOK], 0);
+          UseTls := False;
+        end;
+      end;  //of try
+    end  //of begin
+    else
+      UseTls := False;
+  end;  //of begin
+
+  DirectorySelected := (FDownloadDirectory <> '');
 
   // Download folder not set yet?
-  if (FDownloadDirectory = '') then
+  if not DirectorySelected then
+  begin
     // Show select directory dialog
     DirectorySelected := SelectDirectory(FLanguageFile.GetString(LID_UPDATE_SELECT_DIR),
       '', FDownloadDirectory);
+  end;  //of begin
 
   if DirectorySelected then
   begin
-    Url := URL_DOWNLOAD + FRemoteFileName;
-    FFileName := IncludeTrailingPathDelimiter(FDownloadDirectory) + FLocalFileName;
-    FThread := TDownloadThread.Create(Url, FFileName);
+    FFileName := GetUniqueFileName(IncludeTrailingPathDelimiter(FDownloadDirectory)
+      + FLocalFileName);
+    FButtonFinished.Caption := FLanguageFile.GetString(LID_CANCEL);
 
-    with TDownloadThread(FThread) do
+    // Initialize thread
+    FThread := TDownloadThread.Create(URL_DIR + 'downloader.php?file='
+      + FRemoteFileName, FFileName);
+
+    with FThread do
     begin
-      // Link events
-      OnDownloading := Self.OnDownloading;
-      OnCancel := OnDownloadCancel;
-      OnFinish := OnDownloadFinished;
-      OnError := OnDownloadError;
-
-      // Use HTTPS?
-      if UseTls then
-      begin
-        TLSEnabled := True;
-        FForm.Caption := FLanguageFile.GetString(LID_UPDATE_SECURE);
-      end;  //of begin
-
+      OnDownloading := Self.Downloading;
+      OnCancel := DownloadCanceled;
+      OnFinish := DownloadFinished;
+      OnTerminate := DownloadTerminated;
+      OnError := HttpError;
+      TLSEnabled := UseTls;
       Start();
     end;  //of with
   end  //of begin
   else
-    // Cancel clicked
-    Reset();
+  begin
+    FLabelStatistic.Caption := FLanguageFile.GetString(LID_CANCELED);
+    FButtonFinished.Caption := FLanguageFile.GetString(LID_FINISHED);
+  end;  //of if
 
   Result := (FForm.ShowModal() = mrOk);
-end;
-
-function TUpdateDialog.InstallCertificate(): Boolean;
-var
-  ResourceStream: TResourceStream;
-  FileName: string;
-
-begin
-  Result := False;
-  ResourceStream := TResourceStream.Create(HInstance, 'ca', RT_RCDATA);
-  FileName := IncludeTrailingPathDelimiter(GetEnvironmentVariable('TEMP')) +'CA.crt';
-
-  try
-    // Extract certificate from resource
-    ResourceStream.SaveToFile(FileName);
-
-    // Install certificate
-    // TODO: Better use Windows API
-    Result := ExecuteProgram('certutil.exe', '-user -addstore ROOT "'+ FileName +'"', SW_HIDE);
-
-    if not Result then
-    begin
-      FLanguageFile.ShowMessage(FLanguageFile.GetString([LID_CERTIFICATE_INSTALL,
-        LID_IMPOSSIBLE]), FLanguageFile.GetString(LID_CERTIFICATE_NO_CERTUTIL), mtError);
-    end;  //of begin
-
-  finally
-    ResourceStream.Free;
-  end;  //of try
-end;
-
-function TUpdateDialog.ShowInstallCertificateDialog(): Boolean;
-var
-  Answer: Integer;
-
-begin
-  Result := False;
-
-  // Ask user to install the certificate
-  Answer := TaskMessageDlg(FLanguageFile.GetString(LID_UPDATE_SECURE),
-    FLanguageFile.GetString([LID_UPDATE_SECURE_DESCRIPTION1,
-    LID_UPDATE_SECURE_DESCRIPTION2, NEW_LINE, LID_CERTIFICATE_INSTALL_CONFIRM]),
-    mtConfirmation, mbYesNoCancel, 0, mbYes);
-
-  case Answer of
-    IDYES:
-      Result := InstallCertificate();
-
-    IDCANCEL:
-      Abort;
-  end;  //of case
 end;
 
 procedure TUpdateDialog.LaunchSetup();
 begin
   ExecuteProgram(FFileName);
-end;
-
-procedure TUpdateDialog.RemoveListener(AListener: IUpdateListener);
-begin
-  FListeners.Remove(AListener);
 end;
 
 procedure TUpdateDialog.FinishedClick(Sender: TObject);
@@ -1180,7 +950,7 @@ begin
   if Assigned(FThread) then
   begin
     // Cancel download
-    FThread.Terminate;
+    FThread.Terminate();
     CanClose := False;
   end  //of begin
   else
