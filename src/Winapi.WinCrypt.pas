@@ -9,7 +9,6 @@
 unit Winapi.WinCrypt;
 
 {$ALIGN ON}
-{$MINENUMSIZE 4}
 {$WEAKPACKAGEUNIT}
 
 interface
@@ -51,8 +50,6 @@ type
   THMacInfo = HMAC_INFO;
 
 const
-  crypt32                = 'Crypt32.dll';
-
   { ProviderType }
   PROV_RSA_FULL          = 1;
   {$EXTERNALSYM PROV_RSA_FULL}
@@ -447,7 +444,7 @@ const
   {$EXTERNALSYM CRYPT_STRING_NOCR}
 
 function CryptStringToBinary(pszString: PWideChar; cchString, dwFlags: DWORD;
-  pbBinary: PByte; var pcbBinary, pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
+  pbBinary: PByte; var pcbBinary: DWORD; out pdwSkip, pdwFlags: DWORD): Boolean; stdcall;
 {$EXTERNALSYM CryptStringToBinary}
 
 function CryptBinaryToString(pbBinary: PByte; cbBinary, dwFlags: DWORD;
@@ -571,6 +568,9 @@ function CryptVerifySignature(hHash: HCRYPTHASH; pbSignature: PByte; dwSigLen: D
 {$EXTERNALSYM CryptVerifySignature}
 
 implementation
+
+const
+  crypt32 = 'Crypt32.dll';
 
 function CryptAcquireContext; external advapi32 name 'CryptAcquireContextW';
 function CryptBinaryToString; external crypt32 name 'CryptBinaryToStringW';
