@@ -6,6 +6,7 @@ Changelog
 
 Version 1.0.1  [??.??.17]
 
+- Bugfix: Keine Fortschrittsanzeige bei Dateien kleiner als 1MB
 - Updater v3.1
   - Abhängigkeit zur "Indy"-Komponenten Bibliothek entfernt
   - Programmdatei bis zu 1 MB kleiner
