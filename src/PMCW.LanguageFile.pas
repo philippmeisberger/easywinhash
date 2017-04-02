@@ -326,7 +326,7 @@ begin
   FLangId := 0;
 {$ELSE}
   if not FileExists(AIniFile) then
-    raise EArgumentException.Create(Format('Language file "%s" could not be found!', [AIniFile]));
+    raise EArgumentException.Create(SysUtils.Format('Language file "%s" could not be found!', [AIniFile]));
 
   FIni := TIniFile.Create(AIniFile);
 {$ENDIF}
