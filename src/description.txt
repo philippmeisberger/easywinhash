@@ -1,5 +1,5 @@
-﻿EasyWinHash ist ein Werkzeug zum einfachen Erzeugen und Überprüfen kryptografischer Prüfsummen (Hashes) von heruntergeladenen Dateien. Meist bieten Download-Portale solche Prüfsummen neben den eigentlichen Programmen an. Mit EasyWinHash können diese überprüft werden, um sicher zu gehen, dass die Datei nicht verändert bzw. manipuliert wurde.
+﻿EasyWinHash is a tool for easily creating and verifying cryptographic checksums (hashes) of downloaded files. Usually, download portals offer such checksums in addition to the actual programs. With EasyWinHash these can be checked to ensure that the file has not been modified or tampered with.
 
-Copyright (C) 2016 Philipp Meisberger
+Copyright (C) 2016 Philipp Meisberger <team@pm-codeworks.de>
 
-Dieses Programm kann durch jedermann gemäß den Bestimmungen der Deutschen Freien Software Lizenz genutzt werden. Die Lizenz kann unter http://www.d-fsl.de abgerufen werden.
+This Program may be used by anyone in accordance with the terms of the German Free Software License. The License may be obtained under <http://www.d-fsl.org>.
