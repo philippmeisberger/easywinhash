@@ -40,15 +40,6 @@ object Main: TMain
     Caption = '&Datei:'
     FocusControl = eFile
   end
-  object lVersion: TLabel
-    Left = 405
-    Top = 3
-    Width = 21
-    Height = 14
-    Alignment = taRightJustify
-    Anchors = [akTop, akRight]
-    Caption = 'v1.0'
-  end
   object cbxAlgorithm: TComboBox
     Left = 24
     Top = 144

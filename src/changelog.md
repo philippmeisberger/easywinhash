@@ -11,7 +11,7 @@ Version 1.0.1  [*??.??.17*]
   * Removed dependency to "Indy" component suite
   * Executable up to 1MB smaller
 
-Version 1.0  [11.05.16]
+Version 1.0  [*11.05.16*]
 -----------
 
 Initial release

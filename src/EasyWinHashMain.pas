@@ -14,9 +14,9 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ExtCtrls,
   Vcl.Menus, Winapi.ShellAPI, Vcl.Buttons, Vcl.ClipBrd, System.Win.TaskbarCore,
-  Vcl.Taskbar, System.UiTypes, Vcl.ImgList, System.ImageList, FileHashThread,
+  Vcl.Taskbar, System.UITypes, Vcl.ImgList, System.ImageList, FileHashThread,
   PMCW.CryptoAPI, PMCW.CA, PMCW.LanguageFile, PMCW.Dialogs, PMCW.Dialogs.Updater,
-  PMCW.Dialogs.About, PMCW.FileSystem;
+  PMCW.Dialogs.About;
 
 type
   { TMain }
@@ -41,7 +41,6 @@ type
     eFile: TButtonedEdit;
     lHash: TLabel;
     lFile: TLabel;
-    lVersion: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
@@ -81,7 +80,6 @@ implementation
 procedure TMain.FormCreate(Sender: TObject);
 var
   i, AlgorithmIndex: Integer;
-  FileVersion: TFileVersion;
 
 begin
   // Setup languages
@@ -106,10 +104,6 @@ begin
 
   // Enable drag & drop support
   DragAcceptFiles(Handle, True);
-
-  // Get version information
-  if FileVersion.FromFile(Application.ExeName) then
-    lVersion.Caption := FileVersion.ToString('v%d.%d');
 
   // Parse arguments
   i := 1;
