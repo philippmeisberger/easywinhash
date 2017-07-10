@@ -16,7 +16,7 @@ uses
   Vcl.Menus, Winapi.ShellAPI, Vcl.Buttons, Vcl.ClipBrd, System.Win.TaskbarCore,
   Vcl.Taskbar, System.UITypes, Vcl.ImgList, System.ImageList, FileHashThread,
   PMCW.CryptoAPI, PMCW.CA, PMCW.LanguageFile, PMCW.Dialogs, PMCW.Dialogs.Updater,
-  PMCW.Dialogs.About;
+  PMCW.Dialogs.About, PMCW.SysUtils;
 
 type
   { TMain }
