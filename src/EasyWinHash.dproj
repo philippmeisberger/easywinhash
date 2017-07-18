@@ -73,7 +73,7 @@
         <Icon_MainIcon>EasyWinHash.ico</Icon_MainIcon>
         <VerInfo_AutoIncVersion>true</VerInfo_AutoIncVersion>
         <Manifest_File>PMCW.Default.manifest</Manifest_File>
-        <DCC_DcuOutput>lib\$(Platform)\$(Config)</DCC_DcuOutput>
+        <DCC_DcuOutput>..\bin\$(Platform)\$(Config)</DCC_DcuOutput>
         <DCC_ExeOutput>..\bin\$(Platform)\$(Config)</DCC_ExeOutput>
         <DCC_F>false</DCC_F>
         <DCC_S>false</DCC_S>
@@ -98,7 +98,6 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_Define>RELEASE;$(DCC_Define)</DCC_Define>
-        <DCC_ExeOutput>..\bin\$(Platform)\</DCC_ExeOutput>
         <DCC_SymbolReferenceInfo>0</DCC_SymbolReferenceInfo>
         <DCC_DebugInformation>0</DCC_DebugInformation>
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -182,14 +181,8 @@
                 <Platform value="Win64">True</Platform>
             </Platforms>
             <Deployment Version="2">
-                <DeployFile LocalName="..\bin\EasyWinHash.exe" Configuration="Debug" Class="ProjectOutput">
-                    <Platform Name="Win32">
-                        <RemoteName>EasyWinHash.exe</RemoteName>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="..\bin\Win32\EasyWinHash.exe" Configuration="Release" Class="ProjectOutput">
-                    <Platform Name="Win32">
+                <DeployFile LocalName="..\bin\Win64\Debug\EasyWinHash.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win64">
                         <RemoteName>EasyWinHash.exe</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>

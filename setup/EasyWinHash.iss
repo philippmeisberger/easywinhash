@@ -1,8 +1,8 @@
 #define MyAppName "EasyWinHash"
 #define MyAppURL "http://www.pm-codeworks.de"
 #define MyAppExeName "EasyWinHash.exe"
-#define MyAppExePath32 "..\bin\Win32\"
-#define MyAppExePath64 "..\bin\Win64\"
+#define MyAppExePath32 "..\bin\Win32\Release\"
+#define MyAppExePath64 "..\bin\Win64\Release\"
 #define FileVersion GetFileVersion(MyAppExePath32 + MyAppExeName)
 #define ProductVersion GetFileProductVersion(MyAppExePath32 + MyAppExeName)
 
