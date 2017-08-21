@@ -92,26 +92,22 @@ function OpenUrl(const AUrl: string): Boolean;
 
 {$IFDEF MSWINDOWS}
 /// <summary>
-///   Performs an operation on a specified file.
+///   Loads a string from a resource.
 /// </summary>
-/// <param name="AOperation">
-///   The operation to perform.
+/// <param name="AResource">
+///   Path to the resource.
 /// </param>
-/// <param name="AFileName">
-///   Object on which to execute the specified operation.
+/// <param name="AIdent">
+///   ID of the string.
 /// </param>
-/// <param name="AArguments">
-///   Optional arguments passed to the program.
-/// </param>
-/// <param name="AShow">
-///   Optional: The show mode.
+/// <param name="ADefault">
+///   Optional: The default string to use if loading failed.
 /// </param>
 /// <returns>
-///   <c>True</c> if the operation was successfully executed or <c>False</c>
-///   otherwise.
+///   The string.
 /// </returns>
-function ShellExec(const AOperation, AFileName: string; const AArguments: string = '';
-  AShow: Integer = SW_SHOWNORMAL): Boolean;
+function LoadResourceString(const AResource: string; const AIdent: Word;
+  const ADefault: string = ''): string;
 
 /// <summary>
 ///   Expands an environment variable.
@@ -230,13 +226,6 @@ begin
 {$ENDIF}
 end;
 
-function ShellExec(const AOperation, AFileName: string; const AArguments: string = '';
-  AShow: Integer = SW_SHOWNORMAL): Boolean;
-begin
-  Result := (ShellExecute(0, PChar(AOperation), PChar(AFileName), PChar(AArguments),
-    nil, AShow) > 32);
-end;
-
 function ExpandEnvironmentVar(var AVariable: string): Boolean;
 var
   BufferSize: Integer;
@@ -303,6 +292,26 @@ begin
     CoTaskMemFree(Path);
   end;  //of begin
 end;
+
+function LoadResourceString(const AResource: string; const AIdent: Word;
+  const ADefault: string = ''): string;
+var
+  Module: HMODULE;
+  Buffer: array[0..255] of Char;
+
+begin
+  Module := GetModuleHandle(PChar(AResource));
+
+  try
+    if ((Module <> 0) and (LoadString(Module, AIdent, @Buffer[0], SizeOf(Buffer)) <> 0)) then
+      Result := Buffer
+    else
+      Result := ADefault;
+
+  finally
+    FreeLibrary(Module);
+  end;  //of try
+end;
 {$ENDIF}
 
 function OpenUrl(const AUrl: string): Boolean;
@@ -325,8 +334,24 @@ begin
   end;  //of try
 end;
 {$ELSE}
+var
+  ShellExecuteInfo: TShellExecuteInfo;
+
 begin
-  Result := ShellExec('open', AUrl, '', SW_SHOWNORMAL);
+  ZeroMemory(@ShellExecuteInfo, SizeOf(TShellExecuteInfo));
+
+  with ShellExecuteInfo do
+  begin
+    cbSize := SizeOf(TShellExecuteInfo);
+    Wnd := 0;
+    lpVerb := 'open';
+    lpFile := PChar(AUrl);
+    lpDirectory := nil;
+    lpParameters := nil;
+    nShow := SW_SHOWDEFAULT;
+  end;  //of with
+
+  Result := ShellExecuteEx(@ShellExecuteInfo);
 end;
 {$ENDIF}
 
