@@ -6,7 +6,9 @@ An open-source project of PM Code Works
 Version 1.0.1  [*??.??.17*]
 -------------
 
-* Bug fix: No progress bar for files less than 1MB
+* Bug fixes:
+  * No progress bar for files less than 1MB
+  * Loading primary language if requested locale could not be found in language file
 * Updater v3.1
   * Removed dependency to "Indy" component suite
   * Executable up to 1MB smaller
