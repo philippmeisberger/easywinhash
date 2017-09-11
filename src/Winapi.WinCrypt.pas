@@ -535,11 +535,11 @@ const
   CRYPTPROTECTMEMORY_BLOCK_SIZE    = $00000010;
   {$EXTERNALSYM CRYPTPROTECTMEMORY_BLOCK_SIZE}
 
-function CryptProtectMemory(var pData: LPVOID; cbData, dwFlags: DWORD): BOOL; stdcall;
+function CryptProtectMemory(pData: LPVOID; cbData, dwFlags: DWORD): BOOL; stdcall;
 {$EXTERNALSYM CryptProtectMemory}
 
-function CryptUnProtectMemory(var pData: LPVOID; cbData, dwFlags: DWORD): BOOL; stdcall;
-{$EXTERNALSYM CryptUnProtectMemory}
+function CryptUnprotectMemory(pData: LPVOID; cbData, dwFlags: DWORD): BOOL; stdcall;
+{$EXTERNALSYM CryptUnprotectMemory}
 
 const
   { OID key type }
@@ -597,7 +597,7 @@ function CryptStringToBinary; external crypt32 name 'CryptStringToBinaryW';
 function CryptProtectData; external crypt32 name 'CryptProtectData';
 function CryptProtectMemory; external crypt32 name 'CryptProtectMemory';
 function CryptUnprotectData; external crypt32 name 'CryptUnprotectData';
-function CryptUnProtectMemory; external crypt32 name 'CryptUnProtectMemory';
+function CryptUnprotectMemory; external crypt32 name 'CryptUnprotectMemory';
 function CryptVerifySignature; external advapi32 name 'CryptVerifySignatureW';
 
 end.
