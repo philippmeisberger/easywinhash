@@ -51,6 +51,7 @@ type
     procedure TestSha384;
     procedure TestSha512;
     procedure TestCancel;
+    procedure TestGenerateRandom;
   end;
 
 implementation
@@ -202,6 +203,19 @@ begin
   Inc(FOnProgressCalled);
   CheckEquals(1, FOnProgressCalled, 'Since calculation has been canceled OnProgress should not be called');
   ACancel := True;
+end;
+
+procedure THashTest.TestGenerateRandom;
+const
+  cLength = 16;
+
+var
+  Random: TBytes;
+
+begin
+  Random := FHash.GenerateRandom(cLength);
+  CheckEquals(cLength, Length(Random), 'Unexpected length of random data');
+  CheckNotEqualsString('', StringOf(Random), 'No random data was generated');
 end;
 
 procedure THashTest.TestMd5;

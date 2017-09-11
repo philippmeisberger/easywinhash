@@ -299,7 +299,29 @@ type
     /// <returns>
     ///   Random bytes.
     /// </returns>
-    function GenerateRandom(ALength: Cardinal): TCryptoBytes;
+    function GenerateRandom(ALength: Cardinal): TCryptoBytes;  overload;
+
+    /// <summary>
+    ///   Generates random data of specified length.
+    /// </summary>
+    /// <param name="ABuffer">
+    ///   The buffer to fill with random data.
+    /// </param>
+    /// <param name="ALength">
+    ///   The buffer length in bytes.
+    /// </param>
+    procedure GenerateRandom(const ABuffer: Pointer; ALength: Cardinal); overload;
+
+    /// <summary>
+    ///   Generates random data of specified length.
+    /// </summary>
+    /// <param name="ABuffer">
+    ///   The buffer to fill with random data.
+    /// </param>
+    /// <param name="ALength">
+    ///   The buffer length in bytes.
+    /// </param>
+    procedure GenerateRandom(const ABuffer: TBytes; ALength: Cardinal); overload;
 
     /// <summary>
     ///   Event that is called when hash calculation has finished.
@@ -493,6 +515,15 @@ end;
 { TCryptoBase }
 
 function TCryptoBase.GenerateRandom(ALength: Cardinal): TCryptoBytes;
+begin
+  if (ALength > 0) then
+  begin
+    SetLength(Result, ALength);
+    GenerateRandom(@Result[0], ALength);
+  end;  //of begin
+end;
+
+procedure TCryptoBase.GenerateRandom(const ABuffer: Pointer; ALength: Cardinal);
 var
   CryptProvider: TCryptProv;
 
@@ -500,16 +531,19 @@ begin
   if (ALength = 0) then
     Exit;
 
-  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-    CRYPT_VERIFYCONTEXT));
+  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT));
 
   try
-    SetLength(Result, ALength);
-    Check(CryptGenRandom(CryptProvider, ALength, @Result[0]));
+    Check(CryptGenRandom(CryptProvider, ALength, ABuffer));
 
   finally
     CryptReleaseContext(CryptProvider, 0);
   end;  //of try
+end;
+
+procedure TCryptoBase.GenerateRandom(const ABuffer: TBytes; ALength: Cardinal);
+begin
+  GenerateRandom(@ABuffer[0], ALength);
 end;
 
 procedure TCryptoBase.NotifyOnFinish();
@@ -698,8 +732,7 @@ begin
   NotifyOnStart();
 
   try
-    Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES,
-      CRYPT_VERIFYCONTEXT));
+    Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT));
 
     // Init hash
     Check(CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0,
