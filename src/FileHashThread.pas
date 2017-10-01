@@ -59,7 +59,7 @@ type
     ///   calculated.
     /// </param>
     constructor Create(const AFileName: TFileName; AHashAlgorithm: THashAlgorithm;
-      AHashValue: string = '');
+      const AHashValue: string = '');
 
     /// <summary>
     ///   Destructor for destroying a <c>TFileHashThread</c> instance.
@@ -102,7 +102,7 @@ implementation
 { TFileHashThread }
 
 constructor TFileHashThread.Create(const AFileName: TFileName;
-  AHashAlgorithm: THashAlgorithm; AHashValue: string = '');
+  AHashAlgorithm: THashAlgorithm; const AHashValue: string = '');
 begin
   inherited Create(True);
   FreeOnTerminate := True;
@@ -114,7 +114,7 @@ end;
 
 destructor TFileHashThread.Destroy;
 begin
-  FHash.Free;
+  FreeAndNil(FHash);
   inherited Destroy;
 end;
 
@@ -164,12 +164,18 @@ begin
 end;
 
 procedure TFileHashThread.Execute;
+var
+  HashValue: TCryptoBytes;
+
 begin
   Synchronize(DoNotifyOnStart);
 
   try
     if (FHashValue <> '') then
-      FMatches := AnsiSameStr(FHash.ComputeFromFile(FFileName).ToHex(), FHashValue)
+    begin
+      HashValue := HashValue.FromHex(FHashValue);
+      FMatches := FHash.ComputeFromFile(FFileName).Equals(HashValue);
+    end
     else
       FHashValue := FHash.ComputeFromFile(FFileName).ToHex();
 
