@@ -9,6 +9,7 @@ Version 1.0.1  [*??.??.17*]
 * Bug fixes:
   * No progress bar for files less than 1MB
   * Loading primary language if requested locale could not be found in language file
+* Fixed memory leak when dropping files
 * Updater v3.1
   * Removed dependency to "Indy" component suite
   * Executable up to 1MB smaller

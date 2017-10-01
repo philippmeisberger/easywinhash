@@ -309,13 +309,13 @@ end;
 procedure TMain.WMDropFiles(var AMsg: TWMDropFiles);
 var
   BufferSize: Integer;
-  FileName: PChar;
+  FileName: string;
 
 begin
   BufferSize := DragQueryFile(AMsg.Drop, 0, nil, 0) + 1;
-  FileName := StrAlloc(BufferSize);
-  DragQueryFile(AMsg.Drop, 0, FileName, BufferSize);
-  eFile.Text := StrPas(FileName);
+  SetLength(FileName, BufferSize);
+  DragQueryFile(AMsg.Drop, 0, PChar(FileName), BufferSize);
+  eFile.Text := FileName;
   DragFinish(AMsg.Drop);
 end;
 
