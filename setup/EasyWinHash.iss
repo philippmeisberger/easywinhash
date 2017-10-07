@@ -108,7 +108,7 @@ Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandS
 BeveledLabel=Inno Setup
 
 [CustomMessages]
-ContextMenu=Integrate {#MyAppName} into contextmeu
+ContextMenu=Integrate {#MyAppName} into contextmenu
 ContextMenuCalculate=Calculate hash
 ContextMenuVerify=Verify hash
 
