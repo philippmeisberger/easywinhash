@@ -180,8 +180,19 @@ end;
 
 procedure TMain.OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
 begin
-  pbProgress.Max := AFileSize;
-  pbProgress.Position := AProgress;
+  // Use file size in KB to deny range error if file > 2GB
+  if (AFileSize > MaxInt) then
+  begin
+    pbProgress.Max := AFileSize div 1000;
+    pbProgress.Position := AProgress div 1000;
+  end  //of begin
+  else
+  begin
+    // Use file size in bytes to show progress for files < 1MB
+    pbProgress.Max := AFileSize;
+    pbProgress.Position := AProgress;
+  end;  //of if
+
   Taskbar.ProgressMaxValue := AFileSize;
   TaskBar.ProgressValue := AProgress;
 end;
