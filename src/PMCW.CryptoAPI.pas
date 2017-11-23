@@ -2,7 +2,7 @@
 {                                                                         }
 { Windows CryptoAPI Unit v1.2                                             }
 {                                                                         }
-{ Copyright (c) 2011-2016 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2017 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -13,7 +13,7 @@ unit PMCW.CryptoAPI;
 interface
 
 uses
-  Windows, Classes, SysUtils, Winapi.WinCrypt;
+  Windows, Classes, SysUtils, Math, Winapi.WinCrypt;
 
 type
   /// <summary>
@@ -719,10 +719,13 @@ begin
 end;
 
 function THash.Compute(const AStream: TStream): TCryptoBytes;
+const
+  ONE_KB = 1024;
+
 var
   CryptProvider: TCryptProv;
   HashHandle: TCryptHash;
-  Buffer: array[0..1023] of Byte;
+  Buffer: TBytes;
   BytesRead: Integer;
   Cancel: Boolean;
   Progress: Int64;
@@ -732,14 +735,16 @@ begin
   NotifyOnStart();
 
   try
-    Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT));
+    // Use dynamic buffer with at least 1KB
+    SetLength(Buffer, Max(ONE_KB, AStream.Size div ONE_KB));
 
     // Init hash
+    Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT));
     Check(CryptCreateHash(CryptProvider, FHashAlgorithm.GetHashAlgorithm(), 0,
       0, HashHandle));
 
     try
-      // Read first KB into buffer
+      // Read first block into buffer
       BytesRead := AStream.Read(Buffer, Length(Buffer));
       Progress := 0;
       Cancel := False;
@@ -757,7 +762,7 @@ begin
         // Create hash of read bytes in buffer
         Check(CryptHashData(HashHandle, @Buffer[0], BytesRead, 0));
 
-        // Read next KB into buffer
+        // Read next block into buffer
         BytesRead := AStream.Read(Buffer, Length(Buffer));
       end;  //of while
 
