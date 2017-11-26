@@ -40,6 +40,15 @@ object Main: TMain
     Caption = '&Datei:'
     FocusControl = eFile
   end
+  object lTimeRemaining: TLabel
+    Left = 368
+    Top = 104
+    Width = 42
+    Height = 14
+    Alignment = taRightJustify
+    Caption = '00:00:00'
+    Visible = False
+  end
   object cbxAlgorithm: TComboBox
     Left = 24
     Top = 144
@@ -58,7 +67,7 @@ object Main: TMain
       'SHA-512')
   end
   object bCalculate: TButton
-    Left = 335
+    Left = 334
     Top = 144
     Width = 75
     Height = 25
@@ -69,8 +78,8 @@ object Main: TMain
   end
   object pbProgress: TProgressBar
     Left = 24
-    Top = 114
-    Width = 386
+    Top = 118
+    Width = 385
     Height = 17
     Anchors = [akLeft, akRight, akBottom]
     Smooth = True
@@ -88,7 +97,7 @@ object Main: TMain
     OnClick = bVerifyClick
   end
   object eHash: TButtonedEdit
-    Left = 25
+    Left = 24
     Top = 78
     Width = 385
     Height = 22

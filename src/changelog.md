@@ -3,9 +3,10 @@
 
 An open-source project of PM Code Works
 
-Version 1.0.1  [*??.??.17*]
--------------
+Version 1.1  [*??.??.17*]
+-----------
 
+* Added displaying remaining time
 * Bug fixes:
   * No progress bar for files less than 1MB
   * Loading primary language if requested locale could not be found in language file

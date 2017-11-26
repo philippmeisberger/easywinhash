@@ -41,6 +41,7 @@ type
     eFile: TButtonedEdit;
     lHash: TLabel;
     lFile: TLabel;
+    lTimeRemaining: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
@@ -56,6 +57,7 @@ type
     FLang: TLanguageFile;
     FUpdateCheck: TUpdateCheck;
     FThread: TFileHashThread;
+    FStartTime: Cardinal;
     procedure WMDropFiles(var AMsg: TWMDropFiles); message WM_DROPFILES;
     procedure OnBeginHashing(Sender: TObject);
     procedure OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
@@ -176,15 +178,20 @@ begin
   cbxAlgorithm.Enabled := False;
   eFile.Enabled := False;
   eHash.Enabled := False;
+  FStartTime := TThread.GetTickCount();
+  lTimeRemaining.Visible := True;
 end;
 
 procedure TMain.OnHashing(Sender: TThread; AProgress, AFileSize: Int64);
+var
+  MsRemaining: Double;
+
 begin
   // Use file size in KB to deny range error if file > 2GB
   if (AFileSize > MaxInt) then
   begin
-    pbProgress.Max := AFileSize div 1000;
-    pbProgress.Position := AProgress div 1000;
+    pbProgress.Max := AFileSize div 1024;
+    pbProgress.Position := AProgress div 1024;
   end  //of begin
   else
   begin
@@ -195,6 +202,10 @@ begin
 
   Taskbar.ProgressMaxValue := AFileSize;
   TaskBar.ProgressValue := AProgress;
+
+  // Calculate remaining time
+  MsRemaining := (TThread.GetTickCount() - FStartTime) / AProgress * (AFileSize - AProgress);
+  lTimeRemaining.Caption := TimeToStr(MsRemaining / MSecsPerDay);
 end;
 
 procedure TMain.OnHashingError(Sender: TThread; const AErrorMessage: string);
@@ -209,6 +220,7 @@ begin
   cbxAlgorithm.Enabled := True;
   eFile.Enabled := True;
   eHash.Enabled := True;
+  lTimeRemaining.Visible := False;
 
   bCalculate.Caption := FLang.GetString(LID_HASH_CALCULATE);
   bCalculate.Cancel := False;
