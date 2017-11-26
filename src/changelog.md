@@ -7,6 +7,7 @@ Version 1.1  [*??.??.17*]
 -----------
 
 * Added displaying remaining time
+* Increased calculation speed
 * Bug fixes:
   * No progress bar for files less than 1MB
   * Loading primary language if requested locale could not be found in language file
