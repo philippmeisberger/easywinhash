@@ -2,7 +2,7 @@
 {                                                                         }
 { EasyWinHash Main Unit                                                   }
 {                                                                         }
-{ Copyright (c) 2016-2017 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2016-2018 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -178,7 +178,7 @@ begin
   cbxAlgorithm.Enabled := False;
   eFile.Enabled := False;
   eHash.Enabled := False;
-  FStartTime := TThread.GetTickCount();
+  FStartTime := GetTickCount();
   lTimeRemaining.Visible := True;
 end;
 
@@ -204,7 +204,7 @@ begin
   TaskBar.ProgressValue := AProgress;
 
   // Calculate remaining time
-  MsRemaining := (TThread.GetTickCount() - FStartTime) / AProgress * (AFileSize - AProgress);
+  MsRemaining := (GetTickCount() - FStartTime) / AProgress * (AFileSize - AProgress);
   lTimeRemaining.Caption := TimeToStr(MsRemaining / MSecsPerDay);
 end;
 
