@@ -54,6 +54,11 @@ type
     procedure TestGenerateRandom;
   end;
 
+  TCryptoBytesTest = class(TTestCase)
+  published
+    procedure TestEquals;
+  end;
+
 implementation
 
 { TBase64Test }
@@ -248,8 +253,26 @@ begin
   CheckHash(haSha512, 'cb2e99f459eeb06a836420a4b74731259bca0db608cc21d4a597289dbf6cf411cbe7b65c8c005dd9e9b225bb0b07083c08ad867294a82977045de38c5cbc7136', TestFile);
 end;
 
+
+{ TCryptoBytesTest }
+
+procedure TCryptoBytesTest.TestEquals;
+const
+  cHexValue = '6aed3a2d6e7e6bca54f3f367ca929ea2';
+
+var
+  CryptoBytes: TCryptoBytes;
+
+begin
+  CryptoBytes := CryptoBytes.FromHex(cHexValue);
+  CheckEqualsString(cHexValue, CryptoBytes.ToHex(), 'Hex value differs');
+  Check(CryptoBytes.Equals(CryptoBytes.FromHex(cHexValue)), 'Same hex values are not considered equal');
+  CheckFalse(CryptoBytes.Equals(CryptoBytes.FromHex(cHexValue.Substring(1))), 'Different hex values are considered equal');
+end;
+
 initialization
   RegisterTest(TBase64Test.Suite);
   RegisterTest(THashTest.Suite);
+  RegisterTest(TCryptoBytesTest.Suite);
 end.
 
