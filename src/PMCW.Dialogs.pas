@@ -2,7 +2,7 @@
 {                                                                         }
 { PM Code Works Dialogs Unit                                              }
 {                                                                         }
-{ Copyright (c) 2011-2017 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2018 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -18,7 +18,41 @@ type
   ///   Possible icons in the balloon tip.
   /// </summary>
   TBalloonIcon = (
-    biNone, biInfo, biWarning, biError, biInfoLarge, biWarningLarge, biErrorLarge
+
+    /// <summary>
+    ///  Show no icon.
+    /// </summary>
+    biNone = TTI_NONE,
+
+    /// <summary>
+    ///   Show info icon.
+    /// </summary>
+    biInfo = TTI_INFO,
+
+    /// <summary>
+    ///   Show warning icon.
+    /// </summary>
+    biWarning = TTI_WARNING,
+
+    /// <summary>
+    ///   Show error icon.
+    /// </summary>
+    biError = TTI_ERROR,
+
+    /// <summary>
+    ///   Show large info icon.
+    /// </summary>
+    biInfoLarge = TTI_INFO_LARGE,
+
+    /// <summary>
+    ///   Show large warning icon.
+    /// </summary>
+    biWarningLarge = TTI_WARNING_LARGE,
+
+    /// <summary>
+    ///   Show large error icon.
+    /// </summary>
+    biErrorLarge = TTI_ERROR_LARGE
   );
 
   TCustomEditHelper = class helper for TCustomEdit
