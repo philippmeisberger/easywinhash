@@ -16,7 +16,7 @@ uses
   Vcl.Menus, Winapi.ShellAPI, Vcl.Buttons, Vcl.ClipBrd, System.Win.TaskbarCore,
   Vcl.Taskbar, System.UITypes, Vcl.ImgList, System.ImageList, FileHashThread,
   PMCW.CryptoAPI, PMCW.CA, PMCW.LanguageFile, PMCW.Dialogs, PMCW.Dialogs.Updater,
-  PMCW.Dialogs.About, PMCW.SysUtils;
+  PMCW.Dialogs.About, PMCW.SysUtils, PMCW.Controls;
 
 type
   { TMain }
@@ -210,7 +210,7 @@ end;
 
 procedure TMain.OnHashingError(Sender: TThread; const AErrorMessage: string);
 begin
-  FLang.ShowException(FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), AErrorMessage);
+  ExceptionDlg(FLang, FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), AErrorMessage);
   OnEndHashing(nil, '');
 end;
 
@@ -378,7 +378,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), E.Message);
+      ExceptionDlg(FLang, FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), E.Message);
   end;  //of try
 end;
 
@@ -453,7 +453,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString([LID_HASH_VERIFY, LID_IMPOSSIBLE]), E.Message);
+      ExceptionDlg(FLang, FLang.GetString([LID_HASH_VERIFY, LID_IMPOSSIBLE]), E.Message);
   end;  //of try
 end;
 
@@ -465,48 +465,17 @@ end;
 
 procedure TMain.mmInstallCertificateClick(Sender: TObject);
 begin
-  try
-    // Certificate already installed?
-    if CertificateExists() then
-    begin
-      MessageDlg(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED),
-        mtInformation, [mbOK], 0);
-    end  //of begin
-    else
-      InstallCertificate();
-
-  except
-    on E: EOSError do
-      MessageDlg(E.Message, mtError, [mbOK], 0);
-  end;  //of try
+  InstallCertificateDlg(FLang);
 end;
 
 procedure TMain.mmReportClick(Sender: TObject);
 begin
-  FLang.ReportBug();
+  ReportBugDlg(FLang, '');
 end;
 
 procedure TMain.mmAboutClick(Sender: TObject);
-var
-  AboutDialog: TAboutDialog;
-  Description, Changelog: TResourceStream;
-
 begin
-  AboutDialog := TAboutDialog.Create(Self);
-  Description := TResourceStream.Create(HInstance, RESOURCE_DESCRIPTION, RT_RCDATA);
-  Changelog := TResourceStream.Create(HInstance, RESOURCE_CHANGELOG, RT_RCDATA);
-
-  try
-    AboutDialog.Title := StripHotkey(mmAbout.Caption);
-    AboutDialog.Description.LoadFromStream(Description);
-    AboutDialog.Changelog.LoadFromStream(Changelog);
-    AboutDialog.Execute();
-
-  finally
-    Changelog.Free;
-    Description.Free;
-    AboutDialog.Free;
-  end;  //of begin
+  AboutDlg(StripHotkey(mmAbout.Caption));
 end;
 
 end.
