@@ -18,7 +18,6 @@ object Main: TMain
   OldCreateOrder = False
   Position = poScreenCenter
   OnCreate = FormCreate
-  OnDestroy = FormDestroy
   DesignSize = (
     434
     177)
@@ -142,27 +141,6 @@ object Main: TMain
     end
     object mmHelp: TMenuItem
       Caption = 'Hilfe'
-      object mmUpdate: TMenuItem
-        Caption = 'Nach Update suchen'
-        OnClick = mmUpdateClick
-      end
-      object N1: TMenuItem
-        Caption = '-'
-      end
-      object mmInstallCertificate: TMenuItem
-        Caption = 'Zertifikat installieren'
-        OnClick = mmInstallCertificateClick
-      end
-      object mmReport: TMenuItem
-        Caption = 'Fehler melden'
-      end
-      object N2: TMenuItem
-        Caption = '-'
-      end
-      object mmAbout: TMenuItem
-        Caption = #220'ber ...'
-        OnClick = mmAboutClick
-      end
     end
   end
   object Taskbar: TTaskbar
