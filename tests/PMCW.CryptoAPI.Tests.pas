@@ -51,12 +51,12 @@ type
     procedure TestSha384;
     procedure TestSha512;
     procedure TestCancel;
-    procedure TestGenerateRandom;
   end;
 
   TCryptoBytesTest = class(TTestCase)
   published
     procedure TestEquals;
+    procedure TestGenerateRandom;
   end;
 
 implementation
@@ -210,19 +210,6 @@ begin
   ACancel := True;
 end;
 
-procedure THashTest.TestGenerateRandom;
-const
-  cLength = 16;
-
-var
-  Random: TBytes;
-
-begin
-  Random := FHash.GenerateRandom(cLength);
-  CheckEquals(cLength, Length(Random), 'Unexpected length of random data');
-  CheckNotEqualsString('', StringOf(Random), 'No random data was generated');
-end;
-
 procedure THashTest.TestMd5;
 begin
   CheckHash(haMd5, '6aed3a2d6e7e6bca54f3f367ca929ea2');
@@ -268,6 +255,22 @@ begin
   CheckEqualsString(cHexValue, CryptoBytes.ToHex(), 'Hex value differs');
   Check(CryptoBytes.Equals(CryptoBytes.FromHex(cHexValue)), 'Same hex values are not considered equal');
   CheckFalse(CryptoBytes.Equals(CryptoBytes.FromHex(cHexValue.Substring(1))), 'Different hex values are considered equal');
+end;
+
+procedure TCryptoBytesTest.TestGenerateRandom;
+const
+  cLength = 16;
+
+var
+  CryptoBytes: TCryptoBytes;
+
+begin
+  CryptoBytes := CryptoBytes.GenerateRandom(cLength);
+  CheckEquals(cLength, Length(CryptoBytes), 'Unexpected length of random data');
+  CheckNotEqualsString('', CryptoBytes.ToHex(), 'No random data was generated');
+
+  CryptoBytes := CryptoBytes.GenerateRandom(0);
+  CheckEquals(0, Length(CryptoBytes), 'No random should be generated if length is 0');
 end;
 
 initialization

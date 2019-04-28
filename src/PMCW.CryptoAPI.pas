@@ -115,7 +115,7 @@ type
     /// <returns>
     ///   An decoded array of bytes.
     /// </returns>
-    function Decode(const AData: TBytes): TBytes; overload;
+    function Decode(const AData: TBytes): TBytes; overload; inline;
 
     /// <summary>
     ///   Decodes a Base64 string.
@@ -126,7 +126,7 @@ type
     /// <returns>
     ///   The decoded string.
     /// </returns>
-    function Decode(const ABase64: string): string; overload;
+    function Decode(const ABase64: string): string; overload; inline;
 
     /// <summary>
     ///   Decodes a Base64 encoded stream.
@@ -159,7 +159,7 @@ type
     /// <returns>
     ///   The Base64 encoded array of bytes.
     /// </returns>
-    function Encode(const AData: TBytes): TBytes; overload;
+    function Encode(const AData: TBytes): TBytes; overload; inline;
 
     /// <summary>
     ///   Encodes stream.
@@ -181,7 +181,7 @@ type
     /// <returns>
     ///   The Base64 encoded string.
     /// </returns>
-    function Encode(const AString: string): string; overload;
+    function Encode(const AString: string): string; overload; inline;
 
     /// <summary>
     ///   Encodes an array of bytes.
@@ -250,6 +250,17 @@ type
     ///   The hexadecimal string.
     /// </returns>
     function ToHex(): string;
+
+    /// <summary>
+    ///   Generates random data of specified length.
+    /// </summary>
+    /// <param name="ALength">
+    ///   The length in bytes.
+    /// </param>
+    /// <returns>
+    ///   Random bytes.
+    /// </returns>
+    function GenerateRandom(ALength: Cardinal): TCryptoBytes;
   end;
 
   /// <summary>
@@ -290,39 +301,6 @@ type
     /// </summary>
     procedure NotifyOnFinish();
   public
-    /// <summary>
-    ///   Generates random data of specified length.
-    /// </summary>
-    /// <param name="ALength">
-    ///   The length in bytes.
-    /// </param>
-    /// <returns>
-    ///   Random bytes.
-    /// </returns>
-    function GenerateRandom(ALength: Cardinal): TCryptoBytes;  overload;
-
-    /// <summary>
-    ///   Generates random data of specified length.
-    /// </summary>
-    /// <param name="ABuffer">
-    ///   The buffer to fill with random data.
-    /// </param>
-    /// <param name="ALength">
-    ///   The buffer length in bytes.
-    /// </param>
-    procedure GenerateRandom(const ABuffer: Pointer; ALength: Cardinal); overload;
-
-    /// <summary>
-    ///   Generates random data of specified length.
-    /// </summary>
-    /// <param name="ABuffer">
-    ///   The buffer to fill with random data.
-    /// </param>
-    /// <param name="ALength">
-    ///   The buffer length in bytes.
-    /// </param>
-    procedure GenerateRandom(const ABuffer: TBytes; ALength: Cardinal); overload;
-
     /// <summary>
     ///   Event that is called when hash calculation has finished.
     /// </summary>
@@ -514,38 +492,6 @@ end;
 
 { TCryptoBase }
 
-function TCryptoBase.GenerateRandom(ALength: Cardinal): TCryptoBytes;
-begin
-  if (ALength > 0) then
-  begin
-    SetLength(Result, ALength);
-    GenerateRandom(@Result[0], ALength);
-  end;  //of begin
-end;
-
-procedure TCryptoBase.GenerateRandom(const ABuffer: Pointer; ALength: Cardinal);
-var
-  CryptProvider: TCryptProv;
-
-begin
-  if (ALength = 0) then
-    Exit;
-
-  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT));
-
-  try
-    Check(CryptGenRandom(CryptProvider, ALength, ABuffer));
-
-  finally
-    CryptReleaseContext(CryptProvider, 0);
-  end;  //of try
-end;
-
-procedure TCryptoBase.GenerateRandom(const ABuffer: TBytes; ALength: Cardinal);
-begin
-  GenerateRandom(@ABuffer[0], ALength);
-end;
-
 procedure TCryptoBase.NotifyOnFinish();
 begin
   if Assigned(FOnFinish) then
@@ -700,6 +646,25 @@ function TCryptoBytesHelper.FromHex(const AHexString: string): TCryptoBytes;
 begin
   SetLength(Result, Length(AHexString) div SizeOf(Char));
   HexToBin(PChar(UpperCase(AHexString)), Pointer(Result), Length(Result));
+end;
+
+function TCryptoBytesHelper.GenerateRandom(ALength: Cardinal): TCryptoBytes;
+var
+  CryptProvider: TCryptProv;
+
+begin
+  if (ALength = 0) then
+    Exit;
+
+  Check(CryptAcquireContext(CryptProvider, nil, nil, PROV_RSA_AES, CRYPT_VERIFYCONTEXT));
+
+  try
+    SetLength(Result, ALength);
+    Check(CryptGenRandom(CryptProvider, ALength, @Result[0]));
+
+  finally
+    CryptReleaseContext(CryptProvider, 0);
+  end;  //of try
 end;
 
 function TCryptoBytesHelper.ToHex(): string;
