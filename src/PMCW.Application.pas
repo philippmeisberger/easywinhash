@@ -2,7 +2,7 @@
 {                                                                         }
 { PM Code Works Application Unit v1.0                                     }
 {                                                                         }
-{ Copyright (c) 2011-2018 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2019 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
@@ -16,13 +16,11 @@ uses
 {$IFDEF MSWINDOWS}
   Windows, PMCW.CA,
 {$ENDIF}
-{$IFDEF FPC}
-  PMCW.SysUtils,
-{$ELSE}
-  System.UITypes, PMCW.Dialogs.Updater,
+{$IFNDEF FPC}
+  System.UITypes, PMCW.Dialogs.Updater, PMCW.Dialogs.ReportBug,
 {$ENDIF}
   SysUtils, Classes, Forms, Menus, Dialogs, PMCW.LanguageFile, PMCW.Dialogs,
-  PMCW.Dialogs.About;
+  PMCW.Dialogs.About, PMCW.SysUtils;
 
 type
   /// <summary>

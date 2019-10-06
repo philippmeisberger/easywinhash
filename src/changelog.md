@@ -15,6 +15,9 @@ Version 1.1  [*??.??.17*]
 * Updater v3.1
   * Removed dependency to "Indy" component suite
   * Executable up to 1MB smaller
+* Introduced sending bug reports without mail client
+* Introduced translation dialog (in menu "Help")
+* Introduced donate button (in menu "Help")
 
 Version 1.0  [*11.05.16*]
 -----------
