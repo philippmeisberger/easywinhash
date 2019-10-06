@@ -37,7 +37,6 @@ Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 Name: "contextmenucalculate"; Description: "{cm:ContextMenuCalculate}"; GroupDescription: "{cm:ContextMenu}"
 Name: "contextmenuverify"; Description: "{cm:ContextMenuVerify}"; GroupDescription: "{cm:ContextMenu}"
 
