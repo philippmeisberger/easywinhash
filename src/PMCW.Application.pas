@@ -33,6 +33,7 @@ type
     FFileNameLocal,
     FFileNameRemote,
     FFileNameRemote64: string;
+    FMenuTranslate,
   {$ENDIF}
     FMenuLanguages,
     FMenuHelp,
@@ -42,6 +43,7 @@ type
     FMenuInstallCert,
   {$ENDIF}
     FMenuReportBug,
+    FMenuDonate,
     FMenuBreak2,
     FMenuAbout: TMenuItem;
     procedure AboutClick(Sender: TObject);
@@ -49,11 +51,13 @@ type
     procedure UpdateSelectedLanguage(Sender: TObject);
   {$IFNDEF FPC}
     procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
+    procedure TranslateClick(Sender: TObject);
   {$ENDIF}
   {$IFDEF MSWINDOWS}
     procedure InstallCertificateClick(Sender: TObject);
   {$ENDIF}
     procedure ReportBugClick(Sender: TObject);
+    procedure DonateClick(Sender: TObject);
     procedure UpdateClick(Sender: TObject);
   protected
     FLang: TLanguageFile;
@@ -113,13 +117,20 @@ begin
   FreeAndNil(FMenuInstallCert);
 {$ENDIF}
   FreeAndNil(FMenuReportBug);
+  FreeAndNil(FMenuDonate);
   FreeAndNil(FMenuBreak2);
   FreeAndNil(FMenuAbout);
 {$IFNDEF FPC}
+  FreeAndNil(FMenuTranslate);
   FreeAndNil(FUpdateCheck);
 {$ENDIF}
   FreeAndNil(FLang);
   inherited Destroy;
+end;
+
+procedure TMainForm.DonateClick(Sender: TObject);
+begin
+  OpenUrl(URL_BASE +'donate.php');
 end;
 
 {$IFDEF MSWINDOWS}
@@ -135,6 +146,102 @@ begin
   except
     on E: EOSError do
       MessageDlg(E.Message, mtError, [mbOK], 0);
+  end;  //of try
+end;
+{$ENDIF}
+{$IFNDEF FPC}
+procedure TMainForm.TranslateClick(Sender: TObject);
+
+  function FormatStringTableEntry(AIndex: TLanguageId; const ATranslatedString: string): string;
+  begin
+    Result := Format('  %d, "%s"', [FIRST_LANGUAGE_START_INDEX + (FLang.Count * FLang.Interval) + AIndex, ATranslatedString.Replace('"', '\"')]);
+  end;
+
+var
+  AvailableLanguages, Translated: TStringList;
+  SelectedLanguage, TranslationFile, OriginString, TranslatedString: string;
+  InsertPos, FirstIndex, i: Integer;
+  Languages: TLanguages;
+  LocaleId: TLocaleID;
+  Canceled: Boolean;
+
+begin
+  Canceled := False;
+  Translated := TStringList.Create;
+  AvailableLanguages := TStringList.Create;
+  Languages := TLanguages.Create;
+
+  try
+    // Get list of all languages
+    for i := 0 to Languages.Count - 1 do
+    begin
+      // Remove already translated
+      if not FLang.IsTranslated(Languages.LocaleID[i]) then
+        AvailableLanguages.Append(Languages.Name[i]);
+    end;  //of for
+
+    // Ask for translation lanuguage
+    if not InputCombo(FLang[LID_TRANSLATE], FLang[LID_TRANSLATE_SELECT], AvailableLanguages, SelectedLanguage) then
+      Exit;
+
+    LocaleId := Languages.LocaleID[AvailableLanguages.IndexOf(SelectedLanguage)];
+    TranslationFile := SelectedLanguage +'.rc';
+
+    // Create new translation?
+    if not FileExists(TranslationFile) then
+    begin
+      Translated.Append('STRINGTABLE');
+      Translated.Append('BEGIN');
+      Translated.Append(FormatStringTableEntry(0, IntToStr(LocaleId)));
+      Translated.Append('END');
+      InsertPos := Translated.Count - 1;
+      FirstIndex := 1;
+    end  //of begin
+    else
+    begin
+      // Continue with previous started translation
+      Translated.LoadFromFile(TranslationFile);
+      InsertPos := Translated.IndexOf('END');
+      FirstIndex := StrToInt(Trim(Translated[InsertPos - 1].Substring(0, Translated[InsertPos - 1].IndexOf(',')))) - (FLang.Count * FLang.Interval) - FIRST_LANGUAGE_START_INDEX + 1;
+    end;  //of if
+
+    // Translate all strings
+    i := FirstIndex;
+    OriginString := FLang[i];
+
+    while (GetLastError() <> ERROR_RESOURCE_NAME_NOT_FOUND) do
+    begin
+      TranslatedString := '';
+
+      // Let user translate only non-empty strings
+      if (OriginString <> '') then
+      begin
+        // User clicked cancel or entered nothing
+        if (not InputQuery(FLang[LID_TRANSLATE], OriginString, TranslatedString) or (TranslatedString = '')) then
+        begin
+          Canceled := True;
+          Break;
+        end;  //of begin
+      end;  //of begin
+
+      Translated.Insert(InsertPos, FormatStringTableEntry(i, TranslatedString));
+      Inc(InsertPos);
+      Inc(i);
+      OriginString := FLang[i];
+    end;  //of while
+
+    Translated.SaveToFile(TranslationFile, TEncoding.ANSI);
+
+    if not Canceled then
+    begin
+      if (MessageDlg(FLang.Format([LID_TRANSLATE_FINISHED, LID_TRANSLATE_SEND], [ExtractFilePath(Application.ExeName) + TranslationFile]), mtConfirmation, mbYesNo, 0) = idYes) then
+        TReportBugThread.Create(Translated.Text);
+    end;  //of begin
+
+  finally
+    FreeAndNil(Languages);
+    FreeAndNil(AvailableLanguages);
+    FreeAndNil(Translated);
   end;  //of try
 end;
 {$ENDIF}
@@ -188,6 +295,19 @@ begin
   FMenuInstallCert.OnClick := InstallCertificateClick;
   AMenuItem.Add(FMenuInstallCert);
 {$ENDIF}
+{$IFNDEF FPC}
+  // "Translate"
+  FMenuTranslate := TMenuItem.Create(AMenuItem);
+  FMenuTranslate.Caption := FLang[LID_TRANSLATE];
+  FMenuTranslate.OnClick := TranslateClick;
+  AMenuItem.Add(FMenuTranslate);
+{$ENDIF}
+
+  // "Donate"
+  FMenuDonate := TMenuItem.Create(AMenuItem);
+  FMenuDonate.Caption := FLang[LID_DONATE];
+  FMenuDonate.OnClick := DonateClick;
+  AMenuItem.Add(FMenuDonate);
 
   // "Report bug"
   FMenuReportBug := TMenuItem.Create(AMenuItem);
@@ -211,9 +331,6 @@ procedure TMainForm.BuildLanguageMenu(AMenuItem: TMenuItem);
 var
   MenuItem: TMenuItem;
   i: Integer;
-{$IFDEF MSWINDOWS}
-  Locale: TLocale;
-{$ENDIF}
 
 begin
   FMenuLanguages := AMenuItem;
@@ -221,7 +338,7 @@ begin
   FMenuLanguages.OnClick := UpdateSelectedLanguage;
 
   // Create submenu
-  for i := 0 to FLang.Languages.Count - 1 do
+  for i := 0 to FLang.Count - 1 do
   begin
     MenuItem := TMenuItem.Create(AMenuItem.Owner);
 
@@ -229,14 +346,8 @@ begin
     begin
       RadioItem := True;
       AutoCheck := True;
-    {$IFDEF MSWINDOWS}
-      Locale := StrToInt(FLang.Languages.Names[i]);
-      Tag := Locale;
-      Caption := Locale.DisplayName();
-    {$ELSE}
-      Hint := FLang.Languages.Names[i];
-      Caption := FLang.Languages.ValueFromIndex[i];
-    {$ENDIF}
+      {$IFDEF MSWINDOWS}Tag{$ELSE}Hint{$ENDIF} := FLang.Locales[i];
+      Caption := FLang.Names[i];
       OnClick := LanguageSelected;
     end;  //of with
 
@@ -255,6 +366,10 @@ begin
 {$IFDEF MSWINDOWS}
   FMenuInstallCert.Caption := FLang[LID_CERTIFICATE_INSTALL];
 {$ENDIF}
+{$IFNDEF FPC}
+  FMenuTranslate.Caption := FLang[LID_TRANSLATE];
+{$ENDIF}
+  FMenuDonate.Caption := FLang[LID_DONATE];
   FMenuReportBug.Caption := FLang[LID_REPORT_BUG];
   FMenuAbout.Caption := FLang.Format(LID_ABOUT, [Application.Title]);
 end;
