@@ -1,102 +1,119 @@
-{ *********************************************************************** }
+﻿{ *********************************************************************** }
 {                                                                         }
-{ PM Code Works Dialogs Unit                                              }
+{ PM Code Works Dialogs Unit v1.0                                         }
 {                                                                         }
-{ Copyright (c) 2011-2018 Philipp Meisberger (PM Code Works)              }
+{ Copyright (c) 2011-2019 Philipp Meisberger (PM Code Works)              }
 {                                                                         }
 { *********************************************************************** }
 
 unit PMCW.Dialogs;
 
+{$IFDEF FPC}{$MODE Delphi}{$ENDIF}
+
 interface
 
 uses
-  Winapi.Windows, Winapi.CommCtrl, Vcl.StdCtrls;
+{$IFDEF FPC}
+  PMCW.SysUtils, Controls, UITypes,
+{$ELSE}
+  System.UITypes, PMCW.Dialogs.ReportBug,
+{$ENDIF}
+{$IFDEF MSWINDOWS}
+  Windows, Classes, StdCtrls, Forms,
+{$ENDIF}
+  SysUtils, Dialogs, PMCW.LanguageFile;
 
-type
-  /// <summary>
-  ///   Possible icons in the balloon tip.
-  /// </summary>
-  TBalloonIcon = (
+/// <summary>
+///   Shows an exception message with additional information.
+/// </summary>
+/// <param name="ALanguageFile">
+///   UI translation file.
+/// </param>
+/// <param name="AMessage">
+///   An error message.
+/// </param>
+/// <param name="ADetails">
+///   Technical error details.
+/// </param>
+procedure ExceptionDlg(ALanguageFile: TLanguageFile; const AMessage, ADetails: string);
 
-    /// <summary>
-    ///  Show no icon.
-    /// </summary>
-    biNone = TTI_NONE,
-
-    /// <summary>
-    ///   Show info icon.
-    /// </summary>
-    biInfo = TTI_INFO,
-
-    /// <summary>
-    ///   Show warning icon.
-    /// </summary>
-    biWarning = TTI_WARNING,
-
-    /// <summary>
-    ///   Show error icon.
-    /// </summary>
-    biError = TTI_ERROR,
-
-    /// <summary>
-    ///   Show large info icon.
-    /// </summary>
-    biInfoLarge = TTI_INFO_LARGE,
-
-    /// <summary>
-    ///   Show large warning icon.
-    /// </summary>
-    biWarningLarge = TTI_WARNING_LARGE,
-
-    /// <summary>
-    ///   Show large error icon.
-    /// </summary>
-    biErrorLarge = TTI_ERROR_LARGE
-  );
-
-  TCustomEditHelper = class helper for TCustomEdit
-    /// <summary>
-    ///   Shows a balloon tip.
-    /// </summary>
-    /// <param name="ATitle">
-    ///   The title to display.
-    /// </param>
-    /// <param name="AText">
-    ///   The text to display.
-    /// </param>
-    /// <param name="AIcon">
-    ///   Optional: A <see cref="TBalloonIcon"/> icon to use.
-    /// </param>
-    /// <returns>
-    ///   <c>True</c> if balloon tip was shown successful or <c>False</c>
-    ///   otherwise.
-    /// </returns>
-    function ShowBalloonTip(const ATitle, AText: string;
-      AIcon: TBalloonIcon = biInfo): Boolean;
-  end;
+/// <summary>
+///   Shows a report bug dialog.
+/// </summary>
+/// <param name="ALanguageFile">
+///   UI translation file.
+/// </param>
+/// <param name="AMessage">
+///   The error message.
+/// </param>
+procedure ReportBugDlg(ALanguageFile: TLanguageFile; const AMessage: string);
 
 implementation
 
-{ TCustomEditHelper }
-
-function TCustomEditHelper.ShowBalloonTip(const ATitle, AText: string;
-  AIcon: TBalloonIcon = biInfo): Boolean;
+procedure ExceptionDlg(ALanguageFile: TLanguageFile; const AMessage, ADetails: string);
+{$IFDEF MSWINDOWS}
+{$WARN SYMBOL_PLATFORM OFF}
 var
-  BalloonTip: TEditBalloonTip;
+  TaskDialog: TTaskDialog;
 
 begin
-  ZeroMemory(@BalloonTip, SizeOf(TEditBalloonTip));
+  TaskDialog := TTaskDialog.Create(nil);
 
-  with BalloonTip do
-  begin
-    cbStruct := SizeOf(TEditBalloonTip);
-    pszTitle := PChar(ATitle);
-    pszText := PChar(AText);
-    ttiIcon := Ord(AIcon);
-  end;  //of with
+  try
+    with TaskDialog do
+    begin
+      MainIcon := tdiError;
+      Title := ALanguageFile[LID_FATAL_ERROR];
+      Text := AMessage;
+      ExpandedText := ADetails;
+      ExpandButtonCaption := ALanguageFile[LID_TECHNICAL_DETAILS];
+      Flags := [tfExpandFooterArea];
+      CommonButtons := [tcbClose];
 
-  Result := Edit_ShowBalloonTip(Handle, BalloonTip);
+      with Buttons.Add do
+      begin
+        Caption := ALanguageFile[LID_REPORT_BUG];
+        ModalResult := mrOk;
+      end;  //of with
+    end;  //of with
+
+    TaskDialog.Execute();
+
+    // Report bug?
+    if (TaskDialog.ModalResult = mrOk) then
+      ReportBugDlg(ALanguageFile, ALanguageFile.Format(LID_REPORT_BUG_BODY, [AMessage, ADetails]));
+
+  finally
+    FreeAndNil(TaskDialog);
+  end;  //of try
+{$WARN SYMBOL_PLATFORM ON}
+{$ELSE}
+begin
+  if (MessageDlg(ALanguageFile[LID_FATAL_ERROR], AMessage +': '+ ADetails + sLineBreak +
+    ALanguageFile[LID_REPORT_BUG]+'?', mtError, [mbYes, mbClose], 0) = mrYes) then
+    ReportBugDlg(ALanguageFile, AMessage);
+{$ENDIF}
+end;
+
+procedure ReportBugDlg(ALanguageFile: TLanguageFile; const AMessage: string);
+{$IFDEF FPC}
+begin
+  OpenUrl('mailto:'+ MAIL_CONTACT);
+{$ELSE}
+var
+  ReportDialog: TReportBugDialog;
+
+begin
+  ReportDialog := TReportBugDialog.Create(nil, ALanguageFile);
+
+  try
+    ReportDialog.Report.Text := AMessage;
+    ReportDialog.Execute();
+
+  finally
+    FreeAndNil(ReportDialog);
+  end;  //of try
+{$ENDIF}
 end;
 
 end.

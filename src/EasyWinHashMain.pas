@@ -15,12 +15,12 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.StdCtrls, Vcl.ExtCtrls,
   Vcl.Menus, Winapi.ShellAPI, Vcl.Buttons, Vcl.ClipBrd, System.Win.TaskbarCore,
   Vcl.Taskbar, System.UITypes, Vcl.ImgList, System.ImageList, FileHashThread,
-  PMCW.CryptoAPI, PMCW.CA, PMCW.LanguageFile, PMCW.Dialogs, PMCW.Dialogs.Updater,
-  PMCW.Dialogs.About, PMCW.SysUtils;
+  PMCW.CryptoAPI, PMCW.LanguageFile, PMCW.Dialogs, PMCW.SysUtils, PMCW.Controls,
+  PMCW.Application;
 
 type
   { TMain }
-  TMain = class(TForm, IChangeLanguageListener)
+  TMain = class(TMainForm)
     cbxAlgorithm: TComboBox;
     bCalculate: TButton;
     pbProgress: TProgressBar;
@@ -29,12 +29,6 @@ type
     mmHelp: TMenuItem;
     mmView: TMenuItem;
     mmLang: TMenuItem;
-    mmUpdate: TMenuItem;
-    N1: TMenuItem;
-    mmAbout: TMenuItem;
-    mmInstallCertificate: TMenuItem;
-    mmReport: TMenuItem;
-    N2: TMenuItem;
     Taskbar: TTaskbar;
     ButtonImages: TImageList;
     eHash: TButtonedEdit;
@@ -45,17 +39,10 @@ type
     procedure FormCreate(Sender: TObject);
     procedure bCalculateClick(Sender: TObject);
     procedure bVerifyClick(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
-    procedure mmInstallCertificateClick(Sender: TObject);
-    procedure mmUpdateClick(Sender: TObject);
-    procedure mmReportClick(Sender: TObject);
-    procedure mmAboutClick(Sender: TObject);
     procedure eFileRightButtonClick(Sender: TObject);
     procedure eHashRightButtonClick(Sender: TObject);
     procedure eFileDblClick(Sender: TObject);
   private
-    FLang: TLanguageFile;
-    FUpdateCheck: TUpdateCheck;
     FThread: TFileHashThread;
     FStartTime: Cardinal;
     procedure WMDropFiles(var AMsg: TWMDropFiles); message WM_DROPFILES;
@@ -64,9 +51,8 @@ type
     procedure OnHashingError(Sender: TThread; const AErrorMessage: string);
     procedure OnEndHashing(Sender: TThread; const AHash: string);
     procedure OnVerified(Sender: TThread; const AMatches: Boolean);
-    procedure OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
-    { IChangeLanguageListener }
-    procedure LanguageChanged();
+  protected
+    procedure LanguageChanged(); override;
   end;
 
 var
@@ -86,23 +72,18 @@ var
 begin
   // Setup languages
   FLang := TLanguageFile.Create(100);
+  FLang.AddListener(Self);
 
-  with FLang do
-  begin
-    AddListener(Self);
-    BuildLanguageMenu(mmLang);
-  end;  //of with
+  // Build menus
+  BuildLanguageMenu(mmLang);
+  BuildHelpMenu(mmHelp);
 
   // Init update notificator
-  FUpdateCheck := TUpdateCheck.Create('EasyWinHash', FLang);
-
-  with FUpdateCheck do
-  begin
-    OnUpdate := Self.OnUpdate;
-  {$IFNDEF DEBUG}
-    CheckForUpdate();
-  {$ENDIF}
-  end;  //of with
+{$IFDEF PORTABLE}
+  CheckForUpdate('EasyWinHash', 'easywinhash.exe', 'easywinhash64.exe', 'EasyWinHash.exe');
+{$ELSE}
+  CheckForUpdate('EasyWinHash', 'easywinhash_setup.exe', '', 'EasyWinHash Setup.exe');
+{$ENDIF}
 
   // Enable drag & drop support
   DragAcceptFiles(Handle, True);
@@ -163,12 +144,6 @@ begin
   end;  //of begin
 end;
 
-procedure TMain.FormDestroy(Sender: TObject);
-begin
-  FUpdateCheck.Free;
-  FLang.Free;
-end;
-
 procedure TMain.OnBeginHashing(Sender: TObject);
 begin
   TaskBar.ProgressValue := 0;
@@ -210,7 +185,7 @@ end;
 
 procedure TMain.OnHashingError(Sender: TThread; const AErrorMessage: string);
 begin
-  FLang.ShowException(FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), AErrorMessage);
+  ExceptionDlg(FLang, FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), AErrorMessage);
   OnEndHashing(nil, '');
 end;
 
@@ -246,52 +221,6 @@ begin
   MessageBeep(MB_ICONINFORMATION);
 end;
 
-procedure TMain.OnUpdate(Sender: TObject; const ANewBuild: Cardinal);
-var
-  Updater: TUpdateDialog;
-
-begin
-  mmUpdate.Caption := FLang.GetString(LID_UPDATE_DOWNLOAD);
-
-  // Ask user to permit download
-  if (TaskMessageDlg(FLang.Format(LID_UPDATE_AVAILABLE, [ANewBuild]),
-    FLang[LID_UPDATE_CONFIRM_DOWNLOAD], mtConfirmation, mbYesNo, 0) = idYes) then
-  begin
-    Updater := TUpdateDialog.Create(Self, FLang);
-
-    try
-      with Updater do
-      begin
-      {$IFDEF PORTABLE}
-        FileNameLocal := 'EasyWinHash.exe';
-      {$IFDEF WIN64}
-        FileNameRemote := 'easywinhash64.exe';
-      {$ELSE}
-        FileNameRemote := 'easywinhash.exe';
-      {$ENDIF}
-      {$ELSE}
-        FileNameLocal := 'EasyWinHash Setup.exe';
-        FileNameRemote := 'easywinhash_setup.exe';
-      {$ENDIF}
-      end;  //of begin
-
-      // Successfully downloaded update?
-      if Updater.Execute() then
-      begin
-        // Caption "Search for update"
-        mmUpdate.Caption := FLang.GetString(LID_UPDATE_SEARCH);
-        mmUpdate.Enabled := False;
-      {$IFNDEF PORTABLE}
-        Updater.LaunchSetup();
-      {$ENDIF}
-      end;  //of begin
-
-    finally
-      Updater.Free;
-    end;  //of try
-  end;  //of begin
-end;
-
 procedure TMain.OnVerified(Sender: TThread; const AMatches: Boolean);
 begin
   if AMatches then
@@ -306,20 +235,11 @@ end;
 
 procedure TMain.LanguageChanged();
 begin
+  inherited LanguageChanged();
+
   with FLang do
   begin
-    // View menu labels
     mmView.Caption := GetString(LID_VIEW);
-    mmLang.Caption := GetString(LID_SELECT_LANGUAGE);
-
-    // Help menu labels
-    mmHelp.Caption := GetString(LID_HELP);
-    mmUpdate.Caption := GetString(LID_UPDATE_SEARCH);
-    mmInstallCertificate.Caption := GetString(LID_CERTIFICATE_INSTALL);
-    mmReport.Caption := GetString(LID_REPORT_BUG);
-    mmAbout.Caption := Format(LID_ABOUT, [Application.Title]);
-
-    // Buttons and labels
     lFile.Caption := '&'+ GetString(LID_FILE) +':';
     lHash.Caption := '&'+ GetString(LID_HASH) +':';
     eFile.RightButton.Hint := GetString(LID_BROWSE_FOR_FILE);
@@ -378,7 +298,7 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), E.Message);
+      ExceptionDlg(FLang, FLang.GetString([LID_HASH_CALCULATE, LID_IMPOSSIBLE]), E.Message);
   end;  //of try
 end;
 
@@ -453,60 +373,8 @@ begin
 
   except
     on E: Exception do
-      FLang.ShowException(FLang.GetString([LID_HASH_VERIFY, LID_IMPOSSIBLE]), E.Message);
+      ExceptionDlg(FLang, FLang.GetString([LID_HASH_VERIFY, LID_IMPOSSIBLE]), E.Message);
   end;  //of try
-end;
-
-procedure TMain.mmUpdateClick(Sender: TObject);
-begin
-  FUpdateCheck.NotifyNoUpdate := True;
-  FUpdateCheck.CheckForUpdate();
-end;
-
-procedure TMain.mmInstallCertificateClick(Sender: TObject);
-begin
-  try
-    // Certificate already installed?
-    if CertificateExists() then
-    begin
-      MessageDlg(FLang.GetString(LID_CERTIFICATE_ALREADY_INSTALLED),
-        mtInformation, [mbOK], 0);
-    end  //of begin
-    else
-      InstallCertificate();
-
-  except
-    on E: EOSError do
-      MessageDlg(E.Message, mtError, [mbOK], 0);
-  end;  //of try
-end;
-
-procedure TMain.mmReportClick(Sender: TObject);
-begin
-  FLang.ReportBug();
-end;
-
-procedure TMain.mmAboutClick(Sender: TObject);
-var
-  AboutDialog: TAboutDialog;
-  Description, Changelog: TResourceStream;
-
-begin
-  AboutDialog := TAboutDialog.Create(Self);
-  Description := TResourceStream.Create(HInstance, RESOURCE_DESCRIPTION, RT_RCDATA);
-  Changelog := TResourceStream.Create(HInstance, RESOURCE_CHANGELOG, RT_RCDATA);
-
-  try
-    AboutDialog.Title := StripHotkey(mmAbout.Caption);
-    AboutDialog.Description.LoadFromStream(Description);
-    AboutDialog.Changelog.LoadFromStream(Changelog);
-    AboutDialog.Execute();
-
-  finally
-    Changelog.Free;
-    Description.Free;
-    AboutDialog.Free;
-  end;  //of begin
 end;
 
 end.
