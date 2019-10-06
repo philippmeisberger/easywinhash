@@ -108,9 +108,17 @@ Root: HKLM; Subkey: "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\CommandS
 BeveledLabel=Inno Setup
 
 [CustomMessages]
-ContextMenu=Integrate {#MyAppName} into contextmenu
-ContextMenuCalculate=Calculate hash
-ContextMenuVerify=Verify hash
+english.ContextMenu=Integrate {#MyAppName} into contextmenu
+french.ContextMenu=Intégrer {#MyAppName} dans le menu contextuel
+german.ContextMenu={#MyAppName} ins Kontextmenü integrieren
+
+english.ContextMenuCalculate=Calculate hash
+french.ContextMenuCalculate=Calculer le hachage
+german.ContextMenuCalculate=Hashwert berechnen
+
+english.ContextMenuVerify=Verify hash
+french.ContextMenuVerify=Vérifier le hachage
+german.ContextMenuVerify=Hashwert überprüfen
 
 [Code]
 procedure UrlLabelClick(Sender: TObject);
